@@ -128,3 +128,19 @@
     @apply font-sans;
   }
 }
+/* Marca — placeholders hasta tener los colores definitivos del cliente.
+   Cambiar solo estas variables re-tematiza todo el sitio. */
+:root {
+  --brand: oklch(0.43 0.09 45);
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-soft: oklch(0.965 0.018 75);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --ring: var(--brand);
+}
+
+@theme inline {
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+}
