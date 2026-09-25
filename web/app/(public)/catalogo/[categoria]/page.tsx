@@ -36,13 +36,23 @@ export default async function CategoryPage({ params }: Props) {
       {products.length === 0 ? (
         <p className="mt-10 text-muted-foreground">Todavía no hay productos en este catálogo.</p>
       ) : (
-        <ul className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 lg:grid-cols-3">
+        <ul className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-8 lg:grid-cols-3">
           {products.map((p) => (
             <li key={p.id}>
-              <Link href={`/producto/${p.slug}`} className="group block rounded-lg focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
-                <ProductImage src={p.coverUrl} alt={p.name} className="transition-opacity group-hover:opacity-90" />
-                <h2 className="mt-3 font-medium group-hover:text-brand">{p.name}</h2>
-                {p.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.description}</p>}
+              <Link
+                href={`/producto/${p.slug}`}
+                className="group flex min-h-24 items-center gap-4 rounded-lg focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:block"
+              >
+                <ProductImage
+                  src={p.coverUrl}
+                  alt={p.name}
+                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 128px"
+                  className="w-32 shrink-0 transition-opacity group-hover:opacity-90 sm:w-full"
+                />
+                <div className="min-w-0">
+                  <h2 className="font-medium group-hover:text-brand sm:mt-3">{p.name}</h2>
+                  {p.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.description}</p>}
+                </div>
               </Link>
             </li>
           ))}

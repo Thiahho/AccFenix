@@ -39,7 +39,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
               key={c.id ?? "all"}
               href={c.id ? `/admin/productos?categoria=${c.id}` : "/admin/productos"}
               aria-current={active ? "page" : undefined}
-              className={cn("rounded-full border px-3 py-1 text-sm", active ? "border-brand bg-brand text-brand-foreground" : "bg-background hover:bg-muted")}
+              className={cn("rounded-full border px-3 py-2 text-sm md:py-1", active ? "border-brand bg-brand text-brand-foreground" : "bg-background hover:bg-muted")}
             >
               {c.name}
             </Link>

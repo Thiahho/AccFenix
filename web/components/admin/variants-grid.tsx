@@ -71,7 +71,7 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setFilter((f) => ({ ...f, [attr.id]: v.id }))}
-                  className={cn("rounded-full border px-3 py-1 text-sm tabular-nums", active ? "border-brand bg-brand text-brand-foreground" : "hover:bg-muted")}
+                  className={cn("rounded-full border px-3 py-2 text-sm tabular-nums md:py-1", active ? "border-brand bg-brand text-brand-foreground" : "hover:bg-muted")}
                 >
                   {v.label}
                 </button>

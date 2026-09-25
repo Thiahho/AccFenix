@@ -43,6 +43,23 @@ export function buildOrderMessage(items: CartItem[], form: OrderForm, threshold:
   return lines.join("\n");
 }
 
+/** Consulta directa por una variante puntual (botón "Pedir por WhatsApp" del catálogo). Nunca incluye precios. */
+export function buildVariantMessage(productName: string, valuesLabel: string): string {
+  return ["¡Hola! Quiero pedir:", `• ${productName} — ${valuesLabel}`, "", "¿Me pasan la cotización y el tiempo de entrega?"].join("\n");
+}
+
+/** Primer contacto de profesionales (decoradores, tapiceros, revendedores). */
+export function buildProfessionalMessage(threshold: number): string {
+  const volume = threshold > 0 ? ` (pedidos desde ${threshold} unidades)` : "";
+  return [
+    "¡Hola! Soy profesional del rubro y quiero cotizar por volumen" + volume + ".",
+    "",
+    "Rubro / empresa:",
+    "Productos y cantidades aproximadas:",
+    "Localidad de entrega:",
+  ].join("\n");
+}
+
 export function whatsappUrl(phone: string, text: string) {
   return `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
 }

@@ -76,7 +76,7 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
                       disabled={!enabled}
                       onClick={() => setSelection((s) => select(attributes, variants, s, attr.id, value.id))}
                       className={cn(
-                        "inline-flex h-10 min-w-12 items-center justify-center gap-2 rounded-md border px-3 text-sm tabular-nums transition-colors",
+                        "inline-flex h-11 min-w-12 items-center justify-center gap-2 rounded-md border px-3 text-sm tabular-nums transition-colors",
                         "focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
                         selected ? "border-brand bg-brand text-brand-foreground" : "hover:border-brand/60 hover:bg-brand-soft",
                         !enabled && "cursor-not-allowed opacity-40 line-through hover:border-border hover:bg-transparent",
@@ -121,7 +121,7 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
                 aria-label="Cantidad"
                 value={qty}
                 onChange={(e) => setQty(Math.min(MAX_QTY, Math.max(1, Number(e.target.value) || 1)))}
-                className="h-9 w-20 border-0 text-center tabular-nums shadow-none focus-visible:ring-0"
+                className="h-11 w-20 border-0 md:h-9 text-center tabular-nums shadow-none focus-visible:ring-0"
               />
               <Button type="button" variant="ghost" size="icon" aria-label="Sumar uno" onClick={() => setQty((q) => Math.min(MAX_QTY, q + 1))}>
                 <PlusIcon />

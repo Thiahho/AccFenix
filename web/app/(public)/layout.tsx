@@ -1,7 +1,17 @@
+import Image from "next/image";
 import Link from "next/link";
+import { WhatsappFab } from "@/components/home/whatsapp-fab";
+import { MobileMenu } from "@/components/site/mobile-menu";
 import { CartButton } from "@/components/site/cart-button";
 import { api, type Category } from "@/lib/api";
 import { site } from "@/lib/site";
+
+const sections = [
+  { href: "/#proyectos", label: "Proyectos" },
+  { href: "/#catalogo", label: "Catálogo" },
+  { href: "/#profesionales", label: "Profesionales" },
+  { href: "/#preguntas", label: "Preguntas" },
+];
 
 async function loadCategories(): Promise<Category[]> {
   try {
@@ -11,40 +21,43 @@ async function loadCategories(): Promise<Category[]> {
   }
 }
 
+async function loadPhone(): Promise<string> {
+  try {
+    return (await api.settings()).whatsappNumber;
+  } catch {
+    return "";
+  }
+}
+
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const categories = await loadCategories();
+  const [categories, phone] = await Promise.all([loadCategories(), loadPhone()]);
 
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4">
-          <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-            {/* Placeholder del logo del cliente */}
-            <span aria-hidden className="grid size-8 place-items-center rounded-md bg-brand text-sm font-bold text-brand-foreground">
-              {site.name.charAt(0)}
-            </span>
-            <span className="text-lg">{site.name}</span>
+          <Link href="/" aria-label={`${site.name} — inicio`} className="flex min-h-11 items-center gap-2.5">
+            <Image src="/logo-solo.png" alt="" width={34} height={40} priority className="h-9 w-auto" />
+            <Image src="/nombre.png" alt="Accesorios Fenix — barrales de madera" width={160} height={26} priority className="hidden h-6 w-auto sm:block" />
           </Link>
-          <nav aria-label="Catálogos" className="hidden flex-1 items-center gap-5 text-sm md:flex">
+          <nav aria-label="Secciones" className="hidden flex-1 items-center gap-5 text-sm md:flex">
+            {sections.map((s) => (
+              <Link key={s.href} href={s.href} className="text-muted-foreground transition-colors hover:text-foreground">
+                {s.label}
+              </Link>
+            ))}
+            {categories.length > 0 && <span aria-hidden className="h-4 w-px bg-border" />}
             {categories.map((c) => (
               <Link key={c.id} href={`/catalogo/${c.slug}`} className="text-muted-foreground transition-colors hover:text-foreground">
                 {c.name}
               </Link>
             ))}
           </nav>
-          <div className="ml-auto md:ml-0">
+          <div className="ml-auto flex items-center gap-2 md:ml-0">
             <CartButton />
+            <MobileMenu categories={categories} />
           </div>
         </div>
-        {categories.length > 0 && (
-          <nav aria-label="Catálogos" className="flex gap-4 overflow-x-auto border-t px-4 py-2 text-sm md:hidden">
-            {categories.map((c) => (
-              <Link key={c.id} href={`/catalogo/${c.slug}`} className="shrink-0 text-muted-foreground hover:text-foreground">
-                {c.name}
-              </Link>
-            ))}
-          </nav>
-        )}
       </header>
 
       <main className="flex-1">{children}</main>
@@ -57,6 +70,8 @@ export default async function PublicLayout({ children }: { children: React.React
           <p>Precios y envío se coordinan por WhatsApp al recibir tu pedido.</p>
         </div>
       </footer>
+
+      <WhatsappFab phone={phone} />
     </div>
   );
 }

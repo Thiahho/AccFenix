@@ -32,10 +32,10 @@ function ValueRow({ attributeId, value }: { attributeId: number; value: AdminVal
   const dirty = label !== value.label || colorHex !== (value.colorHex ?? "") || sortOrder !== value.sortOrder;
 
   return (
-    <li className="flex items-center gap-2">
+    <li className="flex flex-wrap items-center gap-2">
       <Input aria-label="Orden" type="number" className="w-16" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value) || 0)} />
-      <Input aria-label="Valor" className="flex-1" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={80} />
-      <label className="relative grid size-9 shrink-0 cursor-pointer place-items-center rounded-md border" title="Color de muestra (opcional)">
+      <Input aria-label="Valor" className="min-w-36 flex-1" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={80} />
+      <label className="relative grid size-11 shrink-0 cursor-pointer md:size-9 place-items-center rounded-md border" title="Color de muestra (opcional)">
         <span className="size-5 rounded-full border" style={{ backgroundColor: colorHex || "transparent" }} />
         <input type="color" aria-label="Color de muestra" className="absolute inset-0 cursor-pointer opacity-0" value={colorHex || "#ffffff"} onChange={(e) => setColorHex(e.target.value)} />
       </label>

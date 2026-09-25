@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { OrderForm } from "@/lib/order";
-import { buildOrderMessage, isWholesale, whatsappUrl } from "@/lib/whatsapp";
+import { buildOrderMessage, buildProfessionalMessage, buildVariantMessage, isWholesale, whatsappUrl } from "@/lib/whatsapp";
 import type { CartItem } from "@/stores/cart";
 
 const items: CartItem[] = [
@@ -48,5 +48,20 @@ describe("buildOrderMessage", () => {
 describe("whatsappUrl", () => {
   it("strips non-digits and encodes the text", () => {
     expect(whatsappUrl("+54 9 11 1234-5678", "Hola & chau")).toBe("https://wa.me/5491112345678?text=Hola%20%26%20chau");
+  });
+});
+
+describe("buildVariantMessage", () => {
+  it("names the product and the chosen variant, without prices", () => {
+    const msg = buildVariantMessage("Barral", "Medida 2.40 · Grosor 34 · Color Caoba");
+    expect(msg).toContain("• Barral — Medida 2.40 · Grosor 34 · Color Caoba");
+    expect(msg).not.toMatch(/\$|precio/i);
+  });
+});
+
+describe("buildProfessionalMessage", () => {
+  it("mentions the wholesale threshold only when there is one", () => {
+    expect(buildProfessionalMessage(100)).toContain("pedidos desde 100 unidades");
+    expect(buildProfessionalMessage(0)).not.toContain("desde");
   });
 });
