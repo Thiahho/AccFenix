@@ -42,6 +42,9 @@ El seed es idempotente: solo agrega lo que falta.
 
 ```bash
 cd api && dotnet test      # unitarios + integración (Testcontainers: requiere Docker)
+
+# Sin Docker: usar un Postgres existente (el usuario necesita permiso CREATEDB; se crea y borra una base temporal)
+ACCFENIX_TEST_DB="Host=localhost;Port=5433;Database=postgres;Username=...;Password=..." dotnet test
 cd web && npm test         # vitest: mensaje de WhatsApp, carrito, selector de variantes
 ```
 
