@@ -6,7 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AccFenix.Api.Seed;
 
-/// <summary>Carga inicial del catálogo según el acta. Es idempotente: solo agrega lo que falta.</summary>
+/// <summary>
+/// Carga inicial del catálogo según el acta. El catálogo solo se carga si la base no tiene uno:
+/// una vez que se administra desde el panel, la base es la única fuente de verdad.
+/// Settings y usuario admin se crean solo si faltan.
+/// </summary>
 public class CatalogSeeder(AppDbContext db, VariantGenerator generator, IConfiguration config, ILogger<CatalogSeeder> logger)
 {
     static readonly string[] Medidas = ["1.20", "1.40", "1.60", "1.80", "2.00", "2.20", "2.40", "2.60", "2.80", "3.00"];
@@ -14,6 +18,26 @@ public class CatalogSeeder(AppDbContext db, VariantGenerator generator, IConfigu
     static readonly (string Label, string Hex)[] Colores = [("Natural", "#D8B98A"), ("Caoba", "#6B2E1F"), ("Cedro", "#A0522D")];
 
     public async Task SeedAsync(CancellationToken ct = default)
+    {
+        var hasCatalog = await db.Categories.AnyAsync(ct) || await db.Products.AnyAsync(ct) || await db.Attributes.AnyAsync(ct);
+        if (hasCatalog)
+        {
+            logger.LogInformation("La base ya tiene catálogo; se omite el seed del catálogo");
+        }
+        else
+        {
+            await SeedCatalogAsync(ct);
+        }
+
+        await EnsureSettingAsync(SettingKeys.WholesaleThreshold, "100", ct);
+        await EnsureSettingAsync(SettingKeys.WhatsappNumber, "5491122692061", ct);
+        await EnsureAdminAsync(ct);
+
+        logger.LogInformation("Seed completo: {Products} productos, {Variants} variantes",
+            await db.Products.CountAsync(ct), await db.Variants.CountAsync(v => v.IsActive, ct));
+    }
+
+    async Task SeedCatalogAsync(CancellationToken ct)
     {
         var medida = await EnsureAttributeAsync("Medida", 0, Medidas.Select(m => (m, (string?)null)), ct);
         var grosor = await EnsureAttributeAsync("Grosor", 1, Grosores.Select(g => (g, (string?)null)), ct);
@@ -48,13 +72,6 @@ public class CatalogSeeder(AppDbContext db, VariantGenerator generator, IConfigu
         {
             await generator.GenerateAsync(p.Id, ct);
         }
-
-        await EnsureSettingAsync(SettingKeys.WholesaleThreshold, "100", ct);
-        await EnsureSettingAsync(SettingKeys.WhatsappNumber, "5491100000000", ct);
-        await EnsureAdminAsync(ct);
-
-        logger.LogInformation("Seed completo: {Products} productos, {Variants} variantes",
-            await db.Products.CountAsync(ct), await db.Variants.CountAsync(v => v.IsActive, ct));
     }
 
     async Task<CatalogAttribute> EnsureAttributeAsync(string name, int sort, IEnumerable<(string Label, string? Hex)> values, CancellationToken ct)

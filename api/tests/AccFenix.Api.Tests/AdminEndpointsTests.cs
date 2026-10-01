@@ -151,7 +151,7 @@ public class AdminEndpointsTests(ApiFactory factory)
         pub.GetProperty("wholesaleThreshold").GetInt32().Should().Be(50);
 
         // Restaurar el valor por defecto para no afectar otros tests
-        (await client.PutAsJsonAsync("/api/admin/settings", new { whatsappNumber = "5491100000000", wholesaleThreshold = 100 })).EnsureSuccessStatusCode();
+        (await client.PutAsJsonAsync("/api/admin/settings", new { whatsappNumber = "5491122692061", wholesaleThreshold = 100 })).EnsureSuccessStatusCode();
     }
 
     [Fact]
