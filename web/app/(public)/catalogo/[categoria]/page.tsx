@@ -30,7 +30,8 @@ export default async function CategoryPage({ params }: Props) {
       <nav aria-label="Ruta" className="text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">Inicio</Link> / <span className="text-foreground">{category.name}</span>
       </nav>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight">{category.name}</h1>
+      <p className="eyebrow mt-6 text-brass">Catálogo</p>
+      <h1 className="title-serif mt-3 text-4xl sm:text-5xl">{category.name}</h1>
       {category.description && <p className="mt-2 max-w-2xl text-muted-foreground">{category.description}</p>}
 
       {products.length === 0 ? (
@@ -50,7 +51,7 @@ export default async function CategoryPage({ params }: Props) {
                   className="w-32 shrink-0 transition-opacity group-hover:opacity-90 sm:w-full"
                 />
                 <div className="min-w-0">
-                  <h2 className="font-medium group-hover:text-brand sm:mt-3">{p.name}</h2>
+                  <h2 className="font-medium transition-colors group-hover:text-brass sm:mt-3">{p.name}</h2>
                   {p.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.description}</p>}
                 </div>
               </Link>

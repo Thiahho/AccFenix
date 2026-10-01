@@ -1,4 +1,5 @@
 import { availabilityLabel } from "@/lib/api";
+import { mapsLink } from "@/lib/maps-url";
 import type { OrderForm } from "@/lib/order";
 import { totalUnits, type CartItem } from "@/stores/cart";
 
@@ -34,6 +35,7 @@ export function buildOrderMessage(items: CartItem[], form: OrderForm, threshold:
   lines.push("", "*Envío*");
   if (form.zona === "buenos-aires") {
     lines.push("Zona: Buenos Aires", `Localidad: ${form.localidad}`, `Dirección: ${form.direccion}`);
+    if (form.ubicacion) lines.push(`Ubicación: ${mapsLink(form.ubicacion)}`);
   } else {
     lines.push(`Provincia: ${form.provincia}`, `Expreso de preferencia: ${form.expreso}`);
   }

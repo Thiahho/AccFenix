@@ -60,7 +60,7 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
           {items.map((item) => (
             <li key={item.variantId} className="flex flex-wrap items-center gap-4 p-4">
               <div className="min-w-0 flex-1">
-                <Link href={`/producto/${item.productSlug}`} className="font-medium hover:text-brand">
+                <Link href={`/producto/${item.productSlug}`} className="font-medium transition-colors hover:text-brass">
                   {item.productName}
                 </Link>
                 <p className="text-sm text-muted-foreground">{item.valuesLabel}</p>

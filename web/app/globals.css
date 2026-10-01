@@ -128,22 +128,58 @@
     @apply font-sans;
   }
 }
-/* Marca — azul del logo del cliente.
+/* Marca — azul noche, marfil y bronce (la banda "Cómo trabajamos" es la referencia).
    Cambiar solo estas variables re-tematiza todo el sitio. */
 :root {
-  --brand: oklch(0.43 0.17 259); /* azul del logo, #0046AC */
-  --brand-foreground: oklch(0.985 0 0);
-  --brand-soft: oklch(0.965 0.017 250);
+  --ivory: #f5f0e7;
+  --ivory-deep: #efe7d8;
+  --paper: #fbf8f2;
+  --navy: #16233d;
+  --brass: #9a7442;
+  --brass-light: #d9bb86;
+
+  --brand: var(--navy);
+  --brand-foreground: var(--ivory);
+  --brand-soft: var(--ivory-deep);
+
+  --background: var(--ivory);
+  --foreground: var(--navy);
+  --card: var(--paper);
+  --card-foreground: var(--navy);
+  --popover: var(--paper);
+  --popover-foreground: var(--navy);
   --primary: var(--brand);
   --primary-foreground: var(--brand-foreground);
-  --ring: var(--brand);
+  --secondary: var(--ivory-deep);
+  --secondary-foreground: var(--navy);
+  --muted: var(--ivory-deep);
+  --muted-foreground: color-mix(in oklch, var(--navy) 68%, var(--ivory));
+  --accent: var(--ivory-deep);
+  --accent-foreground: var(--navy);
+  --border: color-mix(in oklch, var(--navy) 16%, var(--ivory));
+  --input: color-mix(in oklch, var(--navy) 24%, var(--ivory));
+  --ring: var(--brass);
+}
+
+/* Rótulo en versalitas sobre el título y título en serif; el color se elige según el fondo. */
+@utility eyebrow {
+  @apply text-xs font-semibold tracking-[0.3em] uppercase;
+}
+@utility title-serif {
+  @apply font-serif leading-[1.02] font-medium tracking-tight text-balance;
 }
 
 @theme inline {
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-soft: var(--brand-soft);
+  --color-ivory: var(--ivory);
+  --color-ivory-deep: var(--ivory-deep);
+  --color-navy: var(--navy);
+  --color-brass: var(--brass);
+  --color-brass-light: var(--brass-light);
   --font-display: var(--font-bricolage), var(--font-geist-sans), system-ui, sans-serif;
+  --font-serif: var(--font-cormorant), Georgia, serif;
 }
 
 /* Home: scroll suave a las anclas (respeta reduced-motion) y selección con la marca. */
@@ -160,4 +196,43 @@ html {
 }
 .anchor-section {
   scroll-margin-top: 5rem;
+}
+
+/* Aviso de pedido: barra de tiempo, pulso del contador del header y lugar para el aviso en móvil. */
+@keyframes order-toast-progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0;
+  }
+}
+@keyframes cart-bump {
+  0% {
+    transform: scale(0.6);
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--brand) 45%, transparent);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .order-toast-progress {
+    animation: order-toast-progress linear forwards;
+  }
+  .group:hover .order-toast-progress {
+    animation-play-state: paused;
+  }
+  .cart-bump {
+    animation: cart-bump 0.7s ease-out;
+  }
+}
+@media (max-width: 600px) {
+  body:has([data-order-toast]) [data-whatsapp-fab] {
+    translate: 0 -12rem;
+  }
 }

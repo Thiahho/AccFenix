@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { toast } from "sonner";
 import { MinusIcon, PlusIcon } from "lucide-react";
 import { AvailabilityBadge } from "@/components/site/availability-badge";
+import { notifyAdded } from "@/components/site/order-toast";
 import { ProductGallery } from "@/components/site/product-gallery";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,9 +36,17 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
       },
       qty,
     );
-    toast.success(`${product.name} agregado al pedido`, {
-      description: `${qty} u. · ${describeSelection(attributes, selection)}`,
-      action: { label: "Ver pedido", onClick: () => (window.location.href = "/pedido") },
+    const images = product.media.filter((m) => m.type === "image");
+    const image =
+      images.find((m) => m.attributeValueId !== null && selectedValueIds.includes(m.attributeValueId)) ??
+      images.find((m) => m.attributeValueId === null);
+    const colorHex = attributes.flatMap((a) => a.values).find((v) => v.colorHex && selectedValueIds.includes(v.id))?.colorHex;
+    notifyAdded({
+      title: product.name,
+      detail: `${qty} u. · ${describeSelection(attributes, selection)}`,
+      availability: variant.availability,
+      imageUrl: image?.url,
+      colorHex,
     });
   }
 
@@ -47,10 +55,10 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
       <ProductGallery media={product.media} name={product.name} selectedValueIds={selectedValueIds} />
 
       <div>
-        <p className="text-sm text-muted-foreground">
+        <p className="eyebrow text-brass">
           <Link href={`/catalogo/${product.category.slug}`} className="hover:text-foreground">{product.category.name}</Link>
         </p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">{product.name}</h1>
+        <h1 className="title-serif mt-3 text-4xl sm:text-5xl">{product.name}</h1>
         {product.description && <p className="mt-3 text-muted-foreground">{product.description}</p>}
 
         <div className="mt-8 space-y-6">

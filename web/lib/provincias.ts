@@ -23,3 +23,11 @@ export const provincias = [
   "Tierra del Fuego",
   "Tucumán",
 ] as const;
+
+const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+/** Provincias que coinciden con lo escrito, sin distinguir mayúsculas ni acentos. */
+export function filterProvincias(query: string) {
+  const q = fold(query);
+  return q ? provincias.filter((p) => fold(p).includes(q)) : [...provincias];
+}

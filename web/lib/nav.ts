@@ -4,8 +4,8 @@ import { BriefcaseIcon, CircleHelpIcon, HouseIcon, ImagesIcon, LayoutGridIcon } 
 /** Secciones de la home, en el orden en que aparecen en la página. */
 export const sectionLinks = [
   { id: "inicio", href: "/", label: "Inicio", icon: HouseIcon },
-  { id: "proyectos", href: "/#proyectos", label: "Proyectos", icon: ImagesIcon },
   { id: "catalogo", href: "/#catalogo", label: "Catálogo", icon: LayoutGridIcon },
+  { id: "proyectos", href: "/#proyectos", label: "Proyectos", icon: ImagesIcon },
   { id: "profesionales", href: "/#profesionales", label: "Profesionales", icon: BriefcaseIcon },
   { id: "preguntas", href: "/#preguntas", label: "Preguntas", icon: CircleHelpIcon },
 ];

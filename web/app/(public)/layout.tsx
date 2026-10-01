@@ -3,12 +3,13 @@ import Link from "next/link";
 import { WhatsappFab } from "@/components/home/whatsapp-fab";
 import { MobileMenu } from "@/components/site/mobile-menu";
 import { CartButton } from "@/components/site/cart-button";
+import { OrderToaster } from "@/components/site/order-toast";
 import { api, type Category } from "@/lib/api";
 import { site } from "@/lib/site";
 
 const sections = [
-  { href: "/#proyectos", label: "Proyectos" },
   { href: "/#catalogo", label: "Catálogo" },
+  { href: "/#proyectos", label: "Proyectos" },
   { href: "/#profesionales", label: "Profesionales" },
   { href: "/#preguntas", label: "Preguntas" },
 ];
@@ -62,16 +63,17 @@ export default async function PublicLayout({ children }: { children: React.React
 
       <main className="flex-1">{children}</main>
 
-      <footer className="border-t bg-brand-soft">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:justify-between">
+      <footer className="bg-navy text-ivory/75">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 border-t border-ivory/25 px-4 py-8 text-sm sm:flex-row sm:items-baseline sm:justify-between">
           <p>
-            <span className="font-medium text-foreground">{site.name}</span> · {site.tagline}
+            <span className="font-serif text-xl text-ivory">{site.name}</span> · {site.tagline}
           </p>
           <p>Precios y envío se coordinan por WhatsApp al recibir tu pedido.</p>
         </div>
       </footer>
 
       <WhatsappFab phone={phone} />
+      <OrderToaster />
     </div>
   );
 }

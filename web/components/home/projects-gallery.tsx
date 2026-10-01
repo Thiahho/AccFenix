@@ -4,7 +4,8 @@ import { projects } from "@/lib/home-content";
 export function ProjectsGallery() {
   return (
     <section id="proyectos" className="anchor-section mx-auto max-w-6xl px-4 py-12 md:py-16" aria-labelledby="proyectos-titulo">
-      <h2 id="proyectos-titulo" className="font-display max-w-xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+      <span className="eyebrow text-brass">Proyectos</span>
+      <h2 id="proyectos-titulo" className="title-serif mt-3 max-w-xl text-4xl sm:text-5xl">
         Así cambia un ambiente con el barral correcto
       </h2>
       <ul className="mt-10 grid gap-x-6 gap-y-10 md:grid-cols-3">

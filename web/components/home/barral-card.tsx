@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { MessageCircleIcon, PlusIcon } from "lucide-react";
+import { CheckIcon, MessageCircleIcon, PlusIcon } from "lucide-react";
 import { AvailabilityBadge } from "@/components/site/availability-badge";
+import { notifyAdded } from "@/components/site/order-toast";
 import { PhotoSlot } from "@/components/home/photo-slot";
 import { Button } from "@/components/ui/button";
 import type { AttributeValue, Media, ProductAttribute, Variant } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useHydrated } from "@/lib/use-hydrated";
 import { describeSelection, findVariant, isValueEnabled, type Selection } from "@/lib/variants";
 import { buildVariantMessage, whatsappUrl } from "@/lib/whatsapp";
 import { useCart } from "@/stores/cart";
@@ -21,16 +22,19 @@ type Props = {
   colorAttr: ProductAttribute;
   medida: AttributeValue;
   grosor: AttributeValue;
+  /** Color con el que arranca la tarjeta; si no existe para esta medida y grosor, se usa el primero disponible. */
+  initialColorId?: number;
   variants: Variant[];
   media: Media[];
   phone: string;
 };
 
 /** Una medida en un grosor: el visitante elige color y ve el barral y el barral instalado. */
-export function BarralCard({ productSlug, productName, categoryName, medidaAttr, grosorAttr, colorAttr, medida, grosor, variants, media, phone }: Props) {
+export function BarralCard({ productSlug, productName, categoryName, medidaAttr, grosorAttr, colorAttr, medida, grosor, initialColorId, variants, media, phone }: Props) {
   const attributes = useMemo(() => [medidaAttr, grosorAttr, colorAttr], [medidaAttr, grosorAttr, colorAttr]);
   const base: Selection = { [medidaAttr.id]: medida.id, [grosorAttr.id]: grosor.id };
-  const firstColor = colorAttr.values.find((c) => isValueEnabled(variants, base, colorAttr.id, c.id));
+  const enabledColors = colorAttr.values.filter((c) => isValueEnabled(variants, base, colorAttr.id, c.id));
+  const firstColor = enabledColors.find((c) => c.id === initialColorId) ?? enabledColors[0];
   const [colorId, setColorId] = useState<number | undefined>(firstColor?.id);
   const [view, setView] = useState<"barral" | "instalado">("barral");
   const add = useCart((s) => s.add);
@@ -38,6 +42,10 @@ export function BarralCard({ productSlug, productName, categoryName, medidaAttr,
   const selection: Selection = { ...base, [colorAttr.id]: colorId };
   const variant = findVariant(attributes, variants, selection);
   const label = describeSelection(attributes, selection);
+  const color = colorAttr.values.find((c) => c.id === colorId);
+  const hydrated = useHydrated();
+  const cartQty = useCart((s) => s.items.find((i) => i.variantId === variant?.id)?.qty ?? 0);
+  const inCart = hydrated ? cartQty : 0;
 
   // Convención de carga: la primera foto del valor es el barral solo; la segunda, el barral instalado.
   const ids = [medida.id, grosor.id, colorId];
@@ -53,14 +61,17 @@ export function BarralCard({ productSlug, productName, categoryName, medidaAttr,
       { variantId: variant.id, productSlug, productName, categoryName, valuesLabel: label, availability: variant.availability },
       1,
     );
-    toast.success(`${productName} agregado al pedido`, {
-      description: label,
-      action: { label: "Ver pedido", onClick: () => (window.location.href = "/pedido") },
+    notifyAdded({
+      title: `${productName} ${medida.label} m`,
+      detail: `Grosor ${grosor.label} · ${color?.label ?? ""}`,
+      availability: variant.availability,
+      imageUrl: photos[0]?.url,
+      colorHex: color?.colorHex,
     });
   }
 
   return (
-    <article className="flex h-full flex-row overflow-hidden rounded-xl border bg-card sm:flex-col">
+    <article className={cn("flex h-full flex-row overflow-hidden rounded-xl border bg-card transition-shadow sm:flex-col", inCart > 0 && "border-brand ring-3 ring-brand/15")}>
       <div className="relative min-h-60 w-[38%] shrink-0 sm:min-h-0 sm:w-auto">
         <PhotoSlot
           src={photo?.url}
@@ -132,8 +143,25 @@ export function BarralCard({ productSlug, productName, categoryName, medidaAttr,
               <MessageCircleIcon aria-hidden /> Pedir por WhatsApp
             </Button>
           )}
-          <Button type="button" variant="outline" className="h-11 md:h-9" disabled={!variant} onClick={handleAdd}>
-            <PlusIcon aria-hidden /> Sumar al pedido
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              "h-auto min-h-11 whitespace-normal py-2 text-center leading-tight md:min-h-9",
+              inCart > 0 && "border-brand bg-brand-soft font-semibold text-brand hover:bg-brand-soft hover:text-brand",
+            )}
+            disabled={!variant}
+            onClick={handleAdd}
+          >
+            {inCart > 0 ? (
+              <>
+                <CheckIcon aria-hidden /> Sumado · {inCart} en el pedido
+              </>
+            ) : (
+              <>
+                <PlusIcon aria-hidden /> Sumar al pedido
+              </>
+            )}
           </Button>
         </div>
       </div>

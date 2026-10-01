@@ -25,6 +25,12 @@ describe("buildOrderMessage", () => {
     expect(msg).toContain("Localidad: Quilmes");
     expect(msg).toContain("Dirección: Calle 123");
     expect(msg).not.toContain("Expreso");
+    expect(msg).not.toContain("Ubicación");
+  });
+
+  it("links the exact location when it was captured", () => {
+    const msg = buildOrderMessage(items, { ...baForm, ubicacion: { lat: -34.6041348, lng: -58.8696918 } }, 100);
+    expect(msg).toContain("Dirección: Calle 123\nUbicación: https://www.google.com/maps?q=-34.604135,-58.869692");
   });
 
   it("includes province and carrier for the interior", () => {
@@ -48,6 +54,14 @@ describe("buildOrderMessage", () => {
 describe("whatsappUrl", () => {
   it("strips non-digits and encodes the text", () => {
     expect(whatsappUrl("+54 9 11 1234-5678", "Hola & chau")).toBe("https://wa.me/5491112345678?text=Hola%20%26%20chau");
+  });
+
+  it("keeps customer text inside the text parameter", () => {
+    const url = new URL(whatsappUrl("5491112345678", "Nombre: Ana&phone=999#x\nDirección: Calle 1?a=b"));
+    expect([...url.searchParams.keys()]).toEqual(["text"]);
+    expect(url.searchParams.get("text")).toBe("Nombre: Ana&phone=999#x\nDirección: Calle 1?a=b");
+    expect(url.hash).toBe("");
+    expect(url.pathname).toBe("/5491112345678");
   });
 });
 

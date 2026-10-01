@@ -17,7 +17,8 @@ export function CartButton() {
         <ShoppingBagIcon aria-hidden />
         <span className="hidden sm:inline">Mi pedido</span>
         {lines > 0 && (
-          <span className="absolute -top-2 -right-2 grid min-w-5 place-items-center rounded-full bg-brand px-1 text-[11px] font-semibold text-brand-foreground tabular-nums">
+          // La key reinicia el pulso cada vez que cambia el pedido.
+          <span key={totalUnits(items)} className="cart-bump absolute -top-2.5 -right-2.5 grid h-6 min-w-6 place-items-center rounded-full bg-brand px-1.5 text-[13px] font-semibold text-brand-foreground tabular-nums">
             {lines}
           </span>
         )}

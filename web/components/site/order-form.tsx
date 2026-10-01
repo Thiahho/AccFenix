@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Controller, useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MessageCircleIcon } from "lucide-react";
+import { MapPinIcon, MessageCircleIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { MapsLinkCapture, type MapsLinkCaptureHandle } from "@/components/site/maps-link-capture";
+import { ProvinciaPicker } from "@/components/site/provincia-picker";
+import { SuggestInput } from "@/components/site/suggest-input";
 import type { PublicSettings } from "@/lib/api";
+import { alturaEscrita, fetchDirecciones, fetchLocalidades, type Coords, type DireccionSuggestion, type LocalidadSuggestion } from "@/lib/geo";
+import { isMapsUrl, mapsLink } from "@/lib/maps-url";
 import { orderSchema, type OrderForm } from "@/lib/order";
-import { provincias } from "@/lib/provincias";
 import { buildOrderMessage, whatsappUrl } from "@/lib/whatsapp";
 import { useCart, type CartItem } from "@/stores/cart";
 
@@ -36,6 +39,8 @@ export function OrderFormCard({ items, settings }: { items: CartItem[]; settings
     control,
     handleSubmit,
     watch,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<OrderForm>({
     resolver: zodResolver(orderSchema),
@@ -43,6 +48,11 @@ export function OrderFormCard({ items, settings }: { items: CartItem[]; settings
     shouldUnregister: true,
   });
   const zona = watch("zona");
+  // Centro de la localidad elegida, para acercar las sugerencias de dirección.
+  const [near, setNear] = useState<Coords | null>(null);
+  // Punto exacto captado, junto con los textos con los que se confirmó.
+  const [ubicacion, setUbicacion] = useState<{ coords: Coords; localidad: string; direccion: string } | null>(null);
+  const captureRef = useRef<MapsLinkCaptureHandle>(null);
   const e = errors as AnyErrors;
   const canSend = settings.whatsappNumber.length > 0;
 
@@ -53,7 +63,8 @@ export function OrderFormCard({ items, settings }: { items: CartItem[]; settings
   });
 
   function onSubmit(form: OrderForm) {
-    const text = buildOrderMessage(items, form, settings.wholesaleThreshold);
+    const order = form.zona === "buenos-aires" && ubicacion ? { ...form, ubicacion: ubicacion.coords } : form;
+    const text = buildOrderMessage(items, order, settings.wholesaleThreshold);
     window.open(whatsappUrl(settings.whatsappNumber, text), "_blank", "noopener,noreferrer");
     setSent(true);
   }
@@ -90,7 +101,15 @@ export function OrderFormCard({ items, settings }: { items: CartItem[]; settings
             control={control}
             name="zona"
             render={({ field }) => (
-              <RadioGroup value={field.value} onValueChange={field.onChange} className="grid grid-cols-2 gap-2">
+              <RadioGroup
+                value={field.value}
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  setUbicacion(null);
+                  setNear(null);
+                }}
+                className="grid grid-cols-2 gap-2"
+              >
                 {[
                   { value: "buenos-aires", label: "Buenos Aires" },
                   { value: "otra-provincia", label: "Otra provincia" },
@@ -112,11 +131,115 @@ export function OrderFormCard({ items, settings }: { items: CartItem[]; settings
         {zona === "buenos-aires" ? (
           <>
             <Field id="localidad" label="Localidad" error={e.localidad?.message}>
-              <Input autoComplete="address-level2" {...fieldProps("localidad")} {...register("localidad")} />
+              <Controller
+                control={control}
+                name="localidad"
+                render={({ field }) => (
+                  <SuggestInput<LocalidadSuggestion>
+                    {...fieldProps("localidad")}
+                    ref={field.ref}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    value={field.value ?? ""}
+                    minChars={2}
+                    search={fetchLocalidades}
+                    onValueChange={(text) => {
+                      field.onChange(text);
+                      setNear(null);
+                      if (ubicacion && text !== ubicacion.localidad) setUbicacion(null);
+                    }}
+                    onPick={(l) => {
+                      field.onChange(l.nombre);
+                      setNear({ lat: l.lat, lng: l.lng });
+                      if (ubicacion && l.nombre !== ubicacion.localidad) setUbicacion(null);
+                    }}
+                    itemKey={(l) => `${l.nombre}|${l.partido}|${l.provincia}`}
+                    renderItem={(l) => (
+                      <>
+                        <span>{l.nombre}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {l.provincia === "Buenos Aires" ? `Partido de ${l.partido}` : ["CABA", l.partido].filter(Boolean).join(" · ")}
+                        </span>
+                      </>
+                    )}
+                  />
+                )}
+              />
             </Field>
             <Field id="direccion" label="Dirección" error={e.direccion?.message}>
-              <Input autoComplete="street-address" {...fieldProps("direccion")} {...register("direccion")} />
+              <Controller
+                control={control}
+                name="direccion"
+                render={({ field }) => (
+                  <SuggestInput<DireccionSuggestion>
+                    {...fieldProps("direccion")}
+                    ref={field.ref}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    value={field.value ?? ""}
+                    placeholder="Calle y altura"
+                    search={(q, signal) => fetchDirecciones(q, near, signal)}
+                    onValueChange={(text) => {
+                      field.onChange(text);
+                      // Agregar piso o depto al final conserva el punto; reescribir la dirección lo descarta.
+                      if (ubicacion && !text.startsWith(ubicacion.direccion)) setUbicacion(null);
+                    }}
+                    onPick={(d) => {
+                      const altura = d.altura ?? alturaEscrita(field.value ?? "", d.calle);
+                      const direccion = altura ? `${d.calle} ${altura}` : d.calle;
+                      field.onChange(direccion);
+                      if (!getValues("localidad")?.trim() && d.localidad) setValue("localidad", d.localidad, { shouldValidate: true });
+                      // Solo se adjunta el punto cuando corresponde a una puerta; el de una calle entera sería engañoso.
+                      setUbicacion(d.exacta ? { coords: { lat: d.lat, lng: d.lng }, localidad: getValues("localidad") ?? "", direccion } : null);
+                    }}
+                    onPaste={(ev) => {
+                      const text = ev.clipboardData.getData("text");
+                      if (isMapsUrl(text)) {
+                        ev.preventDefault();
+                        captureRef.current?.capture(text);
+                      }
+                    }}
+                    itemKey={(d) => `${d.calle}|${d.altura ?? ""}|${d.localidad}|${d.partido}`}
+                    renderItem={(d) => (
+                      <>
+                        <span>{d.altura ? `${d.calle} ${d.altura}` : d.calle}</span>
+                        <span className="text-xs text-muted-foreground">{[d.localidad, d.partido].filter(Boolean).join(" · ")}</span>
+                      </>
+                    )}
+                  />
+                )}
+              />
             </Field>
+
+            {ubicacion && (
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-brand-soft px-3 py-2 text-sm">
+                <span className="inline-flex items-center gap-1.5 font-medium text-brand">
+                  <MapPinIcon aria-hidden className="size-4" /> Ubicación captada
+                </span>
+                <a href={mapsLink(ubicacion.coords)} target="_blank" rel="noopener noreferrer" className="font-medium text-brand underline-offset-2 hover:underline">
+                  Ver en Maps
+                </a>
+                <button type="button" onClick={() => setUbicacion(null)} className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+                  Quitar
+                </button>
+              </p>
+            )}
+
+            <MapsLinkCapture
+              ref={captureRef}
+              onApply={({ localidad, direccion, coords }) => {
+                setValue("localidad", localidad, { shouldValidate: true, shouldDirty: true });
+                setValue("direccion", direccion, { shouldValidate: true, shouldDirty: true });
+                setNear(coords);
+                setUbicacion({ coords, localidad, direccion });
+              }}
+              onSwitchProvincia={(provincia) => {
+                setUbicacion(null);
+                setValue("zona", "otra-provincia");
+                // El campo Provincia recién existe después de renderizar la otra zona.
+                setTimeout(() => setValue("provincia", provincia, { shouldValidate: true }));
+              }}
+            />
           </>
         ) : (
           <>
@@ -124,18 +247,7 @@ export function OrderFormCard({ items, settings }: { items: CartItem[]; settings
               <Controller
                 control={control}
                 name="provincia"
-                render={({ field }) => (
-                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                    <SelectTrigger className="w-full" {...fieldProps("provincia")}>
-                      <SelectValue placeholder="Elegí tu provincia" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {provincias.map((p) => (
-                        <SelectItem key={p} value={p}>{p}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                render={({ field }) => <ProvinciaPicker value={field.value} onChange={field.onChange} {...fieldProps("provincia")} />}
               />
             </Field>
             <Field id="expreso" label="Expreso de tu preferencia" error={e.expreso?.message}>
