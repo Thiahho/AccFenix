@@ -28,4 +28,8 @@ public static class Slug
         }
         return sb.ToString().TrimEnd('-');
     }
+
+    /// <summary>true si el texto tiene la forma de un slug generado por <see cref="From"/>: [a-z0-9-], hasta 180 caracteres.</summary>
+    public static bool IsValid(string? text) =>
+        text is { Length: > 0 and <= 180 } && text.All(c => c is >= 'a' and <= 'z' or >= '0' and <= '9' or '-');
 }

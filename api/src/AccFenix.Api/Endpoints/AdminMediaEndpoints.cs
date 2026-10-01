@@ -14,8 +14,20 @@ public class MediaCreateRequestValidator : AbstractValidator<MediaCreateRequest>
     public MediaCreateRequestValidator()
     {
         RuleFor(x => x.Url).NotEmpty().MaximumLength(1000);
-        RuleFor(x => x.PublicId).NotEmpty().MaximumLength(300);
+        RuleFor(x => x.PublicId).NotEmpty().MaximumLength(300)
+            .Must((req, publicId) => MediaUrl.HasPublicId(req.Url ?? "", publicId ?? ""))
+            .WithMessage("El publicId no corresponde a la URL");
         RuleFor(x => x.Type).IsInEnum();
+        RuleFor(x => x.AttributeValueId).GreaterThan(0);
+    }
+}
+
+public class MediaPatchRequestValidator : AbstractValidator<MediaPatchRequest>
+{
+    public MediaPatchRequestValidator()
+    {
+        RuleFor(x => x.SortOrder).InclusiveBetween(-ValidationExtensions.MaxSortOrder, ValidationExtensions.MaxSortOrder);
+        RuleFor(x => x.AttributeValueId).GreaterThan(0);
     }
 }
 
@@ -65,7 +77,7 @@ public static class AdminMediaEndpoints
             else if (req.AttributeValueId is { } valueId) media.AttributeValueId = valueId;
             await db.SaveChangesAsync(ct);
             return Results.NoContent();
-        });
+        }).Validate<MediaPatchRequest>();
 
         admin.MapDelete("/media/{id:int}", async (int id, AppDbContext db, IMediaStorage storage, CancellationToken ct) =>
         {

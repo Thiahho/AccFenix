@@ -32,9 +32,11 @@ public class CategoryRequestValidator : AbstractValidator<CategoryRequest>
 {
     public CategoryRequestValidator()
     {
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(120);
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(120).SingleLine().ProducesSlug(x => x.Slug);
         RuleFor(x => x.Slug).MaximumLength(140);
-        RuleFor(x => x.AttributeIds).NotNull();
+        RuleFor(x => x.Description).FreeText(2000);
+        RuleFor(x => x.SortOrder).ValidSortOrder();
+        RuleFor(x => x.AttributeIds).IdList(50);
     }
 }
 
@@ -42,8 +44,9 @@ public class AttributeRequestValidator : AbstractValidator<AttributeRequest>
 {
     public AttributeRequestValidator()
     {
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(80);
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(80).SingleLine().ProducesSlug(x => x.Slug);
         RuleFor(x => x.Slug).MaximumLength(100);
+        RuleFor(x => x.SortOrder).ValidSortOrder();
     }
 }
 
@@ -51,7 +54,8 @@ public class AttributeValueRequestValidator : AbstractValidator<AttributeValueRe
 {
     public AttributeValueRequestValidator()
     {
-        RuleFor(x => x.Label).NotEmpty().MaximumLength(80);
+        RuleFor(x => x.Label).NotEmpty().MaximumLength(80).SingleLine();
+        RuleFor(x => x.SortOrder).ValidSortOrder();
         RuleFor(x => x.ColorHex).Matches("^#[0-9A-Fa-f]{6}$").When(x => !string.IsNullOrEmpty(x.ColorHex))
             .WithMessage("Usá el formato #RRGGBB");
     }
@@ -62,10 +66,19 @@ public class ProductRequestValidator : AbstractValidator<ProductRequest>
     public ProductRequestValidator()
     {
         RuleFor(x => x.CategoryId).GreaterThan(0);
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(160);
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(160).SingleLine().ProducesSlug(x => x.Slug);
         RuleFor(x => x.Slug).MaximumLength(180);
-        RuleFor(x => x.Description).MaximumLength(2000);
-        RuleFor(x => x.AllowedValueIds).NotNull();
+        RuleFor(x => x.Description).FreeText(2000);
+        RuleFor(x => x.SortOrder).ValidSortOrder();
+        RuleFor(x => x.AllowedValueIds).IdList(500);
+    }
+}
+
+public class VariantPatchRequestValidator : AbstractValidator<VariantPatchRequest>
+{
+    public VariantPatchRequestValidator()
+    {
+        RuleFor(x => x.Availability).IsInEnum();
     }
 }
 
@@ -74,7 +87,7 @@ public class VariantBulkRequestValidator : AbstractValidator<VariantBulkRequest>
     public VariantBulkRequestValidator()
     {
         RuleFor(x => x.ProductId).GreaterThan(0);
-        RuleFor(x => x.ValueIds).NotNull();
+        RuleFor(x => x.ValueIds).IdList(50);
         RuleFor(x => x.Availability).IsInEnum();
     }
 }
@@ -351,7 +364,7 @@ public static class AdminCatalogEndpoints
             if (req.IsActive is { } active) variant.IsActive = active;
             await db.SaveChangesAsync(ct);
             return Results.Ok(new AdminVariantDto(variant.Id, variant.Sku, [], variant.Availability, variant.IsActive));
-        });
+        }).Validate<VariantPatchRequest>();
 
         // Cambia la disponibilidad de todas las variantes del producto que contengan todos los valores indicados
         // (lista vacía = todas). Ej.: todo "Cedro" + "34" → a pedido.

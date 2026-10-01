@@ -1,7 +1,8 @@
 import "server-only";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { clientIpHeaders } from "@/lib/admin/client-ip";
 
 export const SESSION_COOKIE = "accfenix_admin";
 
@@ -57,7 +58,7 @@ export async function adminFetch<T = unknown>(path: string, init: RequestInit = 
 export async function login(email: string, password: string) {
   const res = await fetch(`${apiUrl()}/api/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...clientIpHeaders(await headers(), process.env.API_TRUSTED_KEY) },
     body: JSON.stringify({ email, password }),
     cache: "no-store",
   });

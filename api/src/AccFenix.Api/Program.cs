@@ -45,13 +45,14 @@ builder.Services.AddAuthorization();
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    // Un cupo por visitante: los intentos fallidos de uno no bloquean el login de otro.
     o.AddPolicy(AuthEndpoints.LoginRateLimit, ctx => RateLimitPartition.GetFixedWindowLimiter(
-        ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        ClientIp.PartitionKey(ctx, ctx.RequestServices.GetRequiredService<IConfiguration>()["TrustedWeb:Key"] ?? ""),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(5) }));
 });
 
 builder.Services.ConfigureHttpJsonOptions(o =>
-    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
+    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false)));
 builder.Services.AddProblemDetails();
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .WithOrigins(config.GetSection("Cors:Origins").Get<string[]>() ?? [])
@@ -59,6 +60,11 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .AllowAnyMethod()));
 
 var app = builder.Build();
+
+if (app.Configuration["TrustedWeb:Key"] is { Length: > 0 and < 32 })
+{
+    throw new InvalidOperationException("TrustedWeb:Key debe tener al menos 32 caracteres");
+}
 
 if (args.Contains("seed"))
 {
@@ -80,6 +86,7 @@ app.MapPublicEndpoints();
 app.MapAuthEndpoints();
 app.MapGroup("/api/admin")
     .RequireAuthorization()
+    .AddEndpointFilter<UniqueViolationFilter>()
     .WithTags("Admin")
     .MapAdminCatalogEndpoints()
     .MapAdminMediaEndpoints();

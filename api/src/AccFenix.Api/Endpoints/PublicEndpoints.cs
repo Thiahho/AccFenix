@@ -1,5 +1,6 @@
 using AccFenix.Api.Data;
 using AccFenix.Api.Domain;
+using AccFenix.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace AccFenix.Api.Endpoints;
@@ -44,6 +45,9 @@ public static class PublicEndpoints
 
         api.MapGet("/categories/{slug}/products", async (string slug, AppDbContext db, CancellationToken ct) =>
         {
+            // Un slug mal formado no puede existir: no llega a la base.
+            if (!Slug.IsValid(slug)) return Results.NotFound();
+
             var category = await db.Categories
                 .Where(c => c.IsActive && c.Slug == slug)
                 .Select(c => new CategoryDto(c.Id, c.Name, c.Slug, c.Description, c.Products.Count(p => p.IsActive)))
@@ -62,6 +66,8 @@ public static class PublicEndpoints
 
         api.MapGet("/products/{slug}", async (string slug, AppDbContext db, CancellationToken ct) =>
         {
+            if (!Slug.IsValid(slug)) return Results.NotFound();
+
             var product = await db.Products.AsNoTracking()
                 .Include(p => p.Category).ThenInclude(c => c.Attributes).ThenInclude(ca => ca.Attribute)
                 .Include(p => p.AllowedValues).ThenInclude(a => a.AttributeValue)

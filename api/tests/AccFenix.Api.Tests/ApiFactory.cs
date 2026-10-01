@@ -18,6 +18,7 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string AdminEmail = "admin@test.local";
     public const string AdminPassword = "test-password-123";
+    public const string TrustedWebKey = "test-trusted-web-key-0123456789abcdef";
 
     static readonly string? ExternalServer = Environment.GetEnvironmentVariable("ACCFENIX_TEST_DB");
 
@@ -31,6 +32,7 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:Default", _connectionString);
         builder.UseSetting("Jwt:Key", "test-key-0123456789abcdef0123456789abcdef");
+        builder.UseSetting("TrustedWeb:Key", TrustedWebKey);
         builder.UseSetting("Admin:Email", AdminEmail);
         builder.UseSetting("Admin:Password", AdminPassword);
     }

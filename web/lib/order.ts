@@ -10,6 +10,8 @@ export const orderSchema = z.discriminatedUnion("zona", [
     telefono: required("un teléfono de contacto", 40),
     localidad: required("la localidad"),
     direccion: required("la dirección", 200),
+    /** Punto exacto captado desde un link de Maps o una dirección con puerta; viaja como link en el mensaje. */
+    ubicacion: z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).optional(),
     comentarios: z.string().trim().max(500).optional(),
   }),
   z.object({

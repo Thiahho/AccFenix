@@ -27,6 +27,31 @@ public interface IMediaStorage
     bool IsOwnUrl(string url);
 }
 
+public static class MediaUrl
+{
+    /// <summary>
+    /// true si la URL de entrega (…/upload/v123/{publicId}.ext) es la de ese publicId. Evita registrar un
+    /// publicId que no corresponde al archivo: es el que se usa después para borrarlo de Cloudinary.
+    /// </summary>
+    public static bool HasPublicId(string url, string publicId)
+    {
+        const string marker = "/upload/";
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || publicId.Length == 0) return false;
+        var path = Uri.UnescapeDataString(uri.AbsolutePath);
+        var start = path.IndexOf(marker, StringComparison.Ordinal);
+        if (start < 0) return false;
+        path = path[(start + marker.Length)..];
+
+        // Versión opcional: "v1712345678/".
+        var slash = path.IndexOf('/');
+        if (slash > 1 && path[0] == 'v' && path[1..slash].All(char.IsAsciiDigit)) path = path[(slash + 1)..];
+
+        var dot = path.LastIndexOf('.');
+        if (dot > path.LastIndexOf('/')) path = path[..dot];
+        return path == publicId;
+    }
+}
+
 public class CloudinaryMediaStorage(IOptions<CloudinaryOptions> options, ILogger<CloudinaryMediaStorage> logger) : IMediaStorage
 {
     readonly CloudinaryOptions _o = options.Value;
