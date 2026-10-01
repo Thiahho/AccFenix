@@ -70,6 +70,7 @@ Migraciones nuevas: `dotnet ef migrations add <Nombre> --project src/AccFenix.Ap
 
 - **Web**: Vercel. Configurar `API_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_BRAND_NAME` y `API_TRUSTED_KEY` (el mismo valor que `TrustedWeb__Key` en la API).
 - **API + Postgres**: Railway, Render o Fly.io. Ejecutar `dotnet AccFenix.Api.dll seed` una vez después del primer deploy (aplica las migraciones).
+  - La imagen se construye con `api/Dockerfile`. En Render: servicio de tipo Docker con **Root Directory** `api`; el contenedor escucha en el `PORT` que inyecta la plataforma (8080 si no está definido).
 - La sesión admin es una cookie httpOnly en el dominio del sitio; el navegador nunca ve el JWT.
 
 ## Pendiente del cliente
