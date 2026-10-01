@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeSiteUrl } from "./site";
 
-const SITE = "https://fenix-accesorios-barrales.vercel.app";
+const SITE = "https://fenix-accesorios.vercel.app";
 
 describe("normalizeSiteUrl", () => {
   it("deja intacta una URL completa", () => {
@@ -10,7 +10,7 @@ describe("normalizeSiteUrl", () => {
   });
 
   it("agrega https cuando falta el esquema", () => {
-    expect(normalizeSiteUrl("fenix-accesorios-barrales.vercel.app")).toBe(SITE);
+    expect(normalizeSiteUrl("fenix-accesorios.vercel.app")).toBe(SITE);
   });
 
   it("quita espacios y barras finales", () => {
@@ -23,7 +23,7 @@ describe("normalizeSiteUrl", () => {
   });
 
   it("siempre devuelve algo que new URL() acepta", () => {
-    for (const value of [undefined, "", "fenix-accesorios-barrales.vercel.app", `${SITE}/`]) {
+    for (const value of [undefined, "", "fenix-accesorios.vercel.app", `${SITE}/`]) {
       expect(() => new URL(normalizeSiteUrl(value))).not.toThrow();
     }
   });
