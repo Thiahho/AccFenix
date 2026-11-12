@@ -27,11 +27,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const product = await load(slug);
+  // Without settings the product still renders; only the wholesale price hint is hidden.
+  const [product, wholesaleThreshold] = await Promise.all([
+    load(slug),
+    api.settings().then((s) => s.wholesaleThreshold, () => 0),
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <VariantPicker product={product} />
+      <VariantPicker product={product} wholesaleThreshold={wholesaleThreshold} />
     </div>
   );
 }

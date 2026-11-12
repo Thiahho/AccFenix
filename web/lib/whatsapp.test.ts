@@ -46,8 +46,44 @@ describe("buildOrderMessage", () => {
     expect(isWholesale(items, 0)).toBe(false);
   });
 
-  it("never mentions prices", () => {
-    expect(buildOrderMessage(items, baForm, 100)).not.toMatch(/\$|precio/i);
+  it("does not mention prices when no variant has one", () => {
+    expect(buildOrderMessage(items, baForm, 100)).not.toMatch(/\$|precio|consultar/i);
+  });
+});
+
+describe("buildOrderMessage with prices", () => {
+  const priced = (retail: (number | null)[], wholesale: (number | null)[] = []): CartItem[] =>
+    items.map((item, i) => ({ ...item, retailPrice: retail[i] ?? null, wholesalePrice: wholesale[i] ?? null }));
+
+  it("adds unit price and subtotal to each line and ends with the retail total", () => {
+    const msg = buildOrderMessage(priced([1250.5, 10, 800]), baForm, 0);
+    expect(msg).toContain("• 2 × Barral — Medida 2.40 · Grosor 34 · Color Caoba — $ 1.250,50 c/u = $ 2.501,00");
+    expect(msg).toContain("• 120 × Argollas — Grosor 22 · Color Natural _(a pedido)_ — $ 10,00 c/u = $ 1.200,00");
+    expect(msg).toContain("Total: 123 unidades");
+    expect(msg.endsWith("\n\n*Total: $ 4.501,00* (precios minoristas)")).toBe(true);
+    expect(msg).not.toMatch(/parcial|consultar/i);
+  });
+
+  it("applies wholesale prices at the threshold, falling back to retail where there is none", () => {
+    const msg = buildOrderMessage(priced([1250.5, 10, 800], [1000, 8, null]), baForm, 123);
+    expect(msg).toContain("*PEDIDO MAYORISTA* (123 unidades)");
+    expect(msg).toContain("Color Caoba — $ 1.000,00 c/u = $ 2.000,00");
+    expect(msg).toContain("_(a pedido)_ — $ 8,00 c/u = $ 960,00");
+    expect(msg).toContain("Color Cedro — $ 800,00 c/u = $ 800,00");
+    expect(msg.endsWith("*Total: $ 3.760,00* (precios mayoristas)")).toBe(true);
+  });
+
+  it("keeps retail prices one unit below the threshold", () => {
+    const msg = buildOrderMessage(priced([1250.5, 10, 800], [1000, 8, null]), baForm, 124);
+    expect(msg).not.toContain("MAYORISTA");
+    expect(msg.endsWith("*Total: $ 4.501,00* (precios minoristas)")).toBe(true);
+  });
+
+  it("marks unpriced lines and ends with a partial total in a mixed cart", () => {
+    const msg = buildOrderMessage(priced([1250.5, null, 800]), { ...baForm, comentarios: "Entregar por la tarde" }, 0);
+    expect(msg).toContain("• 120 × Argollas — Grosor 22 · Color Natural _(a pedido)_ — precio a consultar");
+    expect(msg).toContain("Comentarios: Entregar por la tarde\n\n*Total parcial: $ 3.301,00* (precios minoristas)");
+    expect(msg.endsWith("Los productos sin precio se cotizan por WhatsApp.")).toBe(true);
   });
 });
 

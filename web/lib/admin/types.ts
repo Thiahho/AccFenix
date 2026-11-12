@@ -29,7 +29,17 @@ export type AdminProductSummary = {
   coverUrl: string | null;
 };
 
-export type AdminVariant = { id: number; sku: string; valueIds: number[]; availability: Availability; isActive: boolean };
+export type AdminVariant = {
+  id: number;
+  sku: string;
+  valueIds: number[];
+  availability: Availability;
+  isActive: boolean;
+  retailPrice: number | null;
+  wholesalePrice: number | null;
+};
+
+export type VariantPrices = { variantId: number; retailPrice: number | null; wholesalePrice: number | null };
 
 export type AdminMedia = { id: number; type: "image" | "video"; url: string; attributeValueId: number | null; sortOrder: number };
 

@@ -265,7 +265,9 @@ export function OrderFormCard({ items, settings }: { items: CartItem[]; settings
         </Button>
         {!canSend && <p className="text-sm text-destructive">El envío por WhatsApp no está disponible en este momento.</p>}
         <p className="text-xs text-muted-foreground">
-          No calculamos precios ni envío online: te contactamos para cotizar y coordinar la entrega.
+          {items.some((i) => i.retailPrice != null)
+            ? "Los precios no incluyen el envío: te contactamos para confirmar el pedido y coordinar la entrega."
+            : "No calculamos precios ni envío online: te contactamos para cotizar y coordinar la entrega."}
         </p>
       </form>
     </aside>

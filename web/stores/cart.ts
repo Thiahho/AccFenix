@@ -14,6 +14,12 @@ export type CartItem = {
   /** Descripción legible de la variante, p. ej. "Medida 2.40 · Grosor 34 · Color Caoba". */
   valuesLabel: string;
   availability: Availability;
+  /**
+   * Last known prices in ARS. They are a snapshot: `sync` replaces them with the current ones.
+   * Missing (older persisted carts) or null means the variant has no price.
+   */
+  retailPrice?: number | null;
+  wholesalePrice?: number | null;
   qty: number;
 };
 
@@ -24,7 +30,7 @@ type CartState = {
   setQty: (variantId: number, qty: number) => void;
   remove: (variantId: number) => void;
   clear: () => void;
-  /** Aplica el estado actual de las variantes: quita las inactivas o inexistentes y refresca la disponibilidad. */
+  /** Aplica el estado actual de las variantes: quita las inactivas o inexistentes y refresca disponibilidad y precios. */
   sync: (statuses: VariantStatus[]) => void;
 };
 
@@ -36,7 +42,9 @@ export function applyStatuses(items: CartItem[], statuses: VariantStatus[]): Car
   const byId = new Map(statuses.map((s) => [s.id, s]));
   return items.flatMap((item) => {
     const status = byId.get(item.variantId);
-    return status?.isActive ? [{ ...item, availability: status.availability }] : [];
+    if (!status?.isActive) return [];
+    // Prices always come from the fresh data, never from what was stored when the item was added.
+    return [{ ...item, availability: status.availability, retailPrice: status.retailPrice ?? null, wholesalePrice: status.wholesalePrice ?? null }];
   });
 }
 

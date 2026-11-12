@@ -1,18 +1,22 @@
 import { availabilityLabel } from "@/lib/api";
 import { mapsLink } from "@/lib/maps-url";
 import type { OrderForm } from "@/lib/order";
+import { cartTotals, formatArs, isWholesale, lineSubtotal, unitPrice } from "@/lib/pricing";
 import { totalUnits, type CartItem } from "@/stores/cart";
 
-export function isWholesale(items: CartItem[], threshold: number) {
-  return threshold > 0 && totalUnits(items) >= threshold;
-}
+export { isWholesale };
 
-/** Texto del pedido para WhatsApp: productos agrupados por catálogo, cantidades y datos de envío. Nunca incluye precios. */
+/**
+ * Texto del pedido para WhatsApp: productos agrupados por catálogo, cantidades y datos de envío.
+ * Si alguna variante tiene precio, cada línea lleva precio unitario y subtotal y el mensaje cierra con el total.
+ */
 export function buildOrderMessage(items: CartItem[], form: OrderForm, threshold: number): string {
   const units = totalUnits(items);
   const lines: string[] = ["¡Hola! Quiero hacer el siguiente pedido:"];
+  const totals = cartTotals(items, threshold);
+  const hasPrices = totals.pricedLines > 0;
 
-  if (isWholesale(items, threshold)) {
+  if (totals.wholesale) {
     lines.push("", `*PEDIDO MAYORISTA* (${units} unidades)`);
   }
 
@@ -25,7 +29,7 @@ export function buildOrderMessage(items: CartItem[], form: OrderForm, threshold:
     for (const i of categoryItems) {
       const detail = i.valuesLabel ? ` — ${i.valuesLabel}` : "";
       const pending = i.availability === "aPedido" ? ` _(${availabilityLabel.aPedido.toLowerCase()})_` : "";
-      lines.push(`• ${i.qty} × ${i.productName}${detail}${pending}`);
+      lines.push(`• ${i.qty} × ${i.productName}${detail}${pending}${hasPrices ? priceSuffix(i, totals.wholesale) : ""}`);
     }
   }
   lines.push("", `Total: ${units} ${units === 1 ? "unidad" : "unidades"}`);
@@ -42,10 +46,23 @@ export function buildOrderMessage(items: CartItem[], form: OrderForm, threshold:
 
   if (form.comentarios) lines.push("", `Comentarios: ${form.comentarios}`);
 
+  if (hasPrices) {
+    const applied = totals.wholesale ? "precios mayoristas" : "precios minoristas";
+    lines.push("", `*${totals.partial ? "Total parcial" : "Total"}: ${formatArs(totals.total)}* (${applied})`);
+    if (totals.partial) lines.push("Los productos sin precio se cotizan por WhatsApp.");
+  }
+
   return lines.join("\n");
 }
 
-/** Consulta directa por una variante puntual (botón "Pedir por WhatsApp" del catálogo). Nunca incluye precios. */
+function priceSuffix(item: CartItem, wholesale: boolean) {
+  const price = unitPrice(item, wholesale);
+  const subtotal = lineSubtotal(item, wholesale);
+  if (price === null || subtotal === null) return " — precio a consultar";
+  return ` — ${formatArs(price)} c/u = ${formatArs(subtotal)}`;
+}
+
+/** Consulta directa por una variante puntual (botón "Pedir por WhatsApp" del catálogo). No incluye precios. */
 export function buildVariantMessage(productName: string, valuesLabel: string): string {
   return ["¡Hola! Quiero pedir:", `• ${productName} — ${valuesLabel}`, "", "¿Me pasan la cotización y el tiempo de entrega?"].join("\n");
 }

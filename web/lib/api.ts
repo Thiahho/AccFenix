@@ -22,7 +22,15 @@ export type AttributeValue = { id: number; label: string; colorHex: string | nul
 
 export type ProductAttribute = { id: number; name: string; slug: string; values: AttributeValue[] };
 
-export type Variant = { id: number; sku: string; valueIds: number[]; availability: Availability };
+export type Variant = {
+  id: number;
+  sku: string;
+  valueIds: number[];
+  availability: Availability;
+  /** ARS; null means the price is quoted on request. */
+  retailPrice: number | null;
+  wholesalePrice: number | null;
+};
 
 export type Media = { id: number; type: "image" | "video"; url: string; attributeValueId: number | null };
 
@@ -37,7 +45,13 @@ export type ProductDetail = {
   media: Media[];
 };
 
-export type VariantStatus = { id: number; isActive: boolean; availability: Availability };
+export type VariantStatus = {
+  id: number;
+  isActive: boolean;
+  availability: Availability;
+  retailPrice: number | null;
+  wholesalePrice: number | null;
+};
 
 export type PublicSettings = { whatsappNumber: string; wholesaleThreshold: number };
 

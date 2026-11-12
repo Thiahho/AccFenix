@@ -9,11 +9,12 @@ import { ProductGallery } from "@/components/site/product-gallery";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ProductDetail } from "@/lib/api";
+import { formatArs } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { describeSelection, findVariant, initialSelection, isValueEnabled, select, type Selection } from "@/lib/variants";
 import { MAX_QTY, useCart } from "@/stores/cart";
 
-export function VariantPicker({ product }: { product: ProductDetail }) {
+export function VariantPicker({ product, wholesaleThreshold }: { product: ProductDetail; wholesaleThreshold: number }) {
   const { attributes, variants } = product;
   const [selection, setSelection] = useState<Selection>(() => initialSelection(attributes));
   const [qty, setQty] = useState(1);
@@ -33,6 +34,8 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
         categoryName: product.category.name,
         valuesLabel: describeSelection(attributes, selection),
         availability: variant.availability,
+        retailPrice: variant.retailPrice,
+        wholesalePrice: variant.wholesalePrice,
       },
       qty,
     );
@@ -116,6 +119,23 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
             )}
           </div>
 
+          {variant && (
+            <div className="mt-3 border-t pt-3">
+              <p className="flex items-baseline justify-between gap-3">
+                <span className="text-sm text-muted-foreground">Precio por unidad</span>
+                <span className="text-2xl font-semibold tabular-nums">
+                  {variant.retailPrice !== null ? formatArs(variant.retailPrice) : "Consultar"}
+                </span>
+              </p>
+              {variant.wholesalePrice !== null && wholesaleThreshold > 0 && (
+                <p className="mt-1 text-right text-sm text-muted-foreground">
+                  Mayorista desde {wholesaleThreshold} unidades:{" "}
+                  <span className="font-medium text-foreground tabular-nums">{formatArs(variant.wholesalePrice)}</span>
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="mt-4 flex gap-3">
             <div className="flex items-center rounded-md border bg-background">
               <Button type="button" variant="ghost" size="icon" aria-label="Restar uno" onClick={() => setQty((q) => Math.max(1, q - 1))}>
@@ -139,7 +159,11 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
               Agregar al pedido
             </Button>
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">Sin precios online: te enviamos la cotización por WhatsApp.</p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {variant && variant.retailPrice !== null
+              ? "El precio no incluye el envío: lo coordinamos por WhatsApp."
+              : "Los productos sin precio online se cotizan por WhatsApp."}
+          </p>
         </div>
       </div>
     </div>

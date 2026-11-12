@@ -3,15 +3,26 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { bulkAvailability, setVariant } from "@/app/admin/actions";
+import { bulkAvailability, saveVariantPrices, setVariant } from "@/app/admin/actions";
 import { AvailabilityBadge } from "@/components/site/availability-badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { Availability } from "@/lib/api";
-import type { AdminProduct, AdminVariant } from "@/lib/admin/types";
+import type { AdminProduct, AdminVariant, VariantPrices } from "@/lib/admin/types";
+import { parsePriceInput, priceToInput } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
+
+type PriceField = "retailPrice" | "wholesalePrice";
+/** Text typed in the price inputs and not saved yet, by variant id. */
+type Drafts = Record<number, Partial<Record<PriceField, string>>>;
+
+const priceFields: { field: PriceField; label: string }[] = [
+  { field: "retailPrice", label: "Minorista" },
+  { field: "wholesalePrice", label: "Mayorista" },
+];
 
 export function VariantsGrid({ product }: { product: AdminProduct }) {
   const router = useRouter();
@@ -19,6 +30,8 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
   const [variants, setVariants] = useState(product.variants);
   const [filter, setFilter] = useState<Record<number, number | undefined>>({});
   const [showInactive, setShowInactive] = useState(false);
+  const [drafts, setDrafts] = useState<Drafts>({});
+  const [fill, setFill] = useState<Record<PriceField, string>>({ retailPrice: "", wholesalePrice: "" });
 
   // Solo los atributos que efectivamente varían en este producto.
   const attributes = product.categoryAttributes
@@ -31,6 +44,23 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
     (v) => (showInactive || v.isActive) && filterIds.every((id) => v.valueIds.includes(id)),
   );
   const onRequest = visible.filter((v) => v.isActive && v.availability === "aPedido").length;
+
+  const priceText = (v: AdminVariant, field: PriceField) => drafts[v.id]?.[field] ?? priceToInput(v[field]);
+
+  // Rows whose typed prices differ from the stored ones, and how many of the typed values are invalid.
+  const changes: VariantPrices[] = [];
+  let invalidCount = 0;
+  for (const v of variants) {
+    if (!drafts[v.id]) continue;
+    const retail = parsePriceInput(priceText(v, "retailPrice"));
+    const wholesale = parsePriceInput(priceText(v, "wholesalePrice"));
+    if (!retail.ok || !wholesale.ok) {
+      invalidCount++;
+    } else if (retail.value !== v.retailPrice || wholesale.value !== v.wholesalePrice) {
+      changes.push({ variantId: v.id, retailPrice: retail.value, wholesalePrice: wholesale.value });
+    }
+  }
+  const hasDrafts = changes.length > 0 || invalidCount > 0;
 
   function toggleOne(variant: AdminVariant, availability: Availability) {
     setVariants((vs) => vs.map((v) => (v.id === variant.id ? { ...v, availability } : v)));
@@ -49,6 +79,47 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
       if (!res.ok) return void toast.error(res.error);
       setVariants((vs) => vs.map((v) => (v.isActive && filterIds.every((id) => v.valueIds.includes(id)) ? { ...v, availability } : v)));
       toast.success(`${res.data?.updated ?? 0} variantes marcadas como ${availability === "disponible" ? "disponibles" : "a pedido"}`);
+      router.refresh();
+    });
+  }
+
+  function setDraft(variantId: number, field: PriceField, text: string) {
+    setDrafts((d) => ({ ...d, [variantId]: { ...d[variantId], [field]: text } }));
+  }
+
+  /** Copies the helper prices into every visible row; an empty helper field leaves that column untouched. */
+  function fillVisible() {
+    const filled = priceFields.filter(({ field }) => fill[field].trim() !== "");
+    if (filled.length === 0) return void toast.error("Escribí al menos un precio para aplicar");
+    for (const { field } of filled) {
+      const parsed = parsePriceInput(fill[field]);
+      if (!parsed.ok) return void toast.error(parsed.error);
+    }
+    setDrafts((d) => {
+      const next = { ...d };
+      for (const v of visible) {
+        next[v.id] = { ...next[v.id], ...Object.fromEntries(filled.map(({ field }) => [field, fill[field].trim()])) };
+      }
+      return next;
+    });
+    toast.info(`Precio aplicado a ${visible.length} variantes. Guardá los cambios para confirmarlo.`);
+  }
+
+  function savePrices() {
+    if (invalidCount > 0) return void toast.error("Revisá los precios marcados en rojo antes de guardar");
+    if (changes.length === 0) return;
+    startTransition(async () => {
+      const res = await saveVariantPrices(product.id, changes);
+      if (!res.ok) return void toast.error(res.error);
+      const saved = new Map(changes.map((c) => [c.variantId, c]));
+      setVariants((vs) =>
+        vs.map((v) => {
+          const change = saved.get(v.id);
+          return change ? { ...v, retailPrice: change.retailPrice, wholesalePrice: change.wholesalePrice } : v;
+        }),
+      );
+      setDrafts({});
+      toast.success(`Precios guardados en ${res.data?.updated ?? changes.length} variantes`);
       router.refresh();
     });
   }
@@ -94,6 +165,35 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
         </div>
       </section>
 
+      <section className="space-y-3 rounded-xl border bg-background p-4" aria-label="Precios">
+        <div className="flex flex-wrap items-end gap-3">
+          {priceFields.map(({ field, label }) => (
+            <div key={field} className="space-y-1.5">
+              <Label htmlFor={`fill-${field}`}>{label} ($)</Label>
+              <Input
+                id={`fill-${field}`}
+                inputMode="decimal"
+                placeholder="Sin cambios"
+                value={fill[field]}
+                aria-invalid={!parsePriceInput(fill[field]).ok}
+                onChange={(e) => setFill((f) => ({ ...f, [field]: e.target.value }))}
+                className="w-32 text-right tabular-nums"
+              />
+            </div>
+          ))}
+          <Button size="sm" variant="outline" disabled={pending || visible.length === 0} onClick={fillVisible}>
+            Aplicar a las {visible.length} visibles
+          </Button>
+          <Button size="sm" className="ml-auto" disabled={pending || !hasDrafts} onClick={savePrices}>
+            {changes.length > 0 ? `Guardar precios (${changes.length})` : "Guardar precios"}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Precios en pesos, con hasta 2 decimales. Un precio vacío se muestra como “Consultar” en el sitio.
+          {hasDrafts && <span className="font-medium text-foreground"> Hay cambios sin guardar.</span>}
+        </p>
+      </section>
+
       <div className="flex items-center gap-2">
         <Switch id="inactive" checked={showInactive} onCheckedChange={setShowInactive} />
         <Label htmlFor="inactive" className="font-normal text-muted-foreground">Mostrar combinaciones desactivadas</Label>
@@ -105,6 +205,7 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
             <TableRow>
               {attributes.map((a) => <TableHead key={a.id}>{a.name}</TableHead>)}
               <TableHead className="hidden md:table-cell">SKU</TableHead>
+              {priceFields.map(({ field, label }) => <TableHead key={field} className="text-right">{label}</TableHead>)}
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Disponible</TableHead>
             </TableRow>
@@ -118,6 +219,22 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
                   </TableCell>
                 ))}
                 <TableCell className="hidden font-mono text-xs text-muted-foreground md:table-cell">{v.sku}</TableCell>
+                {priceFields.map(({ field, label }) => {
+                  const text = priceText(v, field);
+                  return (
+                    <TableCell key={field} className="text-right">
+                      <Input
+                        inputMode="decimal"
+                        placeholder="—"
+                        aria-label={`Precio ${label.toLowerCase()}: ${v.sku}`}
+                        aria-invalid={!parsePriceInput(text).ok}
+                        value={text}
+                        onChange={(e) => setDraft(v.id, field, e.target.value)}
+                        className="ml-auto w-28 text-right tabular-nums"
+                      />
+                    </TableCell>
+                  );
+                })}
                 <TableCell>{v.isActive ? <AvailabilityBadge availability={v.availability} /> : <span className="text-xs">Desactivada</span>}</TableCell>
                 <TableCell className="text-right">
                   <Switch

@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import type { Availability } from "@/lib/api";
 import { adminFetch, AdminApiError, clearSession, login } from "@/lib/admin/session";
-import type { ActionResult } from "@/lib/admin/types";
+import type { ActionResult, VariantPrices } from "@/lib/admin/types";
 
 /** Ejecuta una llamada admin, refresca el panel y el catálogo público, y traduce errores de la API. */
 async function run<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
@@ -95,8 +95,16 @@ export async function deleteProduct(id: number) {
   return result;
 }
 
-export async function setVariant(id: number, patch: { availability?: Availability; isActive?: boolean }) {
+/** Omitted fields stay unchanged; an explicit null price clears it. */
+export type VariantPatch = { availability?: Availability; isActive?: boolean; retailPrice?: number | null; wholesalePrice?: number | null };
+
+export async function setVariant(id: number, patch: VariantPatch) {
   return run(() => adminFetch(`/api/admin/variants/${id}`, json("PATCH", patch)));
+}
+
+/** Replaces both prices of several variants of one product; the API applies all of them or none. */
+export async function saveVariantPrices(productId: number, prices: VariantPrices[]) {
+  return run(() => adminFetch<{ updated: number }>(`/api/admin/products/${productId}/variants/prices`, json("PUT", { prices })));
 }
 
 export async function bulkAvailability(productId: number, valueIds: number[], availability: Availability) {
