@@ -1,6 +1,7 @@
 using AccFenix.Api.Data;
 using AccFenix.Api.Domain;
 using AccFenix.Api.Services;
+using System.Text.Json.Serialization;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +12,24 @@ public record CategoryRequest(string Name, string? Slug, string? Description, in
 public record AttributeRequest(string Name, string? Slug, int SortOrder);
 public record AttributeValueRequest(string Label, int SortOrder, string? ColorHex);
 public record ProductRequest(int CategoryId, string Name, string? Slug, string? Description, int SortOrder, bool IsActive, List<int> AllowedValueIds);
-public record VariantPatchRequest(Availability? Availability, bool? IsActive);
+/// <summary>
+/// Partial update. Prices follow JSON presence: an omitted price stays as it is, an explicit null clears it.
+/// The serializer only calls a property setter when the field is present, which is what the flags record.
+/// </summary>
+public record VariantPatchRequest(Availability? Availability, bool? IsActive)
+{
+    readonly decimal? _retailPrice;
+    readonly decimal? _wholesalePrice;
+
+    public decimal? RetailPrice { get => _retailPrice; init { _retailPrice = value; HasRetailPrice = true; } }
+    public decimal? WholesalePrice { get => _wholesalePrice; init { _wholesalePrice = value; HasWholesalePrice = true; } }
+
+    [JsonIgnore] public bool HasRetailPrice { get; private init; }
+    [JsonIgnore] public bool HasWholesalePrice { get; private init; }
+}
+/// <summary>Both prices are always applied as sent: null clears the price.</summary>
+public record VariantPriceItem(int VariantId, decimal? RetailPrice, decimal? WholesalePrice);
+public record VariantPricesRequest(List<VariantPriceItem> Prices);
 public record VariantBulkRequest(int ProductId, List<int> ValueIds, Availability Availability);
 public record SettingsRequest(string WhatsappNumber, int WholesaleThreshold);
 
@@ -20,7 +38,7 @@ public record AdminCategoryDto(int Id, string Name, string Slug, string? Descrip
 public record AdminValueDto(int Id, string Label, int SortOrder, string? ColorHex);
 public record AdminAttributeDto(int Id, string Name, string Slug, int SortOrder, List<AdminValueDto> Values);
 public record AdminProductSummaryDto(int Id, int CategoryId, string CategoryName, string Name, string Slug, bool IsActive, int SortOrder, int ActiveVariants, int OnRequestVariants, string? CoverUrl);
-public record AdminVariantDto(int Id, string Sku, List<int> ValueIds, Availability Availability, bool IsActive);
+public record AdminVariantDto(int Id, string Sku, List<int> ValueIds, Availability Availability, bool IsActive, decimal? RetailPrice, decimal? WholesalePrice);
 public record AdminMediaDto(int Id, MediaType Type, string Url, int? AttributeValueId, int SortOrder);
 public record AdminProductDto(
     int Id, int CategoryId, string Name, string Slug, string? Description, int SortOrder, bool IsActive,
@@ -79,6 +97,29 @@ public class VariantPatchRequestValidator : AbstractValidator<VariantPatchReques
     public VariantPatchRequestValidator()
     {
         RuleFor(x => x.Availability).IsInEnum();
+        RuleFor(x => x.RetailPrice).ValidPrice();
+        RuleFor(x => x.WholesalePrice).ValidPrice();
+    }
+}
+
+public class VariantPricesRequestValidator : AbstractValidator<VariantPricesRequest>
+{
+    public const int MaxItems = 1000;
+
+    public VariantPricesRequestValidator()
+    {
+        RuleFor(x => x.Prices).Cascade(CascadeMode.Stop)
+            .NotEmpty()
+            .Must(items => items.Count <= MaxItems).WithMessage($"Hasta {MaxItems} variantes por solicitud")
+            .Must(items => items.All(i => i is not null)).WithMessage("Hay elementos vacíos")
+            .Must(items => items.Select(i => i.VariantId).Distinct().Count() == items.Count)
+            .WithMessage("Cada variante puede aparecer una sola vez");
+        RuleForEach(x => x.Prices).Where(i => i is not null).ChildRules(item =>
+        {
+            item.RuleFor(i => i.VariantId).GreaterThan(0);
+            item.RuleFor(i => i.RetailPrice).ValidPrice();
+            item.RuleFor(i => i.WholesalePrice).ValidPrice();
+        });
     }
 }
 
@@ -285,7 +326,7 @@ public static class AdminCatalogEndpoints
                         ca.Attribute.Values.OrderBy(v => v.SortOrder).Select(v => new AdminValueDto(v.Id, v.Label, v.SortOrder, v.ColorHex)).ToList()))
                     .ToList(),
                 p.Variants.OrderBy(v => v.Id)
-                    .Select(v => new AdminVariantDto(v.Id, v.Sku, v.Values.Select(x => x.AttributeValueId).Order().ToList(), v.Availability, v.IsActive))
+                    .Select(v => new AdminVariantDto(v.Id, v.Sku, v.Values.Select(x => x.AttributeValueId).Order().ToList(), v.Availability, v.IsActive, v.RetailPrice, v.WholesalePrice))
                     .ToList(),
                 p.Media.OrderBy(m => m.SortOrder).Select(m => new AdminMediaDto(m.Id, m.Type, m.Url, m.AttributeValueId, m.SortOrder)).ToList()));
         });
@@ -352,6 +393,28 @@ public static class AdminCatalogEndpoints
             await db.Products.AnyAsync(p => p.Id == id, ct)
                 ? Results.Ok(await generator.GenerateAsync(id, ct))
                 : Results.NotFound());
+
+        // Sets both prices of several variants of the product in one request. All or nothing:
+        // a variant id that does not belong to the product rejects the whole request.
+        admin.MapPut("/products/{id:int}/variants/prices", async (int id, VariantPricesRequest req, AppDbContext db, CancellationToken ct) =>
+        {
+            if (!await db.Products.AnyAsync(p => p.Id == id, ct)) return Results.NotFound();
+
+            var ids = req.Prices.Select(i => i.VariantId).ToList();
+            var variants = await db.Variants.Where(v => v.ProductId == id && ids.Contains(v.Id)).ToDictionaryAsync(v => v.Id, ct);
+            if (variants.Count != ids.Count)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["prices"] = ["Hay variantes que no pertenecen al producto"] });
+            }
+
+            foreach (var item in req.Prices)
+            {
+                variants[item.VariantId].RetailPrice = item.RetailPrice;
+                variants[item.VariantId].WholesalePrice = item.WholesalePrice;
+            }
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(new { Updated = variants.Count });
+        }).Validate<VariantPricesRequest>();
     }
 
     static void MapVariants(RouteGroupBuilder admin)
@@ -362,8 +425,10 @@ public static class AdminCatalogEndpoints
             if (variant is null) return Results.NotFound();
             if (req.Availability is { } availability) variant.Availability = availability;
             if (req.IsActive is { } active) variant.IsActive = active;
+            if (req.HasRetailPrice) variant.RetailPrice = req.RetailPrice;
+            if (req.HasWholesalePrice) variant.WholesalePrice = req.WholesalePrice;
             await db.SaveChangesAsync(ct);
-            return Results.Ok(new AdminVariantDto(variant.Id, variant.Sku, [], variant.Availability, variant.IsActive));
+            return Results.Ok(new AdminVariantDto(variant.Id, variant.Sku, [], variant.Availability, variant.IsActive, variant.RetailPrice, variant.WholesalePrice));
         }).Validate<VariantPatchRequest>();
 
         // Cambia la disponibilidad de todas las variantes del producto que contengan todos los valores indicados

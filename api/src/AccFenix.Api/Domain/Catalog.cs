@@ -85,6 +85,10 @@ public class Variant
     public required string CombinationKey { get; set; }
     public Availability Availability { get; set; } = Availability.Disponible;
     public bool IsActive { get; set; } = true;
+    /// <summary>Unit price in ARS for retail orders. Null means "price on request".</summary>
+    public decimal? RetailPrice { get; set; }
+    /// <summary>Unit price in ARS once the cart reaches the wholesale threshold. Null means "price on request".</summary>
+    public decimal? WholesalePrice { get; set; }
 
     public List<VariantValue> Values { get; set; } = [];
 }

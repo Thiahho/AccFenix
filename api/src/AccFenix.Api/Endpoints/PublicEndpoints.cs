@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AccFenix.Api.Endpoints;
 
-// DTOs públicos. Por diseño ningún DTO expone precios: el sistema no los maneja.
+// DTOs públicos. Las variantes exponen precio minorista y mayorista; null significa "a consultar".
 public record CategoryDto(int Id, string Name, string Slug, string? Description, int ProductCount);
 
 public record ProductSummaryDto(int Id, string Name, string Slug, string? Description, string? CoverUrl);
@@ -16,7 +16,7 @@ public record ValueDto(int Id, string Label, string? ColorHex);
 
 public record AttributeDto(int Id, string Name, string Slug, List<ValueDto> Values);
 
-public record VariantDto(int Id, string Sku, List<int> ValueIds, Availability Availability);
+public record VariantDto(int Id, string Sku, List<int> ValueIds, Availability Availability, decimal? RetailPrice, decimal? WholesalePrice);
 
 public record MediaDto(int Id, MediaType Type, string Url, int? AttributeValueId);
 
@@ -26,7 +26,7 @@ public record ProductDetailDto(
 
 public record CategoryRefDto(string Name, string Slug);
 
-public record VariantStatusDto(int Id, bool IsActive, Availability Availability);
+public record VariantStatusDto(int Id, bool IsActive, Availability Availability, decimal? RetailPrice, decimal? WholesalePrice);
 
 public record PublicSettingsDto(string WhatsappNumber, int WholesaleThreshold);
 
@@ -80,7 +80,7 @@ public static class PublicEndpoints
             return Results.Ok(ToDetail(product));
         });
 
-        // Usado por el carrito para descartar variantes que ya no existen y refrescar disponibilidad.
+        // Usado por el carrito para descartar variantes que ya no existen y refrescar disponibilidad y precios.
         api.MapGet("/variants", async (string ids, AppDbContext db, CancellationToken ct) =>
         {
             var idList = ids.Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -89,7 +89,7 @@ public static class PublicEndpoints
 
             return await db.Variants
                 .Where(v => idList.Contains(v.Id))
-                .Select(v => new VariantStatusDto(v.Id, v.IsActive && v.Product.IsActive && v.Product.Category.IsActive, v.Availability))
+                .Select(v => new VariantStatusDto(v.Id, v.IsActive && v.Product.IsActive && v.Product.Category.IsActive, v.Availability, v.RetailPrice, v.WholesalePrice))
                 .ToListAsync(ct);
         });
 
@@ -120,7 +120,7 @@ public static class PublicEndpoints
             new CategoryRefDto(p.Category.Name, p.Category.Slug),
             attributes,
             p.Variants.OrderBy(v => v.Id)
-                .Select(v => new VariantDto(v.Id, v.Sku, v.Values.Select(x => x.AttributeValueId).Order().ToList(), v.Availability))
+                .Select(v => new VariantDto(v.Id, v.Sku, v.Values.Select(x => x.AttributeValueId).Order().ToList(), v.Availability, v.RetailPrice, v.WholesalePrice))
                 .ToList(),
             p.Media.OrderBy(m => m.SortOrder)
                 .Select(m => new MediaDto(m.Id, m.Type, m.Url, m.AttributeValueId))

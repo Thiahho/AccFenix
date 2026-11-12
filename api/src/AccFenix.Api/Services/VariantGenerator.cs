@@ -10,7 +10,7 @@ public class VariantGenerator(AppDbContext db)
 {
     /// <summary>
     /// Sincroniza las variantes del producto con el producto cartesiano de sus valores permitidos,
-    /// agrupados por los atributos de su categoría. Las variantes existentes conservan su disponibilidad;
+    /// agrupados por los atributos de su categoría. Las variantes existentes conservan su disponibilidad y sus precios;
     /// las que ya no corresponden se desactivan (no se borran).
     /// </summary>
     public async Task<GenerateResult> GenerateAsync(int productId, CancellationToken ct = default)

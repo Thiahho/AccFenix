@@ -68,6 +68,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.Property(x => x.Sku).HasMaxLength(120);
             e.Property(x => x.CombinationKey).HasMaxLength(200);
+            e.Property(x => x.RetailPrice).HasPrecision(12, 2);
+            e.Property(x => x.WholesalePrice).HasPrecision(12, 2);
             e.HasIndex(x => x.Sku).IsUnique();
             e.HasIndex(x => new { x.ProductId, x.CombinationKey }).IsUnique();
             e.HasOne(x => x.Product).WithMany(p => p.Variants).HasForeignKey(x => x.ProductId);

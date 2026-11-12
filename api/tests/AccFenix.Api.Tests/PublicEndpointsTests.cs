@@ -68,8 +68,7 @@ public class PublicEndpointsTests(ApiFactory factory)
     [Theory]
     [InlineData("/api/categories")]
     [InlineData("/api/categories/barrales/products")]
-    [InlineData("/api/products/barral")]
-    public async Task Public_payloads_never_mention_prices(string url)
+    public async Task Catalog_listings_do_not_mention_prices(string url)
     {
         var body = await _client.GetStringAsync(url);
 

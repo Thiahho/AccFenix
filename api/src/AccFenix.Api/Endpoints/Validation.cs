@@ -43,6 +43,8 @@ public class UniqueViolationFilter : IEndpointFilter
 public static class ValidationExtensions
 {
     public const int MaxSortOrder = 100_000;
+    /// <summary>Upper bound for a unit price; it fits the numeric(12,2) price columns.</summary>
+    public const decimal MaxPrice = 99_999_999.99m;
 
     public static RouteHandlerBuilder Validate<T>(this RouteHandlerBuilder builder) => builder.AddEndpointFilter<ValidationFilter<T>>();
 
@@ -64,6 +66,11 @@ public static class ValidationExtensions
 
     public static IRuleBuilderOptions<T, int> ValidSortOrder<T>(this IRuleBuilder<T, int> rule) =>
         rule.InclusiveBetween(-MaxSortOrder, MaxSortOrder);
+
+    /// <summary>Optional price: when present it must be between 0 and <see cref="MaxPrice"/> with at most 2 decimals.</summary>
+    public static IRuleBuilderOptions<T, decimal?> ValidPrice<T>(this IRuleBuilder<T, decimal?> rule) =>
+        rule.Must(price => price is null || (price >= 0 && price <= MaxPrice && decimal.Round(price.Value, 2) == price))
+            .WithMessage("El precio debe estar entre 0 y 99.999.999,99 y tener hasta 2 decimales");
 
     /// <summary>Lista de ids obligatoria, acotada y solo con ids positivos.</summary>
     public static IRuleBuilderOptions<T, List<int>> IdList<T>(this IRuleBuilder<T, List<int>> rule, int max) =>
