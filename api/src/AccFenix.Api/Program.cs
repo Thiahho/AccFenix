@@ -47,8 +47,15 @@ builder.Services.AddRateLimiter(o =>
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     // Un cupo por visitante: los intentos fallidos de uno no bloquean el login de otro.
     o.AddPolicy(AuthEndpoints.LoginRateLimit, ctx => RateLimitPartition.GetFixedWindowLimiter(
-        ClientIp.PartitionKey(ctx, ctx.RequestServices.GetRequiredService<IConfiguration>()["TrustedWeb:Key"] ?? ""),
+        Visitor(ctx),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(5) }));
+    // Order creation is public and writes to the database: each visitor gets a separate, small quota.
+    o.AddPolicy(OrderEndpoints.CreateRateLimit, ctx => RateLimitPartition.GetFixedWindowLimiter(
+        Visitor(ctx),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = OrderEndpoints.CreatePermitLimit, Window = OrderEndpoints.CreateWindow }));
+
+    static string Visitor(HttpContext ctx) =>
+        ClientIp.PartitionKey(ctx, ctx.RequestServices.GetRequiredService<IConfiguration>()["TrustedWeb:Key"] ?? "");
 });
 
 builder.Services.ConfigureHttpJsonOptions(o =>
@@ -83,13 +90,15 @@ app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapPublicEndpoints();
+app.MapOrderEndpoints();
 app.MapAuthEndpoints();
 app.MapGroup("/api/admin")
     .RequireAuthorization()
     .AddEndpointFilter<UniqueViolationFilter>()
     .WithTags("Admin")
     .MapAdminCatalogEndpoints()
-    .MapAdminMediaEndpoints();
+    .MapAdminMediaEndpoints()
+    .MapAdminOrderEndpoints();
 
 app.Run();
 

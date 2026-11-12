@@ -16,6 +16,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Media> Media => Set<Media>();
     public DbSet<Setting> Settings => Set<Setting>();
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -101,6 +103,36 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.Property(x => x.Email).HasMaxLength(200);
             e.HasIndex(x => x.Email).IsUnique();
+        });
+
+        b.Entity<Order>(e =>
+        {
+            // A second identity column: the database hands out consecutive order numbers.
+            e.Property(x => x.Number).UseIdentityAlwaysColumn();
+            e.HasIndex(x => x.Number).IsUnique();
+            e.Property(x => x.CustomerName).HasMaxLength(OrderLimits.Name);
+            e.Property(x => x.Phone).HasMaxLength(OrderLimits.Phone);
+            e.Property(x => x.Locality).HasMaxLength(OrderLimits.Locality);
+            e.Property(x => x.Address).HasMaxLength(OrderLimits.Address);
+            e.Property(x => x.Province).HasMaxLength(OrderLimits.Province);
+            e.Property(x => x.Carrier).HasMaxLength(OrderLimits.Carrier);
+            e.Property(x => x.Comments).HasMaxLength(OrderLimits.Comments);
+            e.Property(x => x.Total).HasPrecision(12, 2);
+            // The admin list is read newest first, optionally by status.
+            e.HasIndex(x => x.CreatedAt);
+            e.HasIndex(x => new { x.Status, x.CreatedAt });
+        });
+
+        b.Entity<OrderItem>(e =>
+        {
+            e.Property(x => x.ProductName).HasMaxLength(160);
+            e.Property(x => x.Sku).HasMaxLength(120);
+            e.Property(x => x.VariantLabel).HasMaxLength(OrderLimits.VariantLabel);
+            e.Property(x => x.UnitPrice).HasPrecision(12, 2);
+            e.Property(x => x.Subtotal).HasPrecision(12, 2);
+            e.HasOne(x => x.Order).WithMany(o => o.Items).HasForeignKey(x => x.OrderId);
+            // Removing a variant from the catalog keeps the order line and its snapshot.
+            e.HasOne(x => x.Variant).WithMany().HasForeignKey(x => x.VariantId).OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
