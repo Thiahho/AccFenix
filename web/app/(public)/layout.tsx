@@ -1,19 +1,9 @@
-import Link from "next/link";
 import { WhatsappFab } from "@/components/home/whatsapp-fab";
-import { MobileMenu } from "@/components/site/mobile-menu";
-import { CartButton } from "@/components/site/cart-button";
 import { Wordmark } from "@/components/site/wordmark";
 import { OrderToaster } from "@/components/site/order-toast";
+import { SiteHeader } from "@/components/site/site-header";
 import { api, type Category } from "@/lib/api";
 import { site } from "@/lib/site";
-
-// Keep in sync with sectionLinks in lib/nav.ts (that module uses client hooks, so it is not imported here).
-const sections = [
-  { href: "/#precios", label: "Precios" },
-  { href: "/#catalogo", label: "Hacé tu pedido" },
-  { href: "/#mayoristas", label: "Mayoristas" },
-  { href: "/#preguntas", label: "Preguntas" },
-];
 
 async function loadCategories(): Promise<Category[]> {
   try {
@@ -36,30 +26,7 @@ export default async function PublicLayout({ children }: { children: React.React
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4">
-          <Link href="/" aria-label={`${site.name} — inicio`} className="flex min-h-11 items-center rounded-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
-            <Wordmark className="text-4xl" />
-          </Link>
-          <nav aria-label="Secciones" className="hidden flex-1 items-center gap-5 text-sm md:flex">
-            {sections.map((s) => (
-              <Link key={s.href} href={s.href} className="rounded-sm font-medium text-muted-foreground transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-                {s.label}
-              </Link>
-            ))}
-            {categories.length > 0 && <span aria-hidden className="h-4 w-px bg-border" />}
-            {categories.map((c) => (
-              <Link key={c.id} href={`/catalogo/${c.slug}`} className="rounded-sm font-medium text-muted-foreground transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-                {c.name}
-              </Link>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-2 md:ml-0">
-            <CartButton />
-            <MobileMenu categories={categories} />
-          </div>
-        </div>
-      </header>
+      <SiteHeader categories={categories} />
 
       <main className="flex-1">{children}</main>
 

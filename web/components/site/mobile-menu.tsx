@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FolderIcon, MenuIcon, ShoppingBagIcon, XIcon } from "lucide-react";
+import { FolderIcon, ShoppingBagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sectionLinks, useActiveSection } from "@/lib/nav";
 import { useHydrated } from "@/lib/use-hydrated";
@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils";
 import { totalUnits, useCart } from "@/stores/cart";
 
 type Props = { categories: { id: number; name: string; slug: string }[] };
+
+/** Stagger index for the menu items slide-in (see `.menu-item-in` in globals.css). */
+const stagger = (i: number) => ({ "--i": i }) as CSSProperties;
 
 const rowClass =
   "flex min-h-12 items-center gap-3 rounded-lg px-3 text-base transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";
@@ -59,20 +62,25 @@ export function MobileMenu({ categories }: Props) {
         aria-controls="menu-movil"
         onClick={() => setOpenedAt(open ? null : pathname)}
       >
-        {open ? <XIcon aria-hidden /> : <MenuIcon aria-hidden />}
+        {/* Three bars that morph into an X (see `.burger` in globals.css). */}
+        <span aria-hidden data-open={open || undefined} className="burger">
+          <span />
+          <span />
+          <span />
+        </span>
       </Button>
 
       {open && (
         <>
-          <button type="button" tabIndex={-1} aria-hidden onClick={close} className="absolute inset-x-0 top-full h-dvh cursor-default bg-black/30 motion-safe:animate-in motion-safe:fade-in" />
+          <button type="button" tabIndex={-1} aria-hidden onClick={close} className="absolute inset-x-0 top-(--menu-top) h-dvh cursor-default bg-black/30 motion-safe:animate-in motion-safe:fade-in" />
           <nav
             id="menu-movil"
             aria-label="Menú"
-            className="absolute inset-x-0 top-full max-h-[calc(100dvh-4rem)] overflow-y-auto border-b bg-background px-3 pt-2 pb-4 shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-200"
+            className="absolute inset-x-0 top-(--menu-top) max-h-[calc(100dvh-var(--menu-top))] overflow-y-auto border-b bg-background px-3 pt-2 pb-4 shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-200"
           >
             <ul>
-              {sectionLinks.map((s) => (
-                <li key={s.id}>
+              {sectionLinks.map((s, i) => (
+                <li key={s.id} className="menu-item-in" style={stagger(i)}>
                   <Link
                     href={s.href}
                     onClick={close}
@@ -90,8 +98,8 @@ export function MobileMenu({ categories }: Props) {
               <>
                 <p className="mt-3 mb-1 border-t px-3 pt-4 text-sm font-medium text-muted-foreground">Catálogos</p>
                 <ul>
-                  {categories.map((c) => (
-                    <li key={c.id}>
+                  {categories.map((c, i) => (
+                    <li key={c.id} className="menu-item-in" style={stagger(sectionLinks.length + i)}>
                       <Link href={`/catalogo/${c.slug}`} onClick={close} className={cn(rowClass, "text-foreground hover:bg-muted")}>
                         <FolderIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
                         {c.name}
@@ -102,7 +110,7 @@ export function MobileMenu({ categories }: Props) {
               </>
             )}
 
-            <div className="mt-3 border-t pt-3">
+            <div className="menu-item-in mt-3 border-t pt-3" style={stagger(sectionLinks.length + categories.length)}>
               <Link href="/pedido" onClick={close} className={cn(rowClass, "font-medium text-foreground hover:bg-muted")}>
                 <ShoppingBagIcon aria-hidden className="size-5 shrink-0" />
                 Mi pedido

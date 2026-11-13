@@ -234,3 +234,187 @@ html {
     translate: 0 -12rem;
   }
 }
+
+/*
+ * Public header (components/site/site-header.tsx).
+ * The header keeps a fixed 4rem box so the page never shifts: compacting only scales the background layer
+ * and nudges the bar with transforms. Every transition and keyframe sits behind prefers-reduced-motion,
+ * where states still change, just instantly (and the header never auto-hides).
+ */
+.site-header {
+  /* Where the mobile menu panel starts, measured from the top of the bar. */
+  --menu-top: 4rem;
+}
+.site-header[data-compact] {
+  --menu-top: 3.75rem;
+}
+.site-header-bg {
+  opacity: 0;
+  transform-origin: top;
+  background-color: color-mix(in oklch, var(--background) 86%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow:
+    0 1px 0 var(--border),
+    0 10px 28px -14px color-mix(in oklch, var(--charcoal) 40%, transparent);
+}
+.site-header[data-compact] .site-header-bg,
+.site-header:has(#menu-movil) .site-header-bg {
+  opacity: 1;
+}
+.site-header[data-compact] .site-header-bg {
+  transform: scaleY(0.875);
+}
+.site-header[data-compact] .site-header-bar {
+  transform: translateY(-0.25rem);
+}
+.site-header-logo {
+  transform-origin: left center;
+}
+.site-header[data-compact] .site-header-logo {
+  transform: scale(0.86);
+}
+
+/* Desktop links: red underline that grows from the center, and the pill that follows the active section. */
+.nav-link::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0.75rem;
+  bottom: 0.2rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--brand);
+  transform: scaleX(0);
+}
+.nav-link:hover::after,
+.nav-link:focus-visible::after {
+  transform: scaleX(1);
+}
+.nav-indicator {
+  width: var(--w, 0);
+  transform: translate(var(--x, 0), -50%);
+  opacity: 0;
+}
+.nav-indicator[data-visible="true"] {
+  opacity: 1;
+}
+
+/* Mobile burger: three bars that fold into an X. */
+.burger {
+  position: relative;
+  display: block;
+  width: 1.125rem;
+  height: 0.875rem;
+}
+.burger > span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+.burger > span:nth-child(1) {
+  top: 0;
+}
+.burger > span:nth-child(2) {
+  top: calc(50% - 1px);
+}
+.burger > span:nth-child(3) {
+  bottom: 0;
+}
+.burger[data-open] > span:nth-child(1) {
+  transform: translateY(0.375rem) rotate(45deg);
+}
+.burger[data-open] > span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0.2);
+}
+.burger[data-open] > span:nth-child(3) {
+  transform: translateY(-0.375rem) rotate(-45deg);
+}
+
+@keyframes header-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.6rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes menu-item-in {
+  from {
+    opacity: 0;
+    transform: translateX(-0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* A raw egg rocking on the counter. */
+@keyframes egg-wobble {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-7deg);
+  }
+  45% {
+    transform: rotate(5deg);
+  }
+  65% {
+    transform: rotate(-3deg);
+  }
+  85% {
+    transform: rotate(1.5deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .site-header,
+  .site-header-bar,
+  .site-header-logo {
+    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .site-header-bg {
+    transition:
+      opacity 0.3s ease,
+      transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  /* Hide on scroll down, unless a header control has focus or the mobile menu is open. */
+  .site-header[data-hidden]:not(:focus-within):not(:has(#menu-movil)) {
+    transform: translateY(calc(-100% - 1.5rem));
+  }
+  .header-item {
+    animation: header-item-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 45ms + 60ms);
+  }
+  .nav-link::after {
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .nav-indicator {
+    transition:
+      transform 0.4s cubic-bezier(0.3, 1.25, 0.4, 1),
+      width 0.4s cubic-bezier(0.3, 1.25, 0.4, 1),
+      opacity 0.2s ease;
+  }
+  .burger > span {
+    transition:
+      transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 0.2s ease;
+  }
+  .menu-item-in {
+    animation: menu-item-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 35ms + 40ms);
+  }
+  .wordmark-wobble {
+    transform-origin: 50% 85%;
+  }
+  .group:hover .wordmark-wobble,
+  .group:focus-visible .wordmark-wobble {
+    animation: egg-wobble 0.8s ease-in-out;
+  }
+}
