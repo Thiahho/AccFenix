@@ -63,5 +63,8 @@ on iOS; SuggestInput scrolls its list into view and caps it at `min(16rem, 40dvh
 ## Next step
 
 Device check on real phones (iOS Safari, Android Chrome, 360–414 px): WhatsApp handoff after placing an order, hero
-LCP, product quantity row, review step, address suggestions and province sheet with the keyboard open. Then the
-native review of commits f055bac..36fa017 if due.
+LCP, product quantity row, review step, address suggestions and province sheet with the keyboard open.
+
+Review assessment of 9f4a7dc..36fa017 (untracked files excluded): risk medium (`executable_change` in
+`web/app/layout.tsx`), 15 paths, 271 lines, `review_due: false` (`under_budget`); stays pending in the slice. Parent
+spot check: `npm test` 193/193.
