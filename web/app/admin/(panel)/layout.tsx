@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ExternalLinkIcon, LogOutIcon } from "lucide-react";
+import { ArrowLeftIcon, LogOutIcon } from "lucide-react";
 import { logoutAction } from "@/app/admin/actions";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <AdminNav />
         <div className="mt-auto flex gap-1 px-3 pb-3 md:block md:space-y-1 md:p-3">
           <Button asChild variant="ghost" className="justify-start md:w-full">
-            <Link href="/" target="_blank">
-              <ExternalLinkIcon /> Ver sitio
+            <Link href="/">
+              <ArrowLeftIcon /> Volver al sitio
             </Link>
           </Button>
           <form action={logoutAction}>
