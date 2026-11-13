@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { sectionLinks, useActiveSection } from "@/lib/nav";
 import { useHydrated } from "@/lib/use-hydrated";
 import { cn } from "@/lib/utils";
-import { totalUnits, useCart } from "@/stores/cart";
+import { useCart } from "@/stores/cart";
 
 type Props = { categories: { id: number; name: string; slug: string }[] };
 
@@ -28,7 +28,8 @@ export function MobileMenu({ categories }: Props) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const hydrated = useHydrated();
   const items = useCart((s) => s.items);
-  const units = hydrated ? totalUnits(items) : 0;
+  // Same count as the header cart badge (products, not units) so both never disagree.
+  const lines = hydrated ? items.length : 0;
 
   const close = () => setOpenedAt(null);
 
@@ -115,8 +116,11 @@ export function MobileMenu({ categories }: Props) {
               <Link href="/pedido" onClick={close} className={cn(rowClass, "font-medium text-foreground hover:bg-muted")}>
                 <ShoppingBagIcon aria-hidden className="size-5 shrink-0" />
                 Mi pedido
-                {units > 0 && (
-                  <span className="ml-auto rounded-full bg-brand px-2 py-0.5 text-xs font-semibold text-brand-foreground tabular-nums">{units}</span>
+                {lines > 0 && (
+                  <span className="ml-auto rounded-full bg-brand px-2 py-0.5 text-xs font-semibold text-brand-foreground tabular-nums">
+                    {lines}
+                    <span className="sr-only"> {lines === 1 ? "producto" : "productos"}</span>
+                  </span>
                 )}
               </Link>
             </div>
