@@ -11,7 +11,7 @@ export default async function AttributesPage() {
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Atributos" description="Opciones que combinan los productos: medida, grosor, color u otras nuevas." />
+      <PageHeader title="Atributos" description="Opciones que combinan los productos: presentación, calibre u otras nuevas." />
       <AttributesEditor attributes={attributes} />
     </div>
   );

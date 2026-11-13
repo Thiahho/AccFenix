@@ -7,9 +7,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-montserrat), system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-heading: var(--font-montserrat), system-ui, sans-serif;
+  --font-display: var(--font-montserrat), system-ui, sans-serif;
+  --font-script: var(--font-yellowtail), cursive;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -46,75 +48,103 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Eggy brand palette, usable as bg-*, text-*, border-* utilities. */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-cream: var(--cream);
+  --color-cream-deep: var(--cream-deep);
+  --color-charcoal: var(--charcoal);
+  --color-yolk: var(--yolk);
+  --color-yolk-light: var(--yolk-light);
 }
 
+/*
+ * Eggy: egg red (#B3121B), eggshell cream, warm charcoal and yolk accents.
+ * Changing only these raw colors re-themes the whole site, admin included.
+ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --egg-red: oklch(0.5 0.19 25);
+  --cream: oklch(0.975 0.012 80);
+  --cream-deep: oklch(0.93 0.026 78);
+  --paper: oklch(0.99 0.006 85);
+  --charcoal: oklch(0.25 0.012 50);
+  /* Burnt orange: readable on cream (eyebrows, small accents). */
+  --yolk: oklch(0.52 0.13 50);
+  /* Amber: for accents on charcoal. */
+  --yolk-light: oklch(0.83 0.14 78);
+
+  --brand: var(--egg-red);
+  --brand-foreground: var(--paper);
+  --brand-soft: oklch(0.95 0.028 35);
+
+  --background: var(--cream);
+  --foreground: var(--charcoal);
+  --card: var(--paper);
+  --card-foreground: var(--charcoal);
+  --popover: var(--paper);
+  --popover-foreground: var(--charcoal);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: var(--cream-deep);
+  --secondary-foreground: var(--charcoal);
+  --muted: var(--cream-deep);
+  --muted-foreground: oklch(0.46 0.022 50);
+  --accent: var(--cream-deep);
+  --accent-foreground: var(--charcoal);
+  --destructive: oklch(0.55 0.21 28);
+  --border: oklch(0.87 0.025 70);
+  --input: oklch(0.8 0.03 65);
+  --ring: var(--egg-red);
+  --chart-1: var(--egg-red);
+  --chart-2: oklch(0.7 0.15 65);
+  --chart-3: oklch(0.52 0.13 50);
+  --chart-4: oklch(0.4 0.03 50);
+  --chart-5: oklch(0.83 0.14 78);
+  --radius: 0.75rem;
+  --sidebar: var(--paper);
+  --sidebar-foreground: var(--charcoal);
+  --sidebar-primary: var(--egg-red);
+  --sidebar-primary-foreground: var(--paper);
+  --sidebar-accent: var(--cream-deep);
+  --sidebar-accent-foreground: var(--charcoal);
+  --sidebar-border: oklch(0.87 0.025 70);
+  --sidebar-ring: var(--egg-red);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Custom properties resolve where declared, so every alias of the red is restated here. */
+  --egg-red: oklch(0.6 0.2 25);
+  --brand: oklch(0.6 0.2 25);
+  --brand-foreground: oklch(0.99 0.006 85);
+  --brand-soft: oklch(0.32 0.06 28);
+  --primary: oklch(0.6 0.2 25);
+  --primary-foreground: oklch(0.99 0.006 85);
+  --ring: oklch(0.6 0.2 25);
+  --sidebar-primary: oklch(0.6 0.2 25);
+  --sidebar-ring: oklch(0.6 0.2 25);
+
+  --background: oklch(0.2 0.01 50);
+  --foreground: oklch(0.95 0.015 80);
+  --card: oklch(0.25 0.012 50);
+  --card-foreground: oklch(0.95 0.015 80);
+  --popover: oklch(0.25 0.012 50);
+  --popover-foreground: oklch(0.95 0.015 80);
+  --secondary: oklch(0.3 0.015 50);
+  --secondary-foreground: oklch(0.95 0.015 80);
+  --muted: oklch(0.3 0.015 50);
+  --muted-foreground: oklch(0.75 0.025 70);
+  --accent: oklch(0.3 0.015 50);
+  --accent-foreground: oklch(0.95 0.015 80);
+  --destructive: oklch(0.7 0.19 25);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 18%);
+  --sidebar: oklch(0.25 0.012 50);
+  --sidebar-foreground: oklch(0.95 0.015 80);
+  --sidebar-accent: oklch(0.3 0.015 50);
+  --sidebar-accent-foreground: oklch(0.95 0.015 80);
+  --sidebar-border: oklch(1 0 0 / 12%);
 }
 
 @layer base {
@@ -128,61 +158,29 @@
     @apply font-sans;
   }
 }
-/* Marca — azul noche, marfil y bronce (la banda "Cómo trabajamos" es la referencia).
-   Cambiar solo estas variables re-tematiza todo el sitio. */
-:root {
-  --ivory: #f5f0e7;
-  --ivory-deep: #efe7d8;
-  --paper: #fbf8f2;
-  --navy: #16233d;
-  --brass: #9a7442;
-  --brass-light: #d9bb86;
 
-  --brand: var(--navy);
-  --brand-foreground: var(--ivory);
-  --brand-soft: var(--ivory-deep);
-
-  --background: var(--ivory);
-  --foreground: var(--navy);
-  --card: var(--paper);
-  --card-foreground: var(--navy);
-  --popover: var(--paper);
-  --popover-foreground: var(--navy);
-  --primary: var(--brand);
-  --primary-foreground: var(--brand-foreground);
-  --secondary: var(--ivory-deep);
-  --secondary-foreground: var(--navy);
-  --muted: var(--ivory-deep);
-  --muted-foreground: color-mix(in oklch, var(--navy) 68%, var(--ivory));
-  --accent: var(--ivory-deep);
-  --accent-foreground: var(--navy);
-  --border: color-mix(in oklch, var(--navy) 16%, var(--ivory));
-  --input: color-mix(in oklch, var(--navy) 24%, var(--ivory));
-  --ring: var(--brass);
-}
-
-/* Rótulo en versalitas sobre el título y título en serif; el color se elige según el fondo. */
+/* Small uppercase label above a title; its color depends on the background. */
 @utility eyebrow {
   @apply text-xs font-semibold tracking-[0.3em] uppercase;
 }
-@utility title-serif {
-  @apply font-serif leading-[1.02] font-medium tracking-tight text-balance;
+/* Bold uppercase display titles, after the "HUEVOS | N°1" price story. */
+@utility title-display {
+  @apply font-heading leading-[0.98] font-extrabold tracking-tight text-balance uppercase;
+}
+/* Script wordmark ("Eggy"). */
+@utility wordmark {
+  @apply font-script leading-none font-normal tracking-normal normal-case;
+}
+/* Dark egg-tray texture for charcoal sections. */
+@utility bg-egg-tray {
+  background-color: var(--charcoal);
+  background-image:
+    radial-gradient(ellipse 34% 40% at 50% 50%, rgb(255 255 255 / 0.07) 0 70%, transparent 72%),
+    radial-gradient(ellipse 34% 40% at 0% 0%, rgb(255 255 255 / 0.05) 0 70%, transparent 72%);
+  background-size: 84px 96px;
 }
 
-@theme inline {
-  --color-brand: var(--brand);
-  --color-brand-foreground: var(--brand-foreground);
-  --color-brand-soft: var(--brand-soft);
-  --color-ivory: var(--ivory);
-  --color-ivory-deep: var(--ivory-deep);
-  --color-navy: var(--navy);
-  --color-brass: var(--brass);
-  --color-brass-light: var(--brass-light);
-  --font-display: var(--font-bricolage), var(--font-geist-sans), system-ui, sans-serif;
-  --font-serif: var(--font-cormorant), Georgia, serif;
-}
-
-/* Home: scroll suave a las anclas (respeta reduced-motion) y selección con la marca. */
+/* Home: smooth scroll to anchors (respects reduced motion) and branded selection. */
 html {
   scroll-behavior: smooth;
 }
@@ -198,7 +196,7 @@ html {
   scroll-margin-top: 5rem;
 }
 
-/* Aviso de pedido: barra de tiempo, pulso del contador del header y lugar para el aviso en móvil. */
+/* Order toast: timer bar, header counter pulse and room for the toast on mobile. */
 @keyframes order-toast-progress {
   from {
     width: 100%;

@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Cormorant_Garamond, Geist } from "next/font/google";
+import { Montserrat, Yellowtail } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { site } from "@/lib/site";
 import "./globals.css";
 
-const sans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const display = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"] });
-const serif = Cormorant_Garamond({ variable: "--font-cormorant", subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+// Montserrat is a variable font: one file covers body text and the 700–900 display titles.
+const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"] });
+// Yellowtail is only used by the "Eggy" wordmark.
+const yellowtail = Yellowtail({ variable: "--font-yellowtail", subsets: ["latin"], weight: "400" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -14,11 +15,11 @@ export const metadata: Metadata = {
   description: site.description,
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#B3121B" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es-AR" className={`${sans.variable} ${display.variable} ${serif.variable}`}>
+    <html lang="es-AR" className={`${montserrat.variable} ${yellowtail.variable}`}>
       <body className="antialiased">
         {children}
         <Toaster position="top-center" />

@@ -10,7 +10,7 @@ const created: CreatedOrder = {
   isWholesale: false,
   total: 2000,
   hasUnpricedItems: false,
-  items: [{ id: 1, variantId: 7, productName: "Barral", sku: "B-1", variantLabel: "2.40", quantity: 2, unitPrice: 1000, subtotal: 2000 }],
+  items: [{ id: 1, variantId: 7, productName: "Huevos N°1", sku: "H1-MAPLE", variantLabel: "Maple", quantity: 2, unitPrice: 1000, subtotal: 2000 }],
 };
 
 describe("interpretOrderResponse", () => {

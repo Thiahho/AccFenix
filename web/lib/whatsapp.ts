@@ -88,16 +88,16 @@ function priceSuffix({ price, subtotal }: LinePrice) {
 
 /** Consulta directa por una variante puntual (botón "Pedir por WhatsApp" del catálogo). No incluye precios. */
 export function buildVariantMessage(productName: string, valuesLabel: string): string {
-  return ["¡Hola! Quiero pedir:", `• ${productName} — ${valuesLabel}`, "", "¿Me pasan la cotización y el tiempo de entrega?"].join("\n");
+  return ["¡Hola! Quiero pedir:", `• ${productName} — ${valuesLabel}`, "", "¿Me confirman el total y el día de entrega?"].join("\n");
 }
 
-/** Primer contacto de profesionales (decoradores, tapiceros, revendedores). */
-export function buildProfessionalMessage(threshold: number): string {
+/** First contact from a business (shop, grocery, restaurant) asking for wholesale prices. */
+export function buildWholesaleMessage(threshold: number): string {
   const volume = threshold > 0 ? ` (pedidos desde ${threshold} unidades)` : "";
   return [
-    "¡Hola! Soy profesional del rubro y quiero cotizar por volumen" + volume + ".",
+    "¡Hola! Tengo un comercio y quiero comprar por mayor" + volume + ".",
     "",
-    "Rubro / empresa:",
+    "Comercio / rubro:",
     "Productos y cantidades aproximadas:",
     "Localidad de entrega:",
   ].join("\n");

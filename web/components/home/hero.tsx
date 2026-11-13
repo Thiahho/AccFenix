@@ -1,49 +1,57 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDownIcon, MessageCircleIcon } from "lucide-react";
+import { ArrowDownIcon, MessageCircleIcon, TruckIcon } from "lucide-react";
+import { Wordmark } from "@/components/site/wordmark";
+import { heroImage } from "@/lib/home-content";
 import { whatsappUrl } from "@/lib/whatsapp";
 
-/** Portada que queda detrás de la cortina (ver CurtainIntro). Deja margen a los costados para los paños recogidos. */
+/** "Somos Eggy" cover: warm gradient after the reference story, egg photo and the two main actions. */
 export function Hero({ phone }: { phone: string }) {
   return (
-    <section className="mx-auto grid h-full max-w-7xl items-center gap-10 px-8 py-10 text-navy md:grid-cols-[1.1fr_1fr] md:px-[calc(8vw+1.5rem)]">
-      <div className="flex flex-col gap-6">
-        <span className="text-xs font-semibold tracking-[0.3em] text-brass">BARRALES DE MADERA</span>
-        <h1 className="font-serif text-5xl leading-[0.98] font-medium tracking-tight text-balance sm:text-6xl lg:text-7xl">
-          El barral que <em className="font-normal text-brass">sostiene</em> tu cortina, a la medida de cada ventana.
-        </h1>
-        <p className="max-w-md text-lg text-pretty text-navy/75">
-          Barrales de madera en 10 medidas, 2 grosores y 3 colores. Venta minorista y mayorista, con cotización por WhatsApp.
-        </p>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Link
-            href="#catalogo"
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-navy px-7 text-[15px] font-semibold text-ivory transition-colors hover:bg-navy/90 focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:outline-none"
-          >
-            Ver medidas <ArrowDownIcon aria-hidden className="size-4" />
-          </Link>
-          {phone && (
-            <a
-              href={whatsappUrl(phone, "¡Hola! Quiero consultar por barrales.")}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex h-12 items-center justify-center gap-2 border-b border-navy px-4 text-[15px] font-semibold transition-colors hover:border-brass hover:text-brass focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:outline-none"
+    <section
+      id="inicio"
+      aria-labelledby="hero-titulo"
+      className="relative overflow-hidden bg-[radial-gradient(120%_90%_at_70%_20%,oklch(0.55_0.15_42)_0%,oklch(0.36_0.1_35)_55%,oklch(0.24_0.05_35)_100%)] text-cream"
+    >
+      <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pt-12 pb-14 md:grid-cols-[1.15fr_1fr] md:gap-12 md:py-20">
+        <div className="flex flex-col gap-6">
+          <p className="eyebrow text-yolk-light">Venta minorista y mayorista</p>
+          <h1 id="hero-titulo" className="flex flex-col gap-1">
+            <span className="title-display text-5xl sm:text-6xl lg:text-7xl">Somos</span>
+            <Wordmark tone="light" className="-mt-1 text-7xl drop-shadow-[0_4px_16px_rgb(0_0_0/0.35)] sm:text-8xl lg:text-9xl" />
+            <span className="mt-3 text-sm font-bold tracking-[0.35em] text-cream/90 uppercase sm:text-base">Distribuidora de huevos</span>
+          </h1>
+          <p className="max-w-md text-lg text-pretty text-cream/85">
+            Huevos frescos por maple, medio cajón y cajón. Pedís por WhatsApp o desde la web y te lo llevamos con nuestro camión.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Link
+              href="#precios"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-7 text-[15px] font-bold tracking-wide text-brand-foreground uppercase shadow-[0_10px_30px_rgb(0_0_0/0.3)] transition-colors hover:bg-brand/90 focus-visible:ring-3 focus-visible:ring-yolk-light focus-visible:outline-none"
             >
-              <MessageCircleIcon aria-hidden className="size-4" /> Escribinos
-            </a>
-          )}
-        </div>
-      </div>
-
-      <div className="hidden h-full items-end justify-end gap-5 pb-4 md:flex">
-        <div className="hidden flex-col gap-3 pb-3 lg:flex">
-          <div className="relative h-56 w-40 overflow-hidden rounded-t-full rounded-b-sm">
-            <Image src="/cortina-1.png" alt="Cortinas azules colgadas de un barral con argollas" fill sizes="160px" className="object-cover" />
+              Ver precios <ArrowDownIcon aria-hidden className="size-4" />
+            </Link>
+            {phone && (
+              <a
+                href={whatsappUrl(phone, "¡Hola! Quiero hacer un pedido de huevos.")}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full border-2 border-cream/70 px-6 text-[15px] font-semibold transition-colors hover:border-cream hover:bg-cream hover:text-charcoal focus-visible:ring-3 focus-visible:ring-yolk-light focus-visible:outline-none"
+              >
+                <MessageCircleIcon aria-hidden className="size-4" /> Pedir por WhatsApp
+              </a>
+            )}
           </div>
-          <span className="font-serif text-lg text-navy/60 italic">Living con barral</span>
+          <p className="flex items-center gap-2 text-sm text-cream/75">
+            <TruckIcon aria-hidden className="size-5 text-yolk-light" /> Entrega con camión propio
+          </p>
         </div>
-        <div className="relative h-[min(560px,68svh)] w-[min(380px,100%)] overflow-hidden rounded-t-full rounded-b-sm shadow-[0_30px_60px_rgb(22_35_61/0.18)]">
-          <Image src="/cortina-2.png" alt="Cortinas de ambiente colgadas de un barral de madera" fill priority sizes="380px" className="object-cover" />
+
+        <div className="relative mx-auto w-full max-w-[19rem] sm:max-w-xs">
+          <div aria-hidden className="absolute -inset-6 rounded-full bg-yolk-light/20 blur-3xl" />
+          <div className="relative aspect-[293/379] overflow-hidden rounded-[2rem] shadow-[0_30px_70px_rgb(0_0_0/0.45)] ring-1 ring-cream/15">
+            <Image src={heroImage.src} alt={heroImage.alt} fill priority sizes="(min-width: 640px) 320px, 80vw" className="object-cover" />
+          </div>
         </div>
       </div>
     </section>

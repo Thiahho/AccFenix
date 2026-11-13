@@ -11,7 +11,7 @@ export type CartItem = {
   productSlug: string;
   productName: string;
   categoryName: string;
-  /** Descripción legible de la variante, p. ej. "Medida 2.40 · Grosor 34 · Color Caoba". */
+  /** Descripción legible de la variante, p. ej. "Calibre N°1 · Presentación Cajón". */
   valuesLabel: string;
   availability: Availability;
   /**
@@ -76,7 +76,7 @@ export const useCart = create<CartState>()(
       sync: (statuses) => set((s) => ({ items: applyStatuses(s.items, statuses) })),
     }),
     {
-      name: "accfenix-cart",
+      name: "eggy-cart",
       version: 1,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ items: s.items, savedAt: s.savedAt }),

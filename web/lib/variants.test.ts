@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { ProductAttribute, Variant } from "@/lib/api";
 import { describeSelection, findVariant, initialSelection, isValueEnabled, select } from "@/lib/variants";
 
-// Medida (1: 1.20, 2: 1.40) × Grosor (10: 22, 11: 34). Falta la combinación 1.40/34.
+// Presentación (1: Maple, 2: Medio cajón) × Calibre (10: N°1, 11: N°2). The Medio cajón/N°2 combination is missing.
 const attributes: ProductAttribute[] = [
-  { id: 1, name: "Medida", slug: "medida", values: [{ id: 1, label: "1.20", colorHex: null }, { id: 2, label: "1.40", colorHex: null }] },
-  { id: 2, name: "Grosor", slug: "grosor", values: [{ id: 10, label: "22", colorHex: null }, { id: 11, label: "34", colorHex: null }] },
+  { id: 1, name: "Presentación", slug: "presentacion", values: [{ id: 1, label: "Maple", colorHex: null }, { id: 2, label: "Medio cajón", colorHex: null }] },
+  { id: 2, name: "Calibre", slug: "calibre", values: [{ id: 10, label: "N°1", colorHex: null }, { id: 11, label: "N°2", colorHex: null }] },
 ];
 const variants: Variant[] = [
   { id: 100, sku: "a", valueIds: [1, 10], availability: "disponible", retailPrice: null, wholesalePrice: null },
@@ -35,6 +35,6 @@ describe("variants", () => {
   });
 
   it("describes the selection", () => {
-    expect(describeSelection(attributes, { 1: 2, 2: 10 })).toBe("Medida 1.40 · Grosor 22");
+    expect(describeSelection(attributes, { 1: 2, 2: 10 })).toBe("Presentación Medio cajón · Calibre N°1");
   });
 });

@@ -1,60 +1,54 @@
-// Contenido editable de la home. Las fotos son placeholders hasta recibir el material del cliente:
-// completar `src` con una URL de Cloudinary o una ruta de /public y la sección la muestra sola.
-// Los textos marcados "a confirmar con el cliente" son propuestos, no datos verificados.
+// Editable home copy. Texts marked "a confirmar con el cliente" are proposals, not verified business data.
 
-export type Project = {
-  title: string;
-  place: string;
-  before: string | null;
-  after: string | null;
+export const heroImage = {
+  src: "/eggy-hero.png",
+  alt: "Huevo blanco con el logo de Eggy apoyado en una maple roja",
 };
 
-export const projects: Project[] = [
-  { title: "Living con ventanal", place: "Ejemplo — reemplazar por proyecto real", before: null, after: null },
-  { title: "Dormitorio principal", place: "Ejemplo — reemplazar por proyecto real", before: null, after: null },
-  { title: "Comedor con doble barral", place: "Ejemplo — reemplazar por proyecto real", before: null, after: null },
-];
+export type Step = { title: string; text: string };
 
-export const heroImage: string | null = null;
+export const steps: Step[] = [
+  { title: "Pedís", text: "Por WhatsApp o armando tu pedido acá en la web, por maple, medio cajón o cajón." },
+  { title: "Confirmamos", text: "Te respondemos con el total, el día y la franja de entrega." },
+  { title: "Entregamos", text: "Llevamos el pedido con nuestro camión propio, cuidado para que llegue entero." },
+];
 
 export type Faq = { question: string; answer: string };
 
-// A confirmar con el cliente antes de publicar.
+// A confirmar con el cliente: zones, payment methods and wholesale rules are proposals.
 export const faqs: Faq[] = [
   {
-    question: "¿Cómo mido mi ventana?",
-    answer:
-      "Medí el ancho de la abertura o de la pared donde va la cortina. La cortina suele salir unos centímetros de cada lado para tapar bien la luz: elegí la medida de barral que cubra ese total. Si estás entre dos medidas, conviene la más larga. Ante la duda, escribinos por WhatsApp con la medida y te orientamos.",
+    question: "¿Qué es un maple?",
+    answer: "Es la bandeja de cartón donde vienen los huevos: un maple trae 30 huevos.",
   },
   {
-    question: "¿Qué medida de barral elijo?",
-    answer:
-      "Trabajamos medidas de 1.20 a 3.00 m, de a 0.20 m. Para tramos de hasta 1.60 m alcanza con dos soportes; desde 1.80 m los kits incluyen tres soportes para que el barral no ceda en el centro.",
+    question: "¿Cuántos huevos trae un cajón y un medio cajón?",
+    answer: "El cajón trae 12 maples, es decir 360 huevos. El medio cajón trae 6 maples: 180 huevos.",
   },
   {
-    question: "¿Grosor 22 o 34?",
+    question: "¿A qué zonas entregan?",
     answer:
-      "Es el grosor del barral. El 34 es el más robusto, pensado para tramos largos o cortinas pesadas; el 22 es más fino y liviano, ideal para ventanas chicas y cortinas livianas. Los soportes y accesorios se piden en el mismo grosor que el barral.",
+      "Entregamos con camión propio en nuestra zona de reparto. Al hacer el pedido te confirmamos si llegamos a tu dirección y qué día pasamos.",
   },
   {
-    question: "¿De qué material son?",
-    answer: "Los barrales son de madera y se ofrecen en tres colores: Natural, Caoba y Cedro.",
+    question: "¿Venden por mayor?",
+    answer:
+      "Sí. Trabajamos con comercios, almacenes, verdulerías y restaurantes. Los pedidos grandes se cobran a precio mayorista: el mínimo figura en la sección Mayoristas.",
   },
   {
-    question: "¿Qué trae cada kit?",
-    answer:
-      "El kit simple trae 1 barral con sus soportes y terminales; el doble incluye 2 barrales para cortina y voile. Cada kit se ofrece en los dos grosores y los tres colores, y hay uno para medidas de 1.20 a 1.60 y otro de 1.80 a 3.00.",
+    question: "¿Cómo se paga?",
+    answer: "Podés pagar en efectivo o por transferencia al recibir el pedido. Si necesitás otra forma de pago, consultanos por WhatsApp.",
   },
   {
-    question: "¿Cómo compro y cómo es el envío?",
+    question: "¿Los precios de la web están actualizados?",
     answer:
-      "En la web no hay precios: armás tu pedido o tocás \"Pedir por WhatsApp\" en la medida que te interesa y te respondemos con la cotización. El envío se coordina con vos: en Buenos Aires directo, al resto del país por el expreso que prefieras.",
+      "Sí, los cargamos nosotros y los actualizamos cuando cambian. Si un producto dice \"Consultar\", te pasamos el precio por WhatsApp.",
   },
 ];
 
 // A confirmar con el cliente antes de publicar.
-export const proConditions: string[] = [
-  "Cotización por volumen para decoradores, tapiceros y revendedores.",
-  "Pedidos con todas las combinaciones de medida, grosor y color en un solo mensaje.",
-  "Envío a todo el país por el expreso de tu preferencia; en Buenos Aires se coordina la entrega.",
+export const wholesaleConditions: string[] = [
+  "Precio mayorista para comercios, almacenes, verdulerías y restaurantes.",
+  "Reparto programado con camión propio, en el día y la franja que te queden cómodos.",
+  "Un solo contacto por WhatsApp para pedidos, cambios y facturación.",
 ];

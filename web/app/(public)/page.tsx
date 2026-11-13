@@ -1,11 +1,11 @@
-import { CatalogGrid } from "@/components/home/catalog-grid";
-import { CurtainIntro } from "@/components/home/curtain-intro";
 import { Faq } from "@/components/home/faq";
 import { Hero } from "@/components/home/hero";
 import { HowWeWork } from "@/components/home/how-we-work";
-import { Professionals } from "@/components/home/professionals";
-import { ProjectsGallery } from "@/components/home/projects-gallery";
+import { OrderCatalog } from "@/components/home/order-catalog";
+import { PriceBoard } from "@/components/home/price-board";
+import { Wholesale } from "@/components/home/wholesale";
 import { api, type PublicSettings } from "@/lib/api";
+import { loadCatalogProducts } from "@/lib/catalog";
 
 async function loadSettings(): Promise<PublicSettings> {
   try {
@@ -16,17 +16,15 @@ async function loadSettings(): Promise<PublicSettings> {
 }
 
 export default async function HomePage() {
-  const settings = await loadSettings();
+  const [settings, products] = await Promise.all([loadSettings(), loadCatalogProducts()]);
 
   return (
     <>
-      <CurtainIntro>
-        <Hero phone={settings.whatsappNumber} />
-      </CurtainIntro>
-      <CatalogGrid phone={settings.whatsappNumber} />
+      <Hero phone={settings.whatsappNumber} />
+      <PriceBoard products={products} threshold={settings.wholesaleThreshold} />
+      <OrderCatalog products={products} phone={settings.whatsappNumber} threshold={settings.wholesaleThreshold} />
       <HowWeWork />
-      <ProjectsGallery />
-      <Professionals phone={settings.whatsappNumber} threshold={settings.wholesaleThreshold} />
+      <Wholesale phone={settings.whatsappNumber} threshold={settings.wholesaleThreshold} />
       <Faq />
     </>
   );

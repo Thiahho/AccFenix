@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { OrderForm } from "@/lib/order";
-import { buildOrderMessage, buildProfessionalMessage, buildVariantMessage, isWholesale, whatsappUrl } from "@/lib/whatsapp";
+import { buildOrderMessage, buildWholesaleMessage, buildVariantMessage, isWholesale, whatsappUrl } from "@/lib/whatsapp";
 import type { CartItem } from "@/stores/cart";
 
 const items: CartItem[] = [
-  { variantId: 1, productSlug: "barral", productName: "Barral", categoryName: "Barrales", valuesLabel: "Medida 2.40 · Grosor 34 · Color Caoba", availability: "disponible", qty: 2 },
-  { variantId: 2, productSlug: "argollas", productName: "Argollas", categoryName: "Accesorios", valuesLabel: "Grosor 22 · Color Natural", availability: "aPedido", qty: 120 },
-  { variantId: 3, productSlug: "barral", productName: "Barral", categoryName: "Barrales", valuesLabel: "Medida 1.20 · Grosor 22 · Color Cedro", availability: "disponible", qty: 1 },
+  { variantId: 1, productSlug: "huevos-n1", productName: "Huevos N°1", categoryName: "Huevos", valuesLabel: "Presentación Cajón", availability: "disponible", qty: 2 },
+  { variantId: 2, productSlug: "huevos-de-campo", productName: "Huevos de campo", categoryName: "Especiales", valuesLabel: "Presentación Medio cajón", availability: "aPedido", qty: 120 },
+  { variantId: 3, productSlug: "huevos-n1", productName: "Huevos N°1", categoryName: "Huevos", valuesLabel: "Presentación Maple", availability: "disponible", qty: 1 },
 ];
 
 const baForm: OrderForm = { zona: "buenos-aires", nombre: "Ana", telefono: "11 5555-5555", localidad: "Quilmes", direccion: "Calle 123" };
@@ -15,8 +15,8 @@ const interiorForm: OrderForm = { zona: "otra-provincia", nombre: "Juan", telefo
 describe("buildOrderMessage", () => {
   it("groups items by category with quantities and variants", () => {
     const msg = buildOrderMessage(items, baForm, 100);
-    expect(msg).toContain("*Barrales*\n• 2 × Barral — Medida 2.40 · Grosor 34 · Color Caoba\n• 1 × Barral — Medida 1.20 · Grosor 22 · Color Cedro");
-    expect(msg).toContain("• 120 × Argollas — Grosor 22 · Color Natural _(a pedido)_");
+    expect(msg).toContain("*Huevos*\n• 2 × Huevos N°1 — Presentación Cajón\n• 1 × Huevos N°1 — Presentación Maple");
+    expect(msg).toContain("• 120 × Huevos de campo — Presentación Medio cajón _(a pedido)_");
     expect(msg).toContain("Total: 123 unidades");
   });
 
@@ -57,8 +57,8 @@ describe("buildOrderMessage with prices", () => {
 
   it("adds unit price and subtotal to each line and ends with the retail total", () => {
     const msg = buildOrderMessage(priced([1250.5, 10, 800]), baForm, 0);
-    expect(msg).toContain("• 2 × Barral — Medida 2.40 · Grosor 34 · Color Caoba — $ 1.250,50 c/u = $ 2.501,00");
-    expect(msg).toContain("• 120 × Argollas — Grosor 22 · Color Natural _(a pedido)_ — $ 10,00 c/u = $ 1.200,00");
+    expect(msg).toContain("• 2 × Huevos N°1 — Presentación Cajón — $ 1.250,50 c/u = $ 2.501,00");
+    expect(msg).toContain("• 120 × Huevos de campo — Presentación Medio cajón _(a pedido)_ — $ 10,00 c/u = $ 1.200,00");
     expect(msg).toContain("Total: 123 unidades");
     expect(msg.endsWith("\n\n*Total: $ 4.501,00* (precios minoristas)")).toBe(true);
     expect(msg).not.toMatch(/parcial|consultar/i);
@@ -67,9 +67,9 @@ describe("buildOrderMessage with prices", () => {
   it("applies wholesale prices at the threshold, falling back to retail where there is none", () => {
     const msg = buildOrderMessage(priced([1250.5, 10, 800], [1000, 8, null]), baForm, 123);
     expect(msg).toContain("*PEDIDO MAYORISTA* (123 unidades)");
-    expect(msg).toContain("Color Caoba — $ 1.000,00 c/u = $ 2.000,00");
+    expect(msg).toContain("Presentación Cajón — $ 1.000,00 c/u = $ 2.000,00");
     expect(msg).toContain("_(a pedido)_ — $ 8,00 c/u = $ 960,00");
-    expect(msg).toContain("Color Cedro — $ 800,00 c/u = $ 800,00");
+    expect(msg).toContain("Presentación Maple — $ 800,00 c/u = $ 800,00");
     expect(msg.endsWith("*Total: $ 3.760,00* (precios mayoristas)")).toBe(true);
   });
 
@@ -81,7 +81,7 @@ describe("buildOrderMessage with prices", () => {
 
   it("marks unpriced lines and ends with a partial total in a mixed cart", () => {
     const msg = buildOrderMessage(priced([1250.5, null, 800]), { ...baForm, comentarios: "Entregar por la tarde" }, 0);
-    expect(msg).toContain("• 120 × Argollas — Grosor 22 · Color Natural _(a pedido)_ — precio a consultar");
+    expect(msg).toContain("• 120 × Huevos de campo — Presentación Medio cajón _(a pedido)_ — precio a consultar");
     expect(msg).toContain("Comentarios: Entregar por la tarde\n\n*Total parcial: $ 3.301,00* (precios minoristas)");
     expect(msg.endsWith("Los productos sin precio se cotizan por WhatsApp.")).toBe(true);
   });
@@ -109,9 +109,9 @@ describe("buildOrderMessage with a saved order", () => {
     const cart = items.map((i) => ({ ...i, retailPrice: 5, wholesalePrice: 4 }));
     const msg = buildOrderMessage(cart, baForm, 1000, saved);
     expect(msg).toContain("*PEDIDO MAYORISTA* (123 unidades)");
-    expect(msg).toContain("Color Caoba — $ 1.000,00 c/u = $ 2.000,00");
+    expect(msg).toContain("Presentación Cajón — $ 1.000,00 c/u = $ 2.000,00");
     expect(msg).toContain("_(a pedido)_ — $ 8,00 c/u = $ 960,00");
-    expect(msg).toContain("Color Cedro — precio a consultar");
+    expect(msg).toContain("Presentación Maple — precio a consultar");
     expect(msg).toContain("*Total parcial: $ 2.960,00* (precios mayoristas)");
   });
 
@@ -139,15 +139,15 @@ describe("whatsappUrl", () => {
 
 describe("buildVariantMessage", () => {
   it("names the product and the chosen variant, without prices", () => {
-    const msg = buildVariantMessage("Barral", "Medida 2.40 · Grosor 34 · Color Caoba");
-    expect(msg).toContain("• Barral — Medida 2.40 · Grosor 34 · Color Caoba");
+    const msg = buildVariantMessage("Huevos N°1", "Presentación Cajón");
+    expect(msg).toContain("• Huevos N°1 — Presentación Cajón");
     expect(msg).not.toMatch(/\$|precio/i);
   });
 });
 
-describe("buildProfessionalMessage", () => {
+describe("buildWholesaleMessage", () => {
   it("mentions the wholesale threshold only when there is one", () => {
-    expect(buildProfessionalMessage(100)).toContain("pedidos desde 100 unidades");
-    expect(buildProfessionalMessage(0)).not.toContain("desde");
+    expect(buildWholesaleMessage(100)).toContain("pedidos desde 100 unidades");
+    expect(buildWholesaleMessage(0)).not.toContain("desde");
   });
 });

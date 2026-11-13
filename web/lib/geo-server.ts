@@ -18,7 +18,7 @@ const PHOTON = "https://photon.komoot.io/api";
 const NOMINATIM = "https://nominatim.openstreetmap.org";
 
 // Nominatim exige identificar la aplicación.
-const HEADERS = { "User-Agent": `AccFenix/1.0 (+${site.url})`, Accept: "application/json" };
+const HEADERS = { "User-Agent": `Eggy/1.0 (+${site.url})`, Accept: "application/json" };
 const TIMEOUT_MS = 5000;
 const DAY = 60 * 60 * 24;
 // Provincia de Buenos Aires + CABA: lon mín, lat mín, lon máx, lat máx.

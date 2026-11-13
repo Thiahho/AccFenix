@@ -58,10 +58,10 @@ export function VariantPicker({ product, wholesaleThreshold }: { product: Produc
       <ProductGallery media={product.media} name={product.name} selectedValueIds={selectedValueIds} />
 
       <div>
-        <p className="eyebrow text-brass">
+        <p className="eyebrow text-yolk">
           <Link href={`/catalogo/${product.category.slug}`} className="hover:text-foreground">{product.category.name}</Link>
         </p>
-        <h1 className="title-serif mt-3 text-4xl sm:text-5xl">{product.name}</h1>
+        <h1 className="title-display mt-3 text-4xl sm:text-5xl">{product.name}</h1>
         {product.description && <p className="mt-3 text-muted-foreground">{product.description}</p>}
 
         <div className="mt-8 space-y-6">

@@ -4,10 +4,10 @@ import { applyStatuses, CART_TTL_MS, isExpired, totalUnits, type CartItem } from
 
 const item = (variantId: number, qty = 1): CartItem => ({
   variantId,
-  productSlug: "barral",
-  productName: "Barral",
-  categoryName: "Barrales",
-  valuesLabel: "Medida 2.40",
+  productSlug: "huevos-n1",
+  productName: "Huevos N°1",
+  categoryName: "Huevos",
+  valuesLabel: "Presentación Maple",
   availability: "disponible",
   qty,
 });

@@ -5,11 +5,11 @@ export function normalizeSiteUrl(value: string | undefined) {
   return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
 }
 
-// Datos de marca. Placeholders hasta recibir el material definitivo del cliente.
+// Brand data. Placeholders until the client delivers the final material.
 export const site = {
-  name: process.env.NEXT_PUBLIC_BRAND_NAME || "Fénix",
-  tagline: "Barrales y accesorios para cortinas",
+  name: process.env.NEXT_PUBLIC_BRAND_NAME || "Eggy",
+  tagline: "Distribuidora de huevos",
   description:
-    "Catálogo de barrales de madera, accesorios y kits para cortinas. Armá tu pedido y envialo por WhatsApp para recibir tu cotización.",
+    "Huevos frescos por maple, medio cajón y cajón, para tu casa o tu comercio. Precios minoristas y mayoristas, pedidos por WhatsApp y entrega con camión propio.",
   url: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
 };

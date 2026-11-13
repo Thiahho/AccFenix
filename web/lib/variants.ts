@@ -39,7 +39,7 @@ export function initialSelection(attributes: ProductAttribute[]): Selection {
   return Object.fromEntries(attributes.filter((a) => a.values.length === 1).map((a) => [a.id, a.values[0].id]));
 }
 
-/** "Medida 2.40 · Grosor 34 · Color Caoba" */
+/** "Calibre N°1 · Presentación Cajón" */
 export function describeSelection(attributes: ProductAttribute[], selection: Selection) {
   return attributes
     .map((a) => {

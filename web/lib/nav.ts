@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { BriefcaseIcon, CircleHelpIcon, HouseIcon, ImagesIcon, LayoutGridIcon } from "lucide-react";
+import { CircleHelpIcon, HouseIcon, ShoppingBasketIcon, StoreIcon, TagIcon } from "lucide-react";
 
 /** Secciones de la home, en el orden en que aparecen en la página. */
 export const sectionLinks = [
   { id: "inicio", href: "/", label: "Inicio", icon: HouseIcon },
-  { id: "catalogo", href: "/#catalogo", label: "Catálogo", icon: LayoutGridIcon },
-  { id: "proyectos", href: "/#proyectos", label: "Proyectos", icon: ImagesIcon },
-  { id: "profesionales", href: "/#profesionales", label: "Profesionales", icon: BriefcaseIcon },
+  { id: "precios", href: "/#precios", label: "Precios", icon: TagIcon },
+  { id: "catalogo", href: "/#catalogo", label: "Hacé tu pedido", icon: ShoppingBasketIcon },
+  { id: "mayoristas", href: "/#mayoristas", label: "Mayoristas", icon: StoreIcon },
   { id: "preguntas", href: "/#preguntas", label: "Preguntas", icon: CircleHelpIcon },
 ];
 

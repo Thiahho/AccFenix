@@ -39,7 +39,7 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
   if (placed) {
     return (
       <div role="status" className="mt-8 rounded-xl border bg-brand-soft/50 p-8 text-center">
-        <p className="eyebrow text-brass">Pedido #{placed.number}</p>
+        <p className="eyebrow text-yolk">Pedido #{placed.number}</p>
         <h2 className="mt-2 text-xl font-semibold">¡Registramos tu pedido!</h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
           Abrimos WhatsApp con el detalle. Enviá el mensaje y te contactamos para confirmar el pedido y coordinar la entrega.
@@ -62,7 +62,7 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
     return (
       <div className="mt-8 rounded-xl border border-dashed p-10 text-center">
         <p className="font-medium">Tu pedido está vacío</p>
-        <p className="mt-1 text-sm text-muted-foreground">Agregá barrales, accesorios o kits desde el catálogo.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Agregá maples, medios cajones o cajones desde la lista de precios.</p>
         <Button asChild className="mt-6">
           <Link href="/">Ir al catálogo</Link>
         </Button>
@@ -96,7 +96,7 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
             return (
             <li key={item.variantId} className="flex flex-wrap items-center gap-4 p-4">
               <div className="min-w-0 flex-1">
-                <Link href={`/producto/${item.productSlug}`} className="font-medium transition-colors hover:text-brass">
+                <Link href={`/producto/${item.productSlug}`} className="font-medium transition-colors hover:text-brand">
                   {item.productName}
                 </Link>
                 <p className="text-sm text-muted-foreground">{item.valuesLabel}</p>
