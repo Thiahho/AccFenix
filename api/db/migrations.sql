@@ -495,3 +495,43 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20261113221619_AddOrderCustomerType') THEN
+    ALTER TABLE "Orders" ADD "BusinessName" character varying(120);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20261113221619_AddOrderCustomerType') THEN
+    ALTER TABLE "Orders" ADD "CustomerType" integer NOT NULL DEFAULT 0;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20261113221619_AddOrderCustomerType') THEN
+    ALTER TABLE "Orders" ADD CONSTRAINT "CK_Orders_BusinessName" CHECK (("CustomerType" = 1) = ("BusinessName" IS NOT NULL));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20261113221619_AddOrderCustomerType') THEN
+    ALTER TABLE "Orders" ADD CONSTRAINT "CK_Orders_CustomerType" CHECK ("CustomerType" IN (0, 1));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20261113221619_AddOrderCustomerType') THEN
+    INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+    VALUES ('20261113221619_AddOrderCustomerType', '8.0.11');
+    END IF;
+END $EF$;
+COMMIT;
+

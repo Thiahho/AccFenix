@@ -66,6 +66,7 @@ public class OrderTests(ApiFactory factory)
     static Dictionary<string, object?> BuenosAires(params (int VariantId, int Quantity)[] items) => new()
     {
         ["zone"] = "buenosAires",
+        ["customerType"] = "personal",
         ["customerName"] = "Ana Pérez",
         ["phone"] = "11 5555-0000",
         ["locality"] = "Morón",
@@ -76,6 +77,7 @@ public class OrderTests(ApiFactory factory)
     static Dictionary<string, object?> OtherProvince(params (int VariantId, int Quantity)[] items) => new()
     {
         ["zone"] = "otherProvince",
+        ["customerType"] = "personal",
         ["customerName"] = "Luis Gómez",
         ["phone"] = "351 555-0000",
         ["province"] = "Córdoba",
@@ -84,6 +86,9 @@ public class OrderTests(ApiFactory factory)
     };
 
     static Dictionary<string, object?> With(Dictionary<string, object?> body, string key, object? value) => new(body) { [key] = value };
+
+    static Dictionary<string, object?> Business(Dictionary<string, object?> body, string? businessName) =>
+        With(With(body, "customerType", "business"), "businessName", businessName);
 
     static Dictionary<string, object?> Without(Dictionary<string, object?> body, string key)
     {
@@ -287,7 +292,7 @@ public class OrderTests(ApiFactory factory)
         await product.SetPrices(product.First, 100m, 80m);
 
         var res = await PostOrder($$"""
-            {"zone":"buenosAires","customerName":"Ana","phone":"11 5555-0000","locality":"Morón","address":"Calle 1",
+            {"zone":"buenosAires","customerType":"personal","customerName":"Ana","phone":"11 5555-0000","locality":"Morón","address":"Calle 1",
              "id":999999,"number":999999,"status":"delivered","isWholesale":true,"total":1,"hasUnpricedItems":true,
              "items":[{"variantId":{{product.First}},"quantity":2,"unitPrice":0.01,"subtotal":0.02,"wholesalePrice":0.01,"productName":"Fake","sku":"FAKE"}]}
             """);
@@ -325,6 +330,16 @@ public class OrderTests(ApiFactory factory)
             ["missing zone"] = Without(ba, "zone"),
             ["unknown zone"] = With(ba, "zone", "mars"),
             ["numeric zone"] = With(ba, "zone", 0),
+
+            ["missing customer type"] = Without(ba, "customerType"),
+            ["null customer type"] = With(ba, "customerType", null),
+            ["unknown customer type"] = With(ba, "customerType", "company"),
+            ["numeric customer type"] = With(ba, "customerType", 1),
+            ["business without business name"] = With(ba, "customerType", "business"),
+            ["business with null business name"] = Business(ba, null),
+            ["business with blank business name"] = Business(ba, "   "),
+            ["business name too long"] = Business(ba, long121),
+            ["business name with a line break"] = Business(op, "Almacén\nDon José"),
 
             ["BA: missing name"] = Without(ba, "customerName"),
             ["BA: blank name"] = With(ba, "customerName", "   "),
@@ -435,6 +450,73 @@ public class OrderTests(ApiFactory factory)
         stored.GetProperty("latitude").GetDouble().Should().Be(-90);
         stored.GetProperty("longitude").GetDouble().Should().Be(180);
         Items(stored).Single().GetProperty("quantity").GetInt32().Should().Be(100_000);
+    }
+
+    // ---- Customer type ----
+
+    [Fact]
+    public async Task Personal_order_is_stored_as_personal_without_business_name()
+    {
+        await using var product = await CreateProduct();
+
+        var id = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
+
+        var stored = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
+        stored.GetProperty("customerType").GetString().Should().Be("personal");
+        stored.GetProperty("businessName").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task Business_order_stores_the_trimmed_business_name()
+    {
+        await using var product = await CreateProduct();
+        var name = new string('b', OrderLimits.BusinessName);
+
+        var id = (await Created(Business(OtherProvince((product.First, 1)), $"  {name}  "))).GetProperty("id").GetInt32();
+
+        var stored = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
+        stored.GetProperty("customerType").GetString().Should().Be("business");
+        stored.GetProperty("businessName").GetString().Should().Be(name);
+    }
+
+    [Fact]
+    public async Task Business_name_sent_with_a_personal_order_is_dropped()
+    {
+        await using var product = await CreateProduct();
+
+        var id = (await Created(With(BuenosAires((product.First, 1)), "businessName", "Almacén Don José"))).GetProperty("id").GetInt32();
+
+        var stored = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
+        stored.GetProperty("customerType").GetString().Should().Be("personal");
+        stored.GetProperty("businessName").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task Business_without_a_name_reports_the_business_name_field()
+    {
+        await using var product = await CreateProduct();
+
+        var res = await PostOrder(Business(BuenosAires((product.First, 1)), " "));
+
+        res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var errors = (await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors");
+        errors.EnumerateObject().Select(e => e.Name).Should().Contain("BusinessName");
+    }
+
+    [Fact]
+    public async Task Admin_list_shows_the_customer_type_and_business_name()
+    {
+        await using var product = await CreateProduct();
+        var personal = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
+        var business = (await Created(Business(BuenosAires((product.First, 1)), "Almacén Don José"))).GetProperty("id").GetInt32();
+
+        var list = Items(await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}?pageSize=100"))
+            .ToDictionary(o => o.GetProperty("id").GetInt32());
+
+        list[personal].GetProperty("customerType").GetString().Should().Be("personal");
+        list[personal].GetProperty("businessName").ValueKind.Should().Be(JsonValueKind.Null);
+        list[business].GetProperty("customerType").GetString().Should().Be("business");
+        list[business].GetProperty("businessName").GetString().Should().Be("Almacén Don José");
     }
 
     // ---- Rate limit ----

@@ -210,6 +210,10 @@ namespace AccFenix.Api.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("BusinessName")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
                     b.Property<string>("Carrier")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
@@ -225,6 +229,9 @@ namespace AccFenix.Api.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
+
+                    b.Property<int>("CustomerType")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("HasUnpricedItems")
                         .HasColumnType("boolean");
@@ -278,7 +285,11 @@ namespace AccFenix.Api.Data.Migrations
 
                     b.ToTable("Orders", t =>
                         {
+                            t.HasCheckConstraint("CK_Orders_BusinessName", "(\"CustomerType\" = 1) = (\"BusinessName\" IS NOT NULL)");
+
                             t.HasCheckConstraint("CK_Orders_Coordinates", "(\"Latitude\" IS NULL) = (\"Longitude\" IS NULL)");
+
+                            t.HasCheckConstraint("CK_Orders_CustomerType", "\"CustomerType\" IN (0, 1)");
 
                             t.HasCheckConstraint("CK_Orders_Latitude", "\"Latitude\" IS NULL OR \"Latitude\" BETWEEN -90 AND 90");
 

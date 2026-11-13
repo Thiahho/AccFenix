@@ -121,10 +121,15 @@ public class DatabaseConstraintTests(ApiFactory factory)
     {
         await ExpectAccepted(Save(With(BuenosAiresOrder(), o => { o.Latitude = 90; o.Longitude = -180; o.Items = [Item(100_000, 0m, 0m)]; })));
         await ExpectAccepted(Save(With(OtherProvinceOrder(), o => o.Items = [Item(unitPrice: null, subtotal: null)])));
+        await ExpectAccepted(Save(With(BuenosAiresOrder(), o => { o.CustomerType = CustomerType.Business; o.BusinessName = "Almacén"; })));
     }
 
     public static TheoryData<string, Func<Order>> InvalidOrders => new()
     {
+        { "CK_Orders_CustomerType", () => With(BuenosAiresOrder(), o => o.CustomerType = (CustomerType)2) },
+        { "CK_Orders_CustomerType", () => With(BuenosAiresOrder(), o => o.CustomerType = (CustomerType)(-1)) },
+        { "CK_Orders_BusinessName", () => With(BuenosAiresOrder(), o => o.CustomerType = CustomerType.Business) },
+        { "CK_Orders_BusinessName", () => With(OtherProvinceOrder(), o => o.BusinessName = "Almacén") },
         { "CK_Orders_Status", () => With(BuenosAiresOrder(), o => o.Status = (OrderStatus)5) },
         { "CK_Orders_Status", () => With(BuenosAiresOrder(), o => o.Status = (OrderStatus)(-1)) },
         { "CK_Orders_Zone", () => With(BuenosAiresOrder(), o => o.Zone = (DeliveryZone)2) },

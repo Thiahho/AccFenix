@@ -10,13 +10,15 @@ public record OrderStatusRequest(OrderStatus? Status);
 
 // ---- Responses ----
 public record AdminOrderSummaryDto(
-    int Id, int Number, DateTime CreatedAt, OrderStatus Status, string CustomerName, string Phone, DeliveryZone Zone,
+    int Id, int Number, DateTime CreatedAt, OrderStatus Status, CustomerType CustomerType, string? BusinessName,
+    string CustomerName, string Phone, DeliveryZone Zone,
     bool IsWholesale, decimal Total, bool HasUnpricedItems, int ItemCount, int TotalUnits);
 
 public record AdminOrderPageDto(int Total, int Page, int PageSize, List<AdminOrderSummaryDto> Items);
 
 public record AdminOrderDto(
-    int Id, int Number, DateTime CreatedAt, OrderStatus Status, string CustomerName, string Phone, DeliveryZone Zone,
+    int Id, int Number, DateTime CreatedAt, OrderStatus Status, CustomerType CustomerType, string? BusinessName,
+    string CustomerName, string Phone, DeliveryZone Zone,
     string? Locality, string? Address, double? Latitude, double? Longitude, string? Province, string? Carrier, string? Comments,
     bool IsWholesale, decimal Total, bool HasUnpricedItems, List<OrderItemDto> Items);
 
@@ -63,7 +65,7 @@ public static class AdminOrderEndpoints
                 // long arithmetic: a huge page number must not overflow the offset.
                 .Skip((int)Math.Min((long)(pageNumber - 1) * size, int.MaxValue)).Take(size)
                 .Select(o => new AdminOrderSummaryDto(
-                    o.Id, o.Number, o.CreatedAt, o.Status, o.CustomerName, o.Phone, o.Zone,
+                    o.Id, o.Number, o.CreatedAt, o.Status, o.CustomerType, o.BusinessName, o.CustomerName, o.Phone, o.Zone,
                     o.IsWholesale, o.Total, o.HasUnpricedItems, o.Items.Count, o.Items.Sum(i => i.Quantity)))
                 .ToListAsync(ct);
             return Results.Ok(new AdminOrderPageDto(total, pageNumber, size, items));
@@ -75,7 +77,7 @@ public static class AdminOrderEndpoints
             if (o is null) return Results.NotFound();
 
             return Results.Ok(new AdminOrderDto(
-                o.Id, o.Number, o.CreatedAt, o.Status, o.CustomerName, o.Phone, o.Zone,
+                o.Id, o.Number, o.CreatedAt, o.Status, o.CustomerType, o.BusinessName, o.CustomerName, o.Phone, o.Zone,
                 o.Locality, o.Address, o.Latitude, o.Longitude, o.Province, o.Carrier, o.Comments,
                 o.IsWholesale, o.Total, o.HasUnpricedItems,
                 o.Items.OrderBy(i => i.Id).Select(OrderEndpoints.ToDto).ToList()));

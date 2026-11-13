@@ -18,6 +18,14 @@ public enum DeliveryZone
     OtherProvince = 1,
 }
 
+/// <summary>Who places the order: a person ("Personal") or a business ("Comercio").</summary>
+public enum CustomerType
+{
+    Personal = 0,
+    /// <summary>A business; the order also records its name.</summary>
+    Business = 1,
+}
+
 /// <summary>
 /// A customer order as it was placed. Prices and product data are copied into the order,
 /// so later catalog changes never alter it.
@@ -30,6 +38,9 @@ public class Order
     public DateTime CreatedAt { get; set; }
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
+    public CustomerType CustomerType { get; set; } = CustomerType.Personal;
+    /// <summary>Name of the business; set only for <see cref="CustomerType.Business"/> orders.</summary>
+    public string? BusinessName { get; set; }
     public required string CustomerName { get; set; }
     public required string Phone { get; set; }
     public DeliveryZone Zone { get; set; }
@@ -80,6 +91,7 @@ public class OrderItem
 public static class OrderLimits
 {
     public const int Name = 120;
+    public const int BusinessName = 120;
     public const int Phone = 40;
     public const int Locality = 120;
     public const int Address = 200;
