@@ -1,5 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { alturaEscrita, direccionesFromPhoton, filtrarPorCalle, localidadesFromGeoref, lugarFromNominatim } from "./geo";
+import { alturaEscrita, buscarLocalidades, direccionesFromPhoton, filtrarPorCalle, localidadesFromGeoref, lugarFromNominatim } from "./geo";
+
+describe("buscarLocalidades", () => {
+  const loc = (nombre: string, partido = nombre) => ({
+    nombre,
+    departamento: { nombre: partido },
+    provincia: { nombre: "Buenos Aires" },
+    centroide: { lat: -34.6, lon: -58.4 },
+  });
+  const todas = [loc("Ezpeleta", "Quilmes"), loc("Quilmes Oeste", "Quilmes"), loc("San Francisco Solano", "Quilmes"), loc("Quilmes"), loc("Bosques", "Florencio Varela")];
+  const nombres = (q: string) => buscarLocalidades(todas, q).map((l) => l.nombre);
+
+  it("sugiere desde las primeras letras, primero las que empiezan así", () => {
+    expect(nombres("qu")).toEqual(["Quilmes", "Quilmes Oeste"]);
+  });
+
+  it("también encuentra por el comienzo de cualquier palabra", () => {
+    expect(nombres("sol")).toEqual(["San Francisco Solano"]);
+  });
+
+  it("ignora mayúsculas, tildes y espacios de más", () => {
+    const conTilde = [loc("Bernal"), loc("Martín Coronado", "Tres de Febrero")];
+    expect(buscarLocalidades(conTilde, "  MARTIN co ").map((l) => l.nombre)).toEqual(["Martín Coronado"]);
+  });
+
+  it("no sugiere nada sin texto", () => {
+    expect(nombres(" ")).toEqual([]);
+  });
+});
 
 describe("localidadesFromGeoref", () => {
   it("deduplica por nombre y partido", () => {

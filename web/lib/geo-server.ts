@@ -2,7 +2,7 @@ import "server-only";
 import {
   direccionesFromPhoton,
   filtrarPorCalle,
-  localidadesFromGeoref,
+  buscarLocalidades,
   lugarFromNominatim,
   type Coords,
   type DireccionSuggestion,
@@ -31,16 +31,22 @@ async function getJson<T>(url: string, revalidate: number): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** Localidades de la provincia de Buenos Aires (06) y de CABA (02) que coinciden con lo escrito. */
+/**
+ * Localidades de la provincia de Buenos Aires (06) y de CABA (02) que coinciden con lo escrito. Se baja la lista
+ * completa (unas 950, cacheada un día) y se filtra acá, así sugiere desde la segunda letra.
+ */
 export async function searchLocalidades(q: string): Promise<LocalidadSuggestion[]> {
   const query = (provincia: string) =>
-    getJson<{ localidades: Parameters<typeof localidadesFromGeoref>[0] }>(
-      `${GEOREF}/localidades?nombre=${encodeURIComponent(q)}&provincia=${provincia}&campos=nombre,departamento.nombre,provincia.nombre,centroide&max=10`,
+    getJson<{ localidades: Parameters<typeof buscarLocalidades>[0] }>(
+      `${GEOREF}/localidades?provincia=${provincia}&campos=nombre,departamento.nombre,provincia.nombre,centroide&max=2000`,
       DAY,
     );
   const results = await Promise.allSettled([query("06"), query("02")]);
   if (results.every((r) => r.status === "rejected")) throw new Error("Georef no disponible");
-  return localidadesFromGeoref(results.flatMap((r) => (r.status === "fulfilled" ? r.value.localidades : [])));
+  return buscarLocalidades(
+    results.flatMap((r) => (r.status === "fulfilled" ? r.value.localidades : [])),
+    q,
+  );
 }
 
 /** Calles y direcciones mientras se escribe, sesgadas hacia `near` (el centro de la localidad elegida). */

@@ -31,6 +31,27 @@ type GeorefLocalidad = {
   centroide?: { lat?: number; lon?: number };
 };
 
+/**
+ * Filtra la lista completa de localidades con lo que va escribiendo el usuario. Georef solo encuentra a partir de
+ * 4–5 letras, por eso se busca acá: primero las que empiezan con el texto, después las que tienen una palabra que
+ * empieza con él. Sin distinguir mayúsculas ni tildes.
+ */
+export function buscarLocalidades(todas: GeorefLocalidad[], q: string, max = 8): LocalidadSuggestion[] {
+  const texto = fold(q).replace(/\s+/g, " ");
+  if (!texto) return [];
+  const ranked: { rank: number; nombre: string; l: GeorefLocalidad }[] = [];
+  for (const l of todas) {
+    const nombre = fold(l.nombre ?? "");
+    const rank = nombre.startsWith(texto) ? 0 : nombre.includes(` ${texto}`) ? 1 : -1;
+    if (rank >= 0) ranked.push({ rank, nombre, l });
+  }
+  ranked.sort((a, b) => a.rank - b.rank || a.nombre.localeCompare(b.nombre));
+  return localidadesFromGeoref(
+    ranked.map((r) => r.l),
+    max,
+  );
+}
+
 /** Georef repite localidades (entidad y localidad censal): se deduplican por nombre y partido. */
 export function localidadesFromGeoref(localidades: GeorefLocalidad[], max = 8): LocalidadSuggestion[] {
   const seen = new Set<string>();
