@@ -535,3 +535,36 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20261113223529_MakeOrderPhoneOptionalAndDropBusinessName') THEN
+    ALTER TABLE "Orders" DROP CONSTRAINT "CK_Orders_BusinessName";
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20261113223529_MakeOrderPhoneOptionalAndDropBusinessName') THEN
+    ALTER TABLE "Orders" DROP COLUMN "BusinessName";
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20261113223529_MakeOrderPhoneOptionalAndDropBusinessName') THEN
+    ALTER TABLE "Orders" ALTER COLUMN "Phone" DROP NOT NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20261113223529_MakeOrderPhoneOptionalAndDropBusinessName') THEN
+    INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+    VALUES ('20261113223529_MakeOrderPhoneOptionalAndDropBusinessName', '8.0.11');
+    END IF;
+END $EF$;
+COMMIT;
+

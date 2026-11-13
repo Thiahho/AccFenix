@@ -22,7 +22,6 @@ public enum DeliveryZone
 public enum CustomerType
 {
     Personal = 0,
-    /// <summary>A business; the order also records its name.</summary>
     Business = 1,
 }
 
@@ -39,10 +38,9 @@ public class Order
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
     public CustomerType CustomerType { get; set; } = CustomerType.Personal;
-    /// <summary>Name of the business; set only for <see cref="CustomerType.Business"/> orders.</summary>
-    public string? BusinessName { get; set; }
     public required string CustomerName { get; set; }
-    public required string Phone { get; set; }
+    /// <summary>Optional: the customer sends the order from their own WhatsApp, so the number usually comes with it.</summary>
+    public string? Phone { get; set; }
     public DeliveryZone Zone { get; set; }
 
     // Buenos Aires only.
@@ -91,7 +89,6 @@ public class OrderItem
 public static class OrderLimits
 {
     public const int Name = 120;
-    public const int BusinessName = 120;
     public const int Phone = 40;
     public const int Locality = 120;
     public const int Address = 200;

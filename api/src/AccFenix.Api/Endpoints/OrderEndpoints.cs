@@ -14,10 +14,10 @@ public record OrderLineRequest(int VariantId, int Quantity);
 /// An order as sent by the site. It carries no prices: the server prices every line itself.
 /// Buenos Aires orders send locality, address and optionally both coordinates; orders to another
 /// province send province and carrier. Fields of the other zone must be absent.
-/// Business customers also send the business name; a business name sent with a personal order is ignored.
+/// The phone is optional (the customer sends the order from their own WhatsApp); a blank phone is stored as null.
 /// </summary>
 public record CreateOrderRequest(
-    DeliveryZone? Zone, CustomerType? CustomerType, string? BusinessName, string? CustomerName, string? Phone,
+    DeliveryZone? Zone, CustomerType? CustomerType, string? CustomerName, string? Phone,
     string? Locality, string? Address, double? Latitude, double? Longitude,
     string? Province, string? Carrier,
     string? Comments, List<OrderLineRequest>? Items);
@@ -37,9 +37,8 @@ public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequest>
     {
         RuleFor(x => x.Zone).NotNull().IsInEnum();
         RuleFor(x => x.CustomerType).NotNull().IsInEnum();
-        When(x => x.CustomerType == CustomerType.Business, () => RequiredText(x => x.BusinessName!, OrderLimits.BusinessName));
         RequiredText(x => x.CustomerName!, OrderLimits.Name);
-        RequiredText(x => x.Phone!, OrderLimits.Phone);
+        When(x => !string.IsNullOrWhiteSpace(x.Phone), () => RequiredText(x => x.Phone!, OrderLimits.Phone));
         RuleFor(x => x.Comments)
             .Must(s => s is null || (s.Trim().Length <= OrderLimits.Comments && !s.Contains('\0')))
             .WithMessage($"Hasta {OrderLimits.Comments} caracteres, sin caracteres no válidos");
@@ -150,15 +149,13 @@ public static class OrderEndpoints
             if (total > OrderLimits.MaxAmount) return ItemsProblem("El total del pedido supera el máximo admitido");
 
             var buenosAires = req.Zone == DeliveryZone.BuenosAires;
-            var business = req.CustomerType == CustomerType.Business;
             var order = new Order
             {
                 CreatedAt = DateTime.UtcNow,
                 Status = OrderStatus.Pending,
                 CustomerType = req.CustomerType!.Value,
-                BusinessName = business ? req.BusinessName!.Trim() : null,
                 CustomerName = req.CustomerName!.Trim(),
-                Phone = req.Phone!.Trim(),
+                Phone = string.IsNullOrWhiteSpace(req.Phone) ? null : req.Phone.Trim(),
                 Zone = req.Zone!.Value,
                 Locality = buenosAires ? req.Locality!.Trim() : null,
                 Address = buenosAires ? req.Address!.Trim() : null,

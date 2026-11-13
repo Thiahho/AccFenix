@@ -120,7 +120,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Number).UseIdentityAlwaysColumn();
             e.HasIndex(x => x.Number).IsUnique();
             e.Property(x => x.CustomerName).HasMaxLength(OrderLimits.Name);
-            e.Property(x => x.BusinessName).HasMaxLength(OrderLimits.BusinessName);
             e.Property(x => x.Phone).HasMaxLength(OrderLimits.Phone);
             e.Property(x => x.Locality).HasMaxLength(OrderLimits.Locality);
             e.Property(x => x.Address).HasMaxLength(OrderLimits.Address);
@@ -137,9 +136,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 t.HasCheckConstraint("CK_Orders_Status", $"\"Status\" IN ({EnumValues<OrderStatus>()})");
                 t.HasCheckConstraint("CK_Orders_Zone", $"\"Zone\" IN ({EnumValues<DeliveryZone>()})");
                 t.HasCheckConstraint("CK_Orders_CustomerType", $"\"CustomerType\" IN ({EnumValues<CustomerType>()})");
-                // Business orders, and only they, carry a business name.
-                t.HasCheckConstraint("CK_Orders_BusinessName",
-                    Invariant($"(\"CustomerType\" = {(int)CustomerType.Business}) = (\"BusinessName\" IS NOT NULL)"));
                 t.HasCheckConstraint("CK_Orders_Number", "\"Number\" > 0");
                 t.HasCheckConstraint("CK_Orders_Total", "\"Total\" >= 0");
                 t.HasCheckConstraint("CK_Orders_Coordinates", "(\"Latitude\" IS NULL) = (\"Longitude\" IS NULL)");

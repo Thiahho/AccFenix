@@ -210,10 +210,6 @@ namespace AccFenix.Api.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("BusinessName")
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
                     b.Property<string>("Carrier")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
@@ -256,7 +252,6 @@ namespace AccFenix.Api.Data.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Number"));
 
                     b.Property<string>("Phone")
-                        .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)");
 
@@ -285,8 +280,6 @@ namespace AccFenix.Api.Data.Migrations
 
                     b.ToTable("Orders", t =>
                         {
-                            t.HasCheckConstraint("CK_Orders_BusinessName", "(\"CustomerType\" = 1) = (\"BusinessName\" IS NOT NULL)");
-
                             t.HasCheckConstraint("CK_Orders_Coordinates", "(\"Latitude\" IS NULL) = (\"Longitude\" IS NULL)");
 
                             t.HasCheckConstraint("CK_Orders_CustomerType", "\"CustomerType\" IN (0, 1)");
