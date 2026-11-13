@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isHeaderCompact, pickActiveSection } from "./nav";
+import { isHeaderCompact, pickActiveSection, showsWhatsappFab } from "./nav";
 
 describe("pickActiveSection", () => {
   const line = 400;
@@ -39,5 +39,22 @@ describe("isHeaderCompact", () => {
   it("compacts once the page has moved", () => {
     expect(isHeaderCompact(20)).toBe(true);
     expect(isHeaderCompact(4000)).toBe(true);
+  });
+});
+
+describe("showsWhatsappFab", () => {
+  it("shows the floating button on home, catalog and product pages", () => {
+    expect(showsWhatsappFab("/")).toBe(true);
+    expect(showsWhatsappFab("/catalogo")).toBe(true);
+    expect(showsWhatsappFab("/producto/huevos-n1")).toBe(true);
+  });
+
+  it("hides it on the checkout, which has its own WhatsApp send button", () => {
+    expect(showsWhatsappFab("/pedido")).toBe(false);
+    expect(showsWhatsappFab("/pedido/")).toBe(false);
+  });
+
+  it("keeps it on pages that only share the prefix", () => {
+    expect(showsWhatsappFab("/pedidos-mayoristas")).toBe(true);
   });
 });

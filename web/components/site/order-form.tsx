@@ -133,6 +133,8 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
       }
       const message = buildOrderMessage(items, order, settings.wholesaleThreshold, result.order);
       const whatsappHref = whatsappUrl(settings.whatsappNumber, message);
+      // Best effort only: after the await this is no longer a user gesture, so iOS and popup blockers may drop it.
+      // The success panel's "Abrir WhatsApp" button is the reliable path.
       window.open(whatsappHref, "_blank", "noopener,noreferrer");
       clear();
       onPlaced({ number: result.order.number, whatsappHref });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MessageCircleIcon, Trash2Icon } from "lucide-react";
 import { AvailabilityBadge } from "@/components/site/availability-badge";
@@ -8,6 +8,7 @@ import { OrderFormCard, type PlacedOrder } from "@/components/site/order-form";
 import { Button } from "@/components/ui/button";
 import { QtyStepper } from "@/components/site/qty-stepper";
 import { api, type PublicSettings } from "@/lib/api";
+import { usePrefersReducedMotion } from "@/components/motion/use-reduced-motion";
 import { useHydrated } from "@/lib/use-hydrated";
 import { cartTotals, formatArs, lineSubtotal, unitPrice } from "@/lib/pricing";
 import { MAX_QTY, totalUnits, useCart } from "@/stores/cart";
@@ -18,6 +19,17 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
   const [removedCount, setRemovedCount] = useState(0);
   const [refreshFailed, setRefreshFailed] = useState(false);
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
+  const reduceMotion = usePrefersReducedMotion();
+  const placedPanel = useRef<HTMLDivElement>(null);
+  const whatsappButton = useRef<HTMLAnchorElement>(null);
+
+  // The form that was just submitted is gone: bring the confirmation into view and put focus on the WhatsApp
+  // button, which is how the order actually reaches the distributor when the browser blocked the automatic open.
+  useEffect(() => {
+    if (!placed) return;
+    placedPanel.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    whatsappButton.current?.focus({ preventScroll: true });
+  }, [placed, reduceMotion]);
 
   // Al entrar, refresca disponibilidad y precios, y quita variantes que ya no existen.
   // The prices stored with the cart are only a snapshot; the ones shown and sent come from this refresh.
@@ -38,19 +50,20 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
   // The cart is already empty here: it is cleared as soon as the order is stored.
   if (placed) {
     return (
-      <div role="status" className="mt-8 rounded-xl border bg-brand-soft/50 p-8 text-center">
+      <div ref={placedPanel} role="status" className="mt-8 scroll-mt-24 rounded-xl border bg-brand-soft/50 p-6 text-center sm:p-8">
         <p className="eyebrow text-yolk">Pedido #{placed.number}</p>
         <h2 className="mt-2 text-xl font-semibold">¡Registramos tu pedido!</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Abrimos WhatsApp con el detalle. Enviá el mensaje y te contactamos para confirmar el pedido y coordinar la entrega.
+        {/* Never claim WhatsApp opened: after the async save the browser may have blocked it. */}
+        <p className="mx-auto mt-2 max-w-md text-pretty text-muted-foreground">
+          Tocá el botón para enviarlo por WhatsApp y coordinar la entrega. Si WhatsApp ya se abrió, enviá el mensaje desde ahí.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <Button asChild>
-            <a href={placed.whatsappHref} target="_blank" rel="noopener noreferrer">
-              <MessageCircleIcon aria-hidden /> Abrir WhatsApp
+        <div className="mx-auto mt-6 flex max-w-md flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center">
+          <Button asChild size="lg" className="h-12 w-full gap-2 px-6 text-base sm:w-auto md:h-12">
+            <a ref={whatsappButton} href={placed.whatsappHref} target="_blank" rel="noopener noreferrer">
+              <MessageCircleIcon aria-hidden className="size-5" /> Abrir WhatsApp
             </a>
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="w-full sm:w-auto">
             <Link href="/">Volver al catálogo</Link>
           </Button>
         </div>

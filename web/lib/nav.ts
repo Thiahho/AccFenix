@@ -49,6 +49,11 @@ export function useActiveSection(pathname: string): string | null {
   return pathname.startsWith("/catalogo") || pathname.startsWith("/producto") ? "catalogo" : null;
 }
 
+/** Whether the floating WhatsApp button belongs on this page: not on the checkout, which has its own send button. */
+export function showsWhatsappFab(pathname: string): boolean {
+  return !/^\/pedido\/?$/.test(pathname);
+}
+
 /** Pixels of scroll before the header capsules shrink a little. */
 const COMPACT_AFTER = 8;
 

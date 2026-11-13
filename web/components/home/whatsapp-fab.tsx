@@ -1,14 +1,20 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import * as m from "motion/react-m";
 import { MessageCircleIcon } from "lucide-react";
 import { usePrefersReducedMotion } from "@/components/motion/use-reduced-motion";
+import { showsWhatsappFab } from "@/lib/nav";
 import { whatsappUrl } from "@/lib/whatsapp";
 
-/** Botón flotante de WhatsApp para todas las páginas públicas: entra con un resorte y late unas pocas veces. */
+/**
+ * Botón flotante de WhatsApp para las páginas públicas: entra con un resorte y late unas pocas veces. Not on the
+ * checkout, where it would compete with the order's own send button.
+ */
 export function WhatsappFab({ phone }: { phone: string }) {
   const reduce = usePrefersReducedMotion();
-  if (!phone) return null;
+  const pathname = usePathname();
+  if (!phone || !showsWhatsappFab(pathname)) return null;
   return (
     <m.a
       href={whatsappUrl(phone, "¡Hola! Quiero hacer una consulta.")}
