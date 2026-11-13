@@ -12,7 +12,7 @@ export function CartButton() {
   const lines = hydrated ? items.length : 0;
 
   return (
-    <Button asChild variant="outline" className="relative gap-2">
+    <Button asChild variant="ghost" className="header-action relative gap-2 rounded-full">
       <Link href="/pedido" aria-label={lines ? `Mi pedido, ${totalUnits(items)} unidades` : "Mi pedido"}>
         <ShoppingBagIcon aria-hidden />
         <span className="hidden sm:inline">Mi pedido</span>

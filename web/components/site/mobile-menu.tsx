@@ -55,7 +55,8 @@ export function MobileMenu({ categories }: Props) {
       <Button
         ref={buttonRef}
         type="button"
-        variant="outline"
+        variant="ghost"
+        className="header-action rounded-full"
         size="icon"
         aria-label={open ? "Cerrar menú" : "Abrir menú"}
         aria-expanded={open}
@@ -72,11 +73,11 @@ export function MobileMenu({ categories }: Props) {
 
       {open && (
         <>
-          <button type="button" tabIndex={-1} aria-hidden onClick={close} className="absolute inset-x-0 top-(--menu-top) h-dvh cursor-default bg-black/30 motion-safe:animate-in motion-safe:fade-in" />
+          <button type="button" tabIndex={-1} aria-hidden onClick={close} className="pointer-events-auto absolute inset-x-0 top-(--menu-top) h-dvh cursor-default bg-black/30 motion-safe:animate-in motion-safe:fade-in" />
           <nav
             id="menu-movil"
             aria-label="Menú"
-            className="absolute inset-x-0 top-(--menu-top) max-h-[calc(100dvh-var(--menu-top))] overflow-y-auto border-b bg-background px-3 pt-2 pb-4 shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-200"
+            className="pointer-events-auto absolute inset-x-3 top-(--menu-top) max-h-[calc(100dvh-var(--menu-top)-0.75rem)] overflow-y-auto rounded-2xl border bg-background px-3 pt-2 pb-4 shadow-xl motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-200"
           >
             <ul>
               {sectionLinks.map((s, i) => (

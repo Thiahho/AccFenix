@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialHeaderScroll, nextHeaderScroll, pickActiveSection } from "./nav";
+import { isHeaderCompact, pickActiveSection } from "./nav";
 
 describe("pickActiveSection", () => {
   const line = 400;
@@ -26,37 +26,18 @@ describe("pickActiveSection", () => {
   });
 });
 
-describe("nextHeaderScroll", () => {
-  it("starts expanded and visible at the top", () => {
-    expect(initialHeaderScroll).toEqual({ compact: false, hidden: false, lastY: 0 });
+describe("isHeaderCompact", () => {
+  it("stays roomy at the top and on overscroll bounce", () => {
+    expect(isHeaderCompact(0)).toBe(false);
+    expect(isHeaderCompact(-30)).toBe(false);
   });
 
-  it("compacts after a few pixels of scroll", () => {
-    expect(nextHeaderScroll(initialHeaderScroll, 4).compact).toBe(false);
-    expect(nextHeaderScroll(initialHeaderScroll, 20).compact).toBe(true);
+  it("ignores the first few pixels of scroll", () => {
+    expect(isHeaderCompact(4)).toBe(false);
   });
 
-  it("hides when scrolling down past the header", () => {
-    const next = nextHeaderScroll({ compact: true, hidden: false, lastY: 300 }, 340);
-    expect(next).toEqual({ compact: true, hidden: true, lastY: 340 });
-  });
-
-  it("reveals when scrolling up", () => {
-    const next = nextHeaderScroll({ compact: true, hidden: true, lastY: 600 }, 560);
-    expect(next.hidden).toBe(false);
-  });
-
-  it("never hides near the top", () => {
-    expect(nextHeaderScroll({ compact: true, hidden: false, lastY: 20 }, 80).hidden).toBe(false);
-    expect(nextHeaderScroll({ compact: true, hidden: true, lastY: 300 }, 0)).toEqual({ compact: false, hidden: false, lastY: 0 });
-  });
-
-  it("ignores tiny jitters and keeps the reference position", () => {
-    const prev = { compact: true, hidden: true, lastY: 500 };
-    expect(nextHeaderScroll(prev, 497)).toBe(prev);
-  });
-
-  it("clamps overscroll bounce to the top", () => {
-    expect(nextHeaderScroll({ compact: true, hidden: false, lastY: 10 }, -30)).toEqual({ compact: false, hidden: false, lastY: 0 });
+  it("compacts once the page has moved", () => {
+    expect(isHeaderCompact(20)).toBe(true);
+    expect(isHeaderCompact(4000)).toBe(true);
   });
 });

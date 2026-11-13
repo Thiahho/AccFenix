@@ -49,43 +49,23 @@ export function useActiveSection(pathname: string): string | null {
   return pathname.startsWith("/catalogo") || pathname.startsWith("/producto") ? "catalogo" : null;
 }
 
-export type HeaderScroll = { compact: boolean; hidden: boolean; lastY: number };
-
-export const initialHeaderScroll: HeaderScroll = { compact: false, hidden: false, lastY: 0 };
-
-/** Pixels of scroll before the header compacts. */
+/** Pixels of scroll before the header capsules shrink a little. */
 const COMPACT_AFTER = 8;
-/** The header never hides above this offset (roughly its own height plus some air). */
-const HIDE_AFTER = 96;
-/** Direction changes smaller than this are ignored, so trackpad jitter does not flicker the header. */
-const JITTER = 6;
 
-/** Scroll-aware header: compacts once the page moved, hides while scrolling down and reappears on the way up. */
-export function nextHeaderScroll(prev: HeaderScroll, rawY: number): HeaderScroll {
-  const y = Math.max(0, rawY);
-  const compact = y > COMPACT_AFTER;
-  const delta = y - prev.lastY;
-  if (y > HIDE_AFTER && Math.abs(delta) < JITTER && compact === prev.compact) return prev;
-  const hidden = y > HIDE_AFTER && delta > 0;
-  return { compact, hidden, lastY: y };
+/** Whether the header should use its compact capsules for this scroll offset (overscroll counts as the top). */
+export function isHeaderCompact(scrollY: number): boolean {
+  return scrollY > COMPACT_AFTER;
 }
 
-/** Compact/hidden flags for the public header. Starts at the top so SSR and the first client render match. */
-export function useHeaderScroll(): Pick<HeaderScroll, "compact" | "hidden"> {
-  const [state, setState] = useState({ compact: false, hidden: false });
+/** Compact flag for the public header. Starts at the top so SSR and the first client render match. */
+export function useHeaderCompact(): boolean {
+  const [compact, setCompact] = useState(false);
 
   useEffect(() => {
-    // Seed with the restored position so a reload mid-page does not read as "scrolling down".
-    let current: HeaderScroll = { ...initialHeaderScroll, lastY: Math.max(0, window.scrollY) };
     let frame = 0;
     const update = () => {
       frame = 0;
-      const next = nextHeaderScroll(current, window.scrollY);
-      if (next === current) return;
-      if (next.compact !== current.compact || next.hidden !== current.hidden) {
-        setState({ compact: next.compact, hidden: next.hidden });
-      }
-      current = next;
+      setCompact(isHeaderCompact(window.scrollY));
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
@@ -98,5 +78,5 @@ export function useHeaderScroll(): Pick<HeaderScroll, "compact" | "hidden"> {
     };
   }, []);
 
-  return state;
+  return compact;
 }

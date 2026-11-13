@@ -15,7 +15,7 @@ export function Hero({ phone }: { phone: string }) {
       aria-labelledby="hero-titulo"
       className="relative overflow-hidden bg-[radial-gradient(120%_90%_at_70%_20%,oklch(0.55_0.15_42)_0%,oklch(0.36_0.1_35)_55%,oklch(0.24_0.05_35)_100%)] text-cream"
     >
-      <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pt-12 pb-14 md:grid-cols-[1.15fr_1fr] md:gap-12 md:py-20">
+      <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pt-28 pb-14 md:grid-cols-[1.15fr_1fr] md:gap-12 md:pt-36 md:pb-20">
         {/* Above the fold: plays on mount with short durations so the headline settles fast. */}
         <Stagger onMount stagger={0.07} className="flex flex-col gap-6">
           <StaggerItem as="p" y={10} duration={0.4} className="eyebrow text-yolk-light">

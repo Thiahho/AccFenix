@@ -237,9 +237,10 @@ html {
 
 /*
  * Public header (components/site/site-header.tsx).
- * The header keeps a fixed 4rem box so the page never shifts: compacting only scales the background layer
- * and nudges the bar with transforms. Every transition and keyframe sits behind prefers-reduced-motion,
- * where states still change, just instantly (and the header never auto-hides).
+ * No bar background: the wordmark, the section links and the actions float in charcoal / red capsules that read
+ * on cream, red and dark sections alike, and the header is always visible. Compacting lifts the bar a little and
+ * deepens the capsule shadow. The actions capsule holds the mobile menu panel, so it must not get a transform or
+ * a backdrop-filter (either would become the panel's containing block). Motion sits behind prefers-reduced-motion.
  */
 .site-header {
   /* Where the mobile menu panel starts, measured from the top of the bar. */
@@ -248,33 +249,34 @@ html {
 .site-header[data-compact] {
   --menu-top: 3.75rem;
 }
-.site-header-bg {
-  opacity: 0;
-  transform-origin: top;
-  background-color: color-mix(in oklch, var(--background) 86%, transparent);
-  backdrop-filter: blur(14px) saturate(1.4);
-  box-shadow:
-    0 1px 0 var(--border),
-    0 10px 28px -14px color-mix(in oklch, var(--charcoal) 40%, transparent);
-}
-.site-header[data-compact] .site-header-bg,
-.site-header:has(#menu-movil) .site-header-bg {
-  opacity: 1;
-}
-.site-header[data-compact] .site-header-bg {
-  transform: scaleY(0.875);
-}
 .site-header[data-compact] .site-header-bar {
   transform: translateY(-0.25rem);
 }
-.site-header-logo {
-  transform-origin: left center;
+.header-capsule {
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--cream) 16%, transparent),
+    0 6px 18px -8px color-mix(in oklch, var(--charcoal) 55%, transparent);
 }
-.site-header[data-compact] .site-header-logo {
-  transform: scale(0.86);
+.site-header[data-compact] .header-capsule {
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--cream) 16%, transparent),
+    0 10px 26px -10px color-mix(in oklch, var(--charcoal) 70%, transparent);
+}
+/* Cart and burger buttons inside the charcoal capsule. */
+.header-action {
+  color: var(--cream);
+}
+.header-action:hover,
+.header-action[aria-expanded="true"] {
+  color: var(--cream);
+  background-color: color-mix(in oklch, var(--cream) 12%, transparent);
+}
+.header-action:focus-visible {
+  border-color: transparent;
+  --tw-ring-color: var(--yolk-light);
 }
 
-/* Desktop links: red underline that grows from the center, and the pill that follows the active section. */
+/* Desktop links: amber underline that grows from the center, and the red pill that follows the active section. */
 .nav-link::after {
   content: "";
   position: absolute;
@@ -282,8 +284,11 @@ html {
   bottom: 0.2rem;
   height: 2px;
   border-radius: 999px;
-  background: var(--brand);
+  background: var(--yolk-light);
   transform: scaleX(0);
+}
+.nav-link[aria-current="true"]::after {
+  display: none;
 }
 .nav-link:hover::after,
 .nav-link:focus-visible::after {
@@ -374,19 +379,11 @@ html {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .site-header,
-  .site-header-bar,
-  .site-header-logo {
+  .site-header-bar {
     transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  .site-header-bg {
-    transition:
-      opacity 0.3s ease,
-      transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  /* Hide on scroll down, unless a header control has focus or the mobile menu is open. */
-  .site-header[data-hidden]:not(:focus-within):not(:has(#menu-movil)) {
-    transform: translateY(calc(-100% - 1.5rem));
+  .header-capsule {
+    transition: box-shadow 0.3s ease;
   }
   .header-item {
     animation: header-item-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
