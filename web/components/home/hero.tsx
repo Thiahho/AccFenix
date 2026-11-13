@@ -16,21 +16,20 @@ export function Hero({ phone }: { phone: string }) {
       className="relative overflow-hidden bg-[radial-gradient(120%_90%_at_70%_20%,oklch(0.55_0.15_42)_0%,oklch(0.36_0.1_35)_55%,oklch(0.24_0.05_35)_100%)] text-cream"
     >
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pt-28 pb-14 md:grid-cols-[1.15fr_1fr] md:gap-12 md:pt-36 md:pb-20">
-        {/* Above the fold: plays on mount with short durations so the headline settles fast. */}
+        {/* Above the fold: the headline is plain markup, visible in the server HTML (it is the LCP candidate); only the
+            secondary items around it play on mount, with short durations. */}
         <Stagger onMount stagger={0.07} className="flex flex-col gap-6">
           <StaggerItem as="p" y={10} duration={0.4} className="eyebrow text-yolk-light">
             Venta minorista y mayorista
           </StaggerItem>
           <h1 id="hero-titulo" className="flex flex-col gap-1">
-            <StaggerItem as="span" y={14} duration={0.4} className="title-display text-5xl sm:text-6xl lg:text-7xl">
-              Somos
-            </StaggerItem>
-            <StaggerItem as="span" y={18} duration={0.5} className="-mt-1 flex">
+            <span className="title-display text-5xl sm:text-6xl lg:text-7xl">Somos</span>
+            <span className="-mt-1 flex">
               <Wordmark tone="light" className="text-7xl drop-shadow-[0_4px_16px_rgb(0_0_0/0.35)] sm:text-8xl lg:text-9xl" />
-            </StaggerItem>
-            <StaggerItem as="span" y={10} duration={0.4} className="mt-3 text-sm font-bold tracking-[0.35em] text-cream/90 uppercase sm:text-base">
+            </span>
+            <span className="mt-3 text-sm font-bold tracking-[0.35em] text-cream/90 uppercase sm:text-base">
               Distribuidora de huevos
-            </StaggerItem>
+            </span>
           </h1>
           <StaggerItem as="p" y={12} duration={0.4} className="max-w-md text-lg text-pretty text-cream/85">
             Huevos frescos por maple, medio cajón y cajón. Pedís por WhatsApp o desde la web y te lo llevamos con nuestro camión.
