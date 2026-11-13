@@ -135,9 +135,10 @@ export function VariantPicker({ product, wholesaleThreshold }: { product: Produc
             </div>
           )}
 
-          <div className="mt-4 flex gap-3">
-            <QtyStepper label="Cantidad" value={qty} max={MAX_QTY} onChange={setQty} />
-            <Button type="button" size="lg" className="flex-1" disabled={!variant} onClick={handleAdd}>
+          {/* Stacked on phones so the stepper and the button never overflow a 360 px screen. */}
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <QtyStepper label="Cantidad" value={qty} max={MAX_QTY} onChange={setQty} className="self-start sm:self-auto" />
+            <Button type="button" size="lg" className="w-full sm:w-auto sm:flex-1" disabled={!variant} onClick={handleAdd}>
               Agregar al pedido
             </Button>
           </div>

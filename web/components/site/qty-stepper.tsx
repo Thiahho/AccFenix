@@ -14,6 +14,7 @@ type Props = {
   /** Accessible name, e.g. "Cantidad de Huevos N°1". */
   label: string;
   id?: string;
+  /** "sm" is compact from the `sm` breakpoint up; on phones every size keeps 44 px touch targets. */
   size?: "sm" | "md";
   className?: string;
 };
@@ -32,7 +33,7 @@ export function QtyStepper({ value, onChange, max, label, id, size = "md", class
         type="button"
         variant="ghost"
         size="icon"
-        className={cn(small && "size-8")}
+        className={cn(small && "sm:size-8")}
         aria-label={`Restar uno (${label})`}
         disabled={value <= 1}
         onClick={() => onChange(Math.max(1, value - 1))}
@@ -55,14 +56,14 @@ export function QtyStepper({ value, onChange, max, label, id, size = "md", class
         onFocus={(e) => e.target.select()}
         className={cn(
           "border-0 text-center tabular-nums shadow-none focus-visible:ring-0",
-          small ? "h-8 w-12 px-1" : "h-11 w-16 md:h-9",
+          small ? "h-11 w-12 px-1 sm:h-8" : "h-11 w-16 md:h-9",
         )}
       />
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className={cn(small && "size-8")}
+        className={cn(small && "sm:size-8")}
         aria-label={`Sumar uno (${label})`}
         disabled={value >= max}
         onClick={() => onChange(Math.min(max, value + 1))}

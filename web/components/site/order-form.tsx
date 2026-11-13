@@ -277,7 +277,7 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
           <div role="alert" className="space-y-3 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             <p>{failure.error}</p>
             {failure.reason !== "invalid" && lastOrder && (
-              <Button type="button" variant="outline" size="sm" onClick={sendWithoutSaving}>
+              <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={sendWithoutSaving}>
                 Enviar igual por WhatsApp
               </Button>
             )}
@@ -331,13 +331,14 @@ function OrderRecap({ items, threshold }: { items: CartItem[]; threshold: number
     <div className="rounded-lg bg-brand-soft/50 p-3 text-sm">
       <ul className="space-y-2">
         {items.map((i) => (
-          <li key={i.variantId} className="flex items-center justify-between gap-3">
-            <span className="min-w-0 truncate">
+          // Name over the stepper on phones (two lines at most), side by side from `sm` up.
+          <li key={i.variantId} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <span className="line-clamp-2 min-w-0">
               {i.productName} <span className="text-muted-foreground">— {i.valuesLabel}</span>
             </span>
             <QtyStepper
               size="sm"
-              className="shrink-0"
+              className="shrink-0 self-start sm:self-auto"
               label={`Cantidad de ${i.productName}`}
               value={i.qty}
               max={MAX_QTY}
