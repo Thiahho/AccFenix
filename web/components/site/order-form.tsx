@@ -20,7 +20,8 @@ import { unavailableResult, type SubmitOrderFailure } from "@/lib/orders/respons
 import { firstOpenStep, invalidSteps, orderSteps, stepFields, stepOfField, stepStatus, type StepId } from "@/lib/orders/steps";
 import { cartTotals, formatArs } from "@/lib/pricing";
 import { buildOrderMessage, whatsappUrl } from "@/lib/whatsapp";
-import { totalUnits, useCart, type CartItem } from "@/stores/cart";
+import { QtyStepper } from "@/components/site/qty-stepper";
+import { MAX_QTY, totalUnits, useCart, type CartItem } from "@/stores/cart";
 
 /** A stored order: its number and the WhatsApp link with the message that names it. */
 export type PlacedOrder = { number: number; whatsappHref: string };
@@ -321,17 +322,25 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
 
 /** What is being ordered, from the cart: one line per item, units and the estimated total. */
 function OrderRecap({ items, threshold }: { items: CartItem[]; threshold: number }) {
+  const setQty = useCart((s) => s.setQty);
   const units = totalUnits(items);
   const totals = cartTotals(items, threshold);
   return (
     <div className="rounded-lg bg-brand-soft/50 p-3 text-sm">
-      <ul className="space-y-1">
+      <ul className="space-y-2">
         {items.map((i) => (
-          <li key={i.variantId} className="flex justify-between gap-3">
+          <li key={i.variantId} className="flex items-center justify-between gap-3">
             <span className="min-w-0 truncate">
               {i.productName} <span className="text-muted-foreground">— {i.valuesLabel}</span>
             </span>
-            <span className="shrink-0 font-medium tabular-nums">× {i.qty}</span>
+            <QtyStepper
+              size="sm"
+              className="shrink-0"
+              label={`Cantidad de ${i.productName}`}
+              value={i.qty}
+              max={MAX_QTY}
+              onChange={(qty) => setQty(i.variantId, qty)}
+            />
           </li>
         ))}
       </ul>

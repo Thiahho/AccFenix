@@ -2,12 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { MinusIcon, PlusIcon } from "lucide-react";
 import { AvailabilityBadge } from "@/components/site/availability-badge";
 import { notifyAdded } from "@/components/site/order-toast";
 import { ProductGallery } from "@/components/site/product-gallery";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { QtyStepper } from "@/components/site/qty-stepper";
 import type { ProductDetail } from "@/lib/api";
 import { formatArs } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
@@ -137,24 +136,7 @@ export function VariantPicker({ product, wholesaleThreshold }: { product: Produc
           )}
 
           <div className="mt-4 flex gap-3">
-            <div className="flex items-center rounded-md border bg-background">
-              <Button type="button" variant="ghost" size="icon" aria-label="Restar uno" onClick={() => setQty((q) => Math.max(1, q - 1))}>
-                <MinusIcon />
-              </Button>
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={MAX_QTY}
-                aria-label="Cantidad"
-                value={qty}
-                onChange={(e) => setQty(Math.min(MAX_QTY, Math.max(1, Number(e.target.value) || 1)))}
-                className="h-11 w-20 border-0 md:h-9 text-center tabular-nums shadow-none focus-visible:ring-0"
-              />
-              <Button type="button" variant="ghost" size="icon" aria-label="Sumar uno" onClick={() => setQty((q) => Math.min(MAX_QTY, q + 1))}>
-                <PlusIcon />
-              </Button>
-            </div>
+            <QtyStepper label="Cantidad" value={qty} max={MAX_QTY} onChange={setQty} />
             <Button type="button" size="lg" className="flex-1" disabled={!variant} onClick={handleAdd}>
               Agregar al pedido
             </Button>

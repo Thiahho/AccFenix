@@ -6,7 +6,7 @@ import { MessageCircleIcon, Trash2Icon } from "lucide-react";
 import { AvailabilityBadge } from "@/components/site/availability-badge";
 import { OrderFormCard, type PlacedOrder } from "@/components/site/order-form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { QtyStepper } from "@/components/site/qty-stepper";
 import { api, type PublicSettings } from "@/lib/api";
 import { useHydrated } from "@/lib/use-hydrated";
 import { cartTotals, formatArs, lineSubtotal, unitPrice } from "@/lib/pricing";
@@ -103,16 +103,12 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
                 <AvailabilityBadge availability={item.availability} className="mt-2" />
               </div>
               <div className="flex items-center gap-2">
-                <label className="sr-only" htmlFor={`qty-${item.variantId}`}>Cantidad de {item.productName}</label>
-                <Input
+                <QtyStepper
                   id={`qty-${item.variantId}`}
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={MAX_QTY}
+                  label={`Cantidad de ${item.productName}`}
                   value={item.qty}
-                  onChange={(e) => setQty(item.variantId, Number(e.target.value))}
-                  className="w-24 text-center tabular-nums"
+                  max={MAX_QTY}
+                  onChange={(qty) => setQty(item.variantId, qty)}
                 />
                 <Button variant="ghost" size="icon" aria-label={`Quitar ${item.productName}`} onClick={() => remove(item.variantId)}>
                   <Trash2Icon />
