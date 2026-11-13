@@ -30,6 +30,7 @@ public record VariantPatchRequest(Availability? Availability, bool? IsActive)
 /// <summary>Both prices are always applied as sent: null clears the price.</summary>
 public record VariantPriceItem(int VariantId, decimal? RetailPrice, decimal? WholesalePrice);
 public record VariantPricesRequest(List<VariantPriceItem> Prices);
+public record ProductBulkDeleteRequest(List<int> Ids);
 public record VariantBulkRequest(int ProductId, List<int> ValueIds, Availability Availability);
 public record SettingsRequest(string WhatsappNumber, int WholesaleThreshold);
 
@@ -120,6 +121,16 @@ public class VariantPricesRequestValidator : AbstractValidator<VariantPricesRequ
             item.RuleFor(i => i.RetailPrice).ValidPrice();
             item.RuleFor(i => i.WholesalePrice).ValidPrice();
         });
+    }
+}
+
+public class ProductBulkDeleteRequestValidator : AbstractValidator<ProductBulkDeleteRequest>
+{
+    public const int MaxItems = 500;
+
+    public ProductBulkDeleteRequestValidator()
+    {
+        RuleFor(x => x.Ids).Cascade(CascadeMode.Stop).NotEmpty().IdList(MaxItems);
     }
 }
 
@@ -388,6 +399,26 @@ public static class AdminCatalogEndpoints
             await db.SaveChangesAsync(ct);
             return Results.NoContent();
         });
+
+        // Deletes several products in one request. All or nothing: an unknown id rejects the whole request.
+        // Duplicated ids are ignored. Media is removed from storage before the products, as in the single delete.
+        admin.MapPost("/products/bulk-delete", async (ProductBulkDeleteRequest req, AppDbContext db, IMediaStorage storage, CancellationToken ct) =>
+        {
+            var ids = req.Ids.Distinct().ToList();
+            var products = await db.Products.Include(p => p.Media).Where(p => ids.Contains(p.Id)).ToListAsync(ct);
+            if (products.Count != ids.Count)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["ids"] = ["Hay productos inexistentes"] });
+            }
+
+            foreach (var media in products.SelectMany(p => p.Media).Where(m => m.CloudinaryPublicId is not null))
+            {
+                await storage.DeleteAsync(media.CloudinaryPublicId!, media.Type, ct);
+            }
+            db.Products.RemoveRange(products);
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(new { Deleted = products.Count });
+        }).Validate<ProductBulkDeleteRequest>();
 
         admin.MapPost("/products/{id:int}/variants/generate", async (int id, AppDbContext db, VariantGenerator generator, CancellationToken ct) =>
             await db.Products.AnyAsync(p => p.Id == id, ct)
