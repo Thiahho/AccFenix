@@ -25,12 +25,18 @@ export function SuggestInput<T>({ value, onValueChange, search, onPick, itemKey,
   const [active, setActive] = useState(-1);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const request = useRef<AbortController>(undefined);
+  const listRef = useRef<HTMLUListElement>(null);
 
   const cancel = () => {
     clearTimeout(timer.current);
     request.current?.abort();
   };
   useEffect(() => cancel, []);
+
+  // When suggestions appear, scroll just enough to show them above the on-screen keyboard.
+  useEffect(() => {
+    if (open) listRef.current?.scrollIntoView({ block: "nearest" });
+  }, [open]);
 
   function handleChange(text: string) {
     onValueChange(text);
@@ -109,9 +115,11 @@ export function SuggestInput<T>({ value, onValueChange, search, onPick, itemKey,
       />
       {open && (
         <ul
+          ref={listRef}
           id={listId}
           role="listbox"
-          className="absolute top-full right-0 left-0 z-30 mt-1 max-h-64 overflow-y-auto overscroll-contain rounded-lg bg-popover p-1.5 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+          // Capped by the visible height so a short viewport (keyboard open) still shows the input and some options.
+          className="absolute top-full right-0 left-0 z-30 mt-1 max-h-[min(16rem,40dvh)] overflow-y-auto overscroll-contain rounded-lg bg-popover p-1.5 text-popover-foreground shadow-md ring-1 ring-foreground/10"
         >
           {items.map((item, i) => (
             <li

@@ -15,7 +15,15 @@ export const metadata: Metadata = {
   description: site.description,
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#B3121B" };
+// "resizes-content": on Android the on-screen keyboard shrinks the layout (and dvh), so suggestion lists and the
+// province sheet stay above it instead of underneath.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+  themeColor: "#B3121B",
+};
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

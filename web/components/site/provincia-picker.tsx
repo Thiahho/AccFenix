@@ -7,6 +7,7 @@ import { DialogOverlay, DialogPortal } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { filterProvincias, provincias } from "@/lib/provincias";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { useKeyboardInset } from "@/lib/viewport";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -19,6 +20,8 @@ export function ProvinciaPicker({ value, onChange, ...triggerProps }: Props) {
   const [open, setOpen] = useState(false);
   const desktop = useMediaQuery("(min-width: 640px)");
   const sheetRef = useRef<HTMLDivElement>(null);
+  // iOS overlays the keyboard instead of resizing the page: lift the sheet above it and let the list shrink.
+  const keyboard = useKeyboardInset(open && !desktop);
 
   const pick = (provincia: string) => {
     onChange(provincia);
@@ -61,6 +64,7 @@ export function ProvinciaPicker({ value, onChange, ...triggerProps }: Props) {
             e.preventDefault();
             sheetRef.current?.focus();
           }}
+          style={keyboard > 0 ? { bottom: keyboard, maxHeight: `calc(100dvh - ${keyboard}px - 1.5rem)` } : undefined}
           className="fixed inset-x-0 bottom-0 z-50 flex flex-col overflow-hidden rounded-t-2xl bg-popover pb-[env(safe-area-inset-bottom)] text-popover-foreground shadow-[0_-12px_40px_rgb(0_0_0/0.18)] duration-200 outline-none data-open:animate-in data-open:slide-in-from-bottom data-closed:animate-out data-closed:slide-out-to-bottom"
         >
           <span aria-hidden className="mx-auto mt-2 h-1 w-10 rounded-full bg-border" />
@@ -167,7 +171,7 @@ function ProvinciaList({ value, onPick, listClassName }: { value?: string; onPic
         role="listbox"
         aria-label="Provincias"
         className={cn(
-          "relative overflow-y-auto overscroll-contain px-1.5 motion-safe:scroll-smooth py-3 [mask-image:linear-gradient(to_bottom,transparent,black_0.75rem,black_calc(100%-0.75rem),transparent)]",
+          "relative min-h-0 overflow-y-auto overscroll-contain px-1.5 motion-safe:scroll-smooth py-3 [mask-image:linear-gradient(to_bottom,transparent,black_0.75rem,black_calc(100%-0.75rem),transparent)]",
           listClassName,
         )}
       >
