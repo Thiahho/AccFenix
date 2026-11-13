@@ -1,5 +1,5 @@
 // Pure pricing rules shared by the cart, the order view and the WhatsApp message.
-// Prices are ARS with at most 2 decimals; a variant without a price is quoted on request.
+// Prices are whole ARS pesos (no cents); a variant without a price is quoted on request.
 
 /** The minimum a cart line needs to be priced. Missing prices mean "no price". */
 export type PricedLine = { qty: number; retailPrice?: number | null; wholesalePrice?: number | null };
@@ -48,27 +48,31 @@ export function cartTotals(items: PricedLine[], threshold: number): CartTotals {
   return { wholesale, total: cents / 100, pricedLines, partial: pricedLines < items.length };
 }
 
-const arsNumber = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: "always" });
+// Prices are handled in whole pesos: no cents are shown or accepted. Legacy values with cents are rounded on display.
+const arsNumber = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0, useGrouping: "always" });
 
-/** "$ 1.250,50". Uses a plain space so the text is safe to paste into a WhatsApp message. */
+/** "$ 60.000". Uses a plain space so the text is safe to paste into a WhatsApp message. */
 export function formatArs(amount: number) {
   return `$ ${arsNumber.format(amount)}`;
 }
 
 export type PriceInput = { ok: true; value: number | null } | { ok: false; error: string };
 
-/** Parses a price typed by the admin. Empty means no price; the rule mirrors the API validation. */
+/**
+ * Parses a price typed by the admin, in whole pesos. Thousands dots are optional ("60000" or "60.000").
+ * Empty means no price. Up to 8 digits keeps the value within the API limit.
+ */
 export function parsePriceInput(raw: string): PriceInput {
   const text = raw.trim();
   if (text === "") return { ok: true, value: null };
-  // Up to 8 integer digits and 2 decimals keeps the value within 0..MAX_PRICE.
-  if (!/^\d{1,8}([.,]\d{1,2})?$/.test(text)) {
-    return { ok: false, error: "Ingresá un precio entre 0 y 99.999.999,99 con hasta 2 decimales" };
+  const digits = /^\d+$/.test(text) ? text : /^\d{1,3}(\.\d{3})+$/.test(text) ? text.replaceAll(".", "") : null;
+  if (digits === null || digits.length > 8) {
+    return { ok: false, error: "Ingresá un precio en pesos, sin centavos (ej: 60000)" };
   }
-  return { ok: true, value: Number(text.replace(",", ".")) };
+  return { ok: true, value: Number(digits) };
 }
 
-/** Text for a price input: empty when there is no price, comma as decimal separator. */
+/** Text for a price input: empty when there is no price, whole pesos with thousands dots. */
 export function priceToInput(price: number | null | undefined) {
-  return price == null ? "" : String(price).replace(".", ",");
+  return price == null ? "" : arsNumber.format(price);
 }

@@ -172,7 +172,7 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
               <Label htmlFor={`fill-${field}`}>{label} ($)</Label>
               <Input
                 id={`fill-${field}`}
-                inputMode="decimal"
+                inputMode="numeric"
                 placeholder="Sin cambios"
                 value={fill[field]}
                 aria-invalid={!parsePriceInput(fill[field]).ok}
@@ -189,7 +189,7 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Precios en pesos, con hasta 2 decimales. Un precio vacío se muestra como “Consultar” en el sitio.
+          Precios en pesos, sin centavos. Podés escribir 60000 o 60.000. Un precio vacío se muestra como “Consultar” en el sitio.
           {hasDrafts && <span className="font-medium text-foreground"> Hay cambios sin guardar.</span>}
         </p>
       </section>
@@ -224,7 +224,7 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
                   return (
                     <TableCell key={field} className="text-right">
                       <Input
-                        inputMode="decimal"
+                        inputMode="numeric"
                         placeholder="—"
                         aria-label={`Precio ${label.toLowerCase()}: ${v.sku}`}
                         aria-invalid={!parsePriceInput(text).ok}

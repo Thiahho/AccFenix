@@ -56,33 +56,33 @@ describe("buildOrderMessage with prices", () => {
     items.map((item, i) => ({ ...item, retailPrice: retail[i] ?? null, wholesalePrice: wholesale[i] ?? null }));
 
   it("adds unit price and subtotal to each line and ends with the retail total", () => {
-    const msg = buildOrderMessage(priced([1250.5, 10, 800]), baForm, 0);
-    expect(msg).toContain("• 2 × Huevos N°1 — Presentación Cajón — $ 1.250,50 c/u = $ 2.501,00");
-    expect(msg).toContain("• 120 × Huevos de campo — Presentación Medio cajón _(a pedido)_ — $ 10,00 c/u = $ 1.200,00");
+    const msg = buildOrderMessage(priced([1250, 10, 800]), baForm, 0);
+    expect(msg).toContain("• 2 × Huevos N°1 — Presentación Cajón — $ 1.250 c/u = $ 2.500");
+    expect(msg).toContain("• 120 × Huevos de campo — Presentación Medio cajón _(a pedido)_ — $ 10 c/u = $ 1.200");
     expect(msg).toContain("Total: 123 unidades");
-    expect(msg.endsWith("\n\n*Total: $ 4.501,00* (precios minoristas)")).toBe(true);
+    expect(msg.endsWith("\n\n*Total: $ 4.500* (precios minoristas)")).toBe(true);
     expect(msg).not.toMatch(/parcial|consultar/i);
   });
 
   it("applies wholesale prices at the threshold, falling back to retail where there is none", () => {
-    const msg = buildOrderMessage(priced([1250.5, 10, 800], [1000, 8, null]), baForm, 123);
+    const msg = buildOrderMessage(priced([1250, 10, 800], [1000, 8, null]), baForm, 123);
     expect(msg).toContain("*PEDIDO MAYORISTA* (123 unidades)");
-    expect(msg).toContain("Presentación Cajón — $ 1.000,00 c/u = $ 2.000,00");
-    expect(msg).toContain("_(a pedido)_ — $ 8,00 c/u = $ 960,00");
-    expect(msg).toContain("Presentación Maple — $ 800,00 c/u = $ 800,00");
-    expect(msg.endsWith("*Total: $ 3.760,00* (precios mayoristas)")).toBe(true);
+    expect(msg).toContain("Presentación Cajón — $ 1.000 c/u = $ 2.000");
+    expect(msg).toContain("_(a pedido)_ — $ 8 c/u = $ 960");
+    expect(msg).toContain("Presentación Maple — $ 800 c/u = $ 800");
+    expect(msg.endsWith("*Total: $ 3.760* (precios mayoristas)")).toBe(true);
   });
 
   it("keeps retail prices one unit below the threshold", () => {
-    const msg = buildOrderMessage(priced([1250.5, 10, 800], [1000, 8, null]), baForm, 124);
+    const msg = buildOrderMessage(priced([1250, 10, 800], [1000, 8, null]), baForm, 124);
     expect(msg).not.toContain("MAYORISTA");
-    expect(msg.endsWith("*Total: $ 4.501,00* (precios minoristas)")).toBe(true);
+    expect(msg.endsWith("*Total: $ 4.500* (precios minoristas)")).toBe(true);
   });
 
   it("marks unpriced lines and ends with a partial total in a mixed cart", () => {
-    const msg = buildOrderMessage(priced([1250.5, null, 800]), { ...baForm, comentarios: "Entregar por la tarde" }, 0);
+    const msg = buildOrderMessage(priced([1250, null, 800]), { ...baForm, comentarios: "Entregar por la tarde" }, 0);
     expect(msg).toContain("• 120 × Huevos de campo — Presentación Medio cajón _(a pedido)_ — precio a consultar");
-    expect(msg).toContain("Comentarios: Entregar por la tarde\n\n*Total parcial: $ 3.301,00* (precios minoristas)");
+    expect(msg).toContain("Comentarios: Entregar por la tarde\n\n*Total parcial: $ 3.300* (precios minoristas)");
     expect(msg.endsWith("Los productos sin precio se cotizan por WhatsApp.")).toBe(true);
   });
 });
@@ -109,10 +109,10 @@ describe("buildOrderMessage with a saved order", () => {
     const cart = items.map((i) => ({ ...i, retailPrice: 5, wholesalePrice: 4 }));
     const msg = buildOrderMessage(cart, baForm, 1000, saved);
     expect(msg).toContain("*PEDIDO MAYORISTA* (123 unidades)");
-    expect(msg).toContain("Presentación Cajón — $ 1.000,00 c/u = $ 2.000,00");
-    expect(msg).toContain("_(a pedido)_ — $ 8,00 c/u = $ 960,00");
+    expect(msg).toContain("Presentación Cajón — $ 1.000 c/u = $ 2.000");
+    expect(msg).toContain("_(a pedido)_ — $ 8 c/u = $ 960");
     expect(msg).toContain("Presentación Maple — precio a consultar");
-    expect(msg).toContain("*Total parcial: $ 2.960,00* (precios mayoristas)");
+    expect(msg).toContain("*Total parcial: $ 2.960* (precios mayoristas)");
   });
 
   it("omits prices when the server priced nothing", () => {

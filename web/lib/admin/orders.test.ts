@@ -41,7 +41,7 @@ describe("pageCount", () => {
 
 describe("orderTotalLabel", () => {
   it("shows the total in ARS", () => {
-    expect(orderTotalLabel({ total: 1500, hasUnpricedItems: false })).toBe("$ 1.500,00");
+    expect(orderTotalLabel({ total: 1500, hasUnpricedItems: false })).toBe("$ 1.500");
   });
 
   it("shows Consultar when nothing is priced", () => {
@@ -49,7 +49,7 @@ describe("orderTotalLabel", () => {
   });
 
   it("marks partial totals", () => {
-    expect(orderTotalLabel({ total: 1500, hasUnpricedItems: true })).toBe("$ 1.500,00 + a consultar");
+    expect(orderTotalLabel({ total: 1500, hasUnpricedItems: true })).toBe("$ 1.500 + a consultar");
   });
 });
 

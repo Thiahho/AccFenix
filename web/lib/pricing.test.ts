@@ -91,11 +91,16 @@ describe("cartTotals", () => {
 });
 
 describe("formatArs", () => {
-  it("formats pesos the es-AR way with a plain space", () => {
-    expect(formatArs(1250.5)).toBe("$ 1.250,50");
-    expect(formatArs(0)).toBe("$ 0,00");
-    expect(formatArs(999)).toBe("$ 999,00");
-    expect(formatArs(99999999.99)).toBe("$ 99.999.999,99");
+  it("formats whole pesos the es-AR way with a plain space and no cents", () => {
+    expect(formatArs(60000)).toBe("$ 60.000");
+    expect(formatArs(0)).toBe("$ 0");
+    expect(formatArs(999)).toBe("$ 999");
+    expect(formatArs(99999999)).toBe("$ 99.999.999");
+  });
+
+  it("rounds legacy prices with cents to the nearest peso", () => {
+    expect(formatArs(1250.5)).toBe("$ 1.251");
+    expect(formatArs(1250.4)).toBe("$ 1.250");
   });
 });
 
@@ -105,28 +110,32 @@ describe("parsePriceInput", () => {
     expect(parsePriceInput("   ")).toEqual({ ok: true, value: null });
   });
 
-  it("accepts comma or dot decimals with up to two digits", () => {
-    expect(parsePriceInput("1250,50")).toEqual({ ok: true, value: 1250.5 });
-    expect(parsePriceInput(" 1250.5 ")).toEqual({ ok: true, value: 1250.5 });
+  it("accepts whole pesos with or without thousands dots", () => {
+    expect(parsePriceInput("60000")).toEqual({ ok: true, value: 60000 });
+    expect(parsePriceInput(" 60.000 ")).toEqual({ ok: true, value: 60000 });
+    expect(parsePriceInput("6500")).toEqual({ ok: true, value: 6500 });
+    expect(parsePriceInput("6.500")).toEqual({ ok: true, value: 6500 });
+    expect(parsePriceInput("1.250.000")).toEqual({ ok: true, value: 1250000 });
     expect(parsePriceInput("0")).toEqual({ ok: true, value: 0 });
-    expect(parsePriceInput("99999999,99")).toEqual({ ok: true, value: 99999999.99 });
+    expect(parsePriceInput("99999999")).toEqual({ ok: true, value: 99999999 });
   });
 
-  it("rejects negatives, more than two decimals, values above the limit and non-numbers", () => {
-    for (const raw of ["-1", "1,234", "100000000", "abc", "1.250,50", "1e3", ","]) {
+  it("rejects cents, misplaced dots, negatives, values above the limit and non-numbers", () => {
+    for (const raw of ["-1", "1250,50", "1250,5", "6.50", "60.00", "1.2345", ".500", "500.", "100000000", "abc", "1e3", ","]) {
       expect(parsePriceInput(raw).ok, raw).toBe(false);
     }
   });
 });
 
 describe("priceToInput", () => {
-  it("renders a stored price the way it is typed", () => {
+  it("renders a stored price as whole pesos with thousands dots", () => {
     expect(priceToInput(null)).toBe("");
-    expect(priceToInput(1250.5)).toBe("1250,5");
+    expect(priceToInput(60000)).toBe("60.000");
     expect(priceToInput(80)).toBe("80");
+    expect(priceToInput(1250.4)).toBe("1.250");
   });
 
   it("round-trips through parsePriceInput", () => {
-    expect(parsePriceInput(priceToInput(1250.55))).toEqual({ ok: true, value: 1250.55 });
+    expect(parsePriceInput(priceToInput(1250000))).toEqual({ ok: true, value: 1250000 });
   });
 });
