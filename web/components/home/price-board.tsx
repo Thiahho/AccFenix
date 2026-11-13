@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowDownIcon } from "lucide-react";
-import { GrowX, Pop, Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
+import { PriceRow } from "@/components/home/price-row";
 import type { ProductDetail } from "@/lib/api";
 import { priceRows, splitProductName } from "@/lib/catalog";
 import { formatArs } from "@/lib/pricing";
@@ -69,24 +70,18 @@ function BoardBlock({ product }: { product: ProductDetail }) {
           )}
         </h3>
       </StaggerItem>
-      <dl className="mt-6 flex flex-col gap-3 sm:gap-4">
+      <ul className="mt-6 flex flex-col gap-1 sm:gap-2">
         {rows.map((row) => (
-          <StaggerItem key={row.variantId} y={12} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4">
-            <dt className="flex items-center gap-4">
-              <span className="title-display text-2xl sm:text-3xl">{row.label}</span>
-              <GrowX delay={0.1} aria-hidden className="ml-auto hidden h-0.5 w-14 shrink-0 bg-cream/70 sm:block" />
-            </dt>
-            <dd className="flex flex-col items-end gap-1">
-              <Pop delay={0.12} className="inline-block bg-brand px-3 py-1.5 font-heading text-xl font-extrabold text-brand-foreground tabular-nums shadow-[0_6px_18px_rgb(0_0_0/0.35)] sm:text-3xl">
-                {row.retailPrice !== null ? formatArs(row.retailPrice) : "Consultar"}
-              </Pop>
-              {row.wholesalePrice !== null && (
-                <span className="text-xs text-cream/75 tabular-nums sm:text-sm">Mayorista {formatArs(row.wholesalePrice)}</span>
-              )}
-            </dd>
+          <StaggerItem as="li" key={row.variantId} y={12}>
+            <PriceRow
+              productName={product.name}
+              label={row.label}
+              price={row.retailPrice !== null ? formatArs(row.retailPrice) : "Consultar"}
+              wholesale={row.wholesalePrice !== null ? formatArs(row.wholesalePrice) : null}
+            />
           </StaggerItem>
         ))}
-      </dl>
+      </ul>
     </Stagger>
   );
 }
