@@ -1,7 +1,6 @@
 using AccFenix.Api.Data;
 using AccFenix.Api.Domain;
 using AccFenix.Api.Services;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace AccFenix.Api.Seed;
@@ -11,7 +10,7 @@ namespace AccFenix.Api.Seed;
 /// una vez que se administra desde el panel, la base es la única fuente de verdad.
 /// Settings y usuario admin se crean solo si faltan.
 /// </summary>
-public class CatalogSeeder(AppDbContext db, VariantGenerator generator, IConfiguration config, ILogger<CatalogSeeder> logger)
+public class CatalogSeeder(AppDbContext db, VariantGenerator generator, AdminAccountService admins, IConfiguration config, ILogger<CatalogSeeder> logger)
 {
     static readonly string[] Medidas = ["1.20", "1.40", "1.60", "1.80", "2.00", "2.20", "2.40", "2.60", "2.80", "3.00"];
     static readonly string[] Grosores = ["22", "34"];
@@ -158,12 +157,6 @@ public class CatalogSeeder(AppDbContext db, VariantGenerator generator, IConfigu
             return;
         }
 
-        email = email.Trim().ToLowerInvariant();
-        if (await db.AdminUsers.AnyAsync(u => u.Email == email, ct)) return;
-
-        var user = new AdminUser { Email = email };
-        user.PasswordHash = new PasswordHasher<AdminUser>().HashPassword(user, password);
-        db.AdminUsers.Add(user);
-        await db.SaveChangesAsync(ct);
+        await admins.CreateIfMissingAsync(email, password, ct);
     }
 }

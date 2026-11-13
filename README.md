@@ -39,6 +39,8 @@ npm run dev
 
 El catálogo inicial solo se carga si la base todavía no tiene catálogo: una vez que se administra desde el panel, volver a correr `seed` no lo toca. Los settings y el usuario admin se crean solo si faltan.
 
+Para recuperar el acceso al panel sin correr el seed: `Admin__Email=... Admin__Password=... dotnet run --project src/AccFenix.Api -- reset-admin` (en producción, `dotnet AccFenix.Api.dll reset-admin`). Crea el admin si no existe o le reemplaza la contraseña (mínimo 8 caracteres); no aplica migraciones ni toca el catálogo, los settings ni otros usuarios. Los tokens ya emitidos siguen siendo válidos hasta que vencen.
+
 ## Tests
 
 ```bash
@@ -60,7 +62,7 @@ Variables de entorno (formato ASP.NET, `__` separa secciones):
 | `ConnectionStrings__Default` | Cadena de conexión de PostgreSQL |
 | `Jwt__Key` | Clave de firma de al menos 32 caracteres |
 | `Cors__Origins__0` | Origen del sitio web (p. ej. `https://tu-dominio.com`) |
-| `Admin__Email`, `Admin__Password` | Usuario admin que crea el seed (solo si no existe) |
+| `Admin__Email`, `Admin__Password` | Usuario admin que crea el seed (solo si no existe) o que crea/restablece `reset-admin` |
 | `TrustedWeb__Key` | Clave compartida con la web (mínimo 32 caracteres, igual a `API_TRUSTED_KEY`). Hace que el límite de intentos de login sea por visitante; sin ella el cupo es compartido |
 | `Cloudinary__CloudName`, `Cloudinary__ApiKey`, `Cloudinary__ApiSecret` | Cuenta para fotos y videos. Sin estas variables, la subida queda deshabilitada |
 

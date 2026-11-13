@@ -15,6 +15,7 @@ var config = builder.Configuration;
 
 builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(config.GetConnectionString("Default")));
 builder.Services.AddScoped<VariantGenerator>();
+builder.Services.AddScoped<AdminAccountService>();
 builder.Services.AddScoped<CatalogSeeder>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
@@ -78,6 +79,12 @@ if (args.Contains("seed"))
     using var scope = app.Services.CreateScope();
     await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<CatalogSeeder>().SeedAsync();
+    return;
+}
+
+if (args.Contains(AdminResetCommand.Name))
+{
+    Environment.ExitCode = await AdminResetCommand.RunAsync(app.Services, app.Configuration);
     return;
 }
 
