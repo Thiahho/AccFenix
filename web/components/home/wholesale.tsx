@@ -1,4 +1,6 @@
 import { MessageCircleIcon, StoreIcon } from "lucide-react";
+import { CountUp } from "@/components/motion/count-up";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import { wholesaleConditions } from "@/lib/home-content";
 import { buildWholesaleMessage, whatsappUrl } from "@/lib/whatsapp";
 
@@ -7,7 +9,7 @@ export function Wholesale({ phone, threshold }: { phone: string; threshold: numb
   return (
     <section id="mayoristas" className="anchor-section bg-egg-tray text-cream" aria-labelledby="mayoristas-titulo">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-2 md:items-center md:gap-16 md:py-20">
-        <div>
+        <Reveal>
           <p className="eyebrow flex items-center gap-2 text-yolk-light">
             <StoreIcon aria-hidden className="size-4" /> Mayoristas
           </p>
@@ -16,7 +18,12 @@ export function Wholesale({ phone, threshold }: { phone: string; threshold: numb
           </h2>
           <p className="mt-4 max-w-md text-lg text-cream/85 text-pretty">
             Te abastecemos con reparto propio.
-            {threshold > 0 && <> Los pedidos desde {threshold} unidades se cobran a precio mayorista.</>} Contanos qué necesitás y armamos tu entrega.
+            {threshold > 0 && (
+              <>
+                {" "}
+                Los pedidos desde <CountUp value={threshold} className="font-bold text-yolk-light tabular-nums" /> unidades se cobran a precio mayorista.
+              </>
+            )} Contanos qué necesitás y armamos tu entrega.
           </p>
           {phone && (
             <a
@@ -28,17 +35,17 @@ export function Wholesale({ phone, threshold }: { phone: string; threshold: numb
               <MessageCircleIcon aria-hidden className="size-4" /> Comprar por mayor
             </a>
           )}
-        </div>
-        <ul>
+        </Reveal>
+        <Stagger as="ul" stagger={0.1}>
           {wholesaleConditions.map((c, i) => (
-            <li key={c} className="flex gap-4 border-t border-cream/25 py-4 last:border-b">
+            <StaggerItem as="li" key={c} y={12} className="flex gap-4 border-t border-cream/25 py-4 last:border-b">
               <span aria-hidden className="font-heading text-3xl leading-none font-black text-yolk-light tabular-nums">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <span className="leading-relaxed text-cream/90 text-pretty">{c}</span>
-            </li>
+            </StaggerItem>
           ))}
-        </ul>
+        </Stagger>
       </div>
     </section>
   );

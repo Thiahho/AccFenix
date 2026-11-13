@@ -1,4 +1,5 @@
 import { WhatsappFab } from "@/components/home/whatsapp-fab";
+import { MotionProvider } from "@/components/motion/motion-provider";
 import { Wordmark } from "@/components/site/wordmark";
 import { OrderToaster } from "@/components/site/order-toast";
 import { SiteHeader } from "@/components/site/site-header";
@@ -25,23 +26,25 @@ export default async function PublicLayout({ children }: { children: React.React
   const [categories, phone] = await Promise.all([loadCategories(), loadPhone()]);
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <SiteHeader categories={categories} />
+    <MotionProvider>
+      <div className="flex min-h-dvh flex-col">
+        <SiteHeader categories={categories} />
 
-      <main className="flex-1">{children}</main>
+        <main className="flex-1">{children}</main>
 
-      <footer className="bg-charcoal text-cream/80">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-10 text-sm sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex flex-col gap-1">
-            <Wordmark tone="light" className="text-4xl" />
-            <p className="font-semibold tracking-[0.2em] text-cream uppercase">{site.tagline}</p>
+        <footer className="bg-charcoal text-cream/80">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-10 text-sm sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-1">
+              <Wordmark tone="light" className="text-4xl" />
+              <p className="font-semibold tracking-[0.2em] text-cream uppercase">{site.tagline}</p>
+            </div>
+            <p className="max-w-sm text-pretty">Pedidos por WhatsApp o desde la web. Entregamos con camión propio.</p>
           </div>
-          <p className="max-w-sm text-pretty">Pedidos por WhatsApp o desde la web. Entregamos con camión propio.</p>
-        </div>
-      </footer>
+        </footer>
 
-      <WhatsappFab phone={phone} />
-      <OrderToaster />
-    </div>
+        <WhatsappFab phone={phone} />
+        <OrderToaster />
+      </div>
+    </MotionProvider>
   );
 }

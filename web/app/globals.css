@@ -418,3 +418,25 @@ html {
     animation: egg-wobble 0.8s ease-in-out;
   }
 }
+
+/*
+ * Home FAQ (components/home/faq-item.tsx): native <details> whose height animates open and closed where the
+ * browser supports ::details-content and interpolate-size; elsewhere it simply toggles. Motion animates the rest.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (interpolate-size: allow-keywords) {
+    .faq-item {
+      interpolate-size: allow-keywords;
+    }
+    .faq-item::details-content {
+      block-size: 0;
+      overflow-y: clip;
+      transition:
+        block-size 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+        content-visibility 0.3s allow-discrete;
+    }
+    .faq-item[open]::details-content {
+      block-size: auto;
+    }
+  }
+}

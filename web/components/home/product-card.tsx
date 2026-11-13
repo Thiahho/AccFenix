@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import * as m from "motion/react-m";
 import { CheckIcon, MessageCircleIcon, PlusIcon } from "lucide-react";
 import { AvailabilityBadge } from "@/components/site/availability-badge";
 import { notifyAdded } from "@/components/site/order-toast";
@@ -57,9 +58,11 @@ export function ProductCard({ product, phone, threshold }: Props) {
   }
 
   return (
-    <article
+    <m.article
+      whileHover={{ y: -4 }}
+      transition={{ type: "spring", stiffness: 380, damping: 26 }}
       className={cn(
-        "flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgb(60_30_10/0.05),0_8px_24px_rgb(60_30_10/0.06)] transition-shadow",
+        "flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgb(60_30_10/0.05),0_8px_24px_rgb(60_30_10/0.06)] transition-shadow duration-300 hover:shadow-[0_2px_4px_rgb(60_30_10/0.06),0_18px_40px_rgb(60_30_10/0.14)]",
         inCart > 0 && "border-brand ring-3 ring-brand/15",
       )}
     >
@@ -124,22 +127,28 @@ export function ProductCard({ product, phone, threshold }: Props) {
         </div>
 
         <div className="mt-auto flex flex-col gap-2">
-          <Button
-            type="button"
-            className={cn("h-auto min-h-11 whitespace-normal py-2 text-center leading-tight", inCart > 0 && "bg-charcoal hover:bg-charcoal/90")}
-            disabled={!variant}
-            onClick={handleAdd}
-          >
-            {inCart > 0 ? (
-              <>
-                <CheckIcon aria-hidden /> Sumado · {inCart} en el pedido
-              </>
-            ) : (
-              <>
-                <PlusIcon aria-hidden /> Sumar al pedido
-              </>
-            )}
-          </Button>
+          {/* Tap feedback only; the wrapper is a plain block so the button keeps its full width. */}
+          <m.div whileTap={variant ? { scale: 0.97 } : undefined} className="flex flex-col">
+            <Button
+              type="button"
+              className={cn("h-auto min-h-11 whitespace-normal py-2 text-center leading-tight", inCart > 0 && "bg-charcoal hover:bg-charcoal/90")}
+              disabled={!variant}
+              onClick={handleAdd}
+            >
+              {inCart > 0 ? (
+                <>
+                  <m.span key="in" initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="inline-flex">
+                    <CheckIcon aria-hidden />
+                  </m.span>
+                  Sumado · {inCart} en el pedido
+                </>
+              ) : (
+                <>
+                  <PlusIcon aria-hidden /> Sumar al pedido
+                </>
+              )}
+            </Button>
+          </m.div>
           {phone && variant ? (
             <Button asChild variant="outline" className="h-auto min-h-11 whitespace-normal py-2 text-center leading-tight">
               <a href={whatsappUrl(phone, buildVariantMessage(product.name, label))} target="_blank" rel="noopener noreferrer">
@@ -149,6 +158,6 @@ export function ProductCard({ product, phone, threshold }: Props) {
           ) : null}
         </div>
       </div>
-    </article>
+    </m.article>
   );
 }
