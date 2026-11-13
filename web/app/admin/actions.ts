@@ -95,6 +95,11 @@ export async function deleteProduct(id: number) {
   return result;
 }
 
+/** All or nothing: an unknown id rejects the whole request. */
+export async function deleteProducts(ids: number[]) {
+  return run(() => adminFetch<{ deleted: number }>("/api/admin/products/bulk-delete", json("POST", { ids })));
+}
+
 /** Omitted fields stay unchanged; an explicit null price clears it. */
 export type VariantPatch = { availability?: Availability; isActive?: boolean; retailPrice?: number | null; wholesalePrice?: number | null };
 
