@@ -9,8 +9,8 @@ const items: CartItem[] = [
   { variantId: 3, productSlug: "huevos-n1", productName: "Huevos N°1", categoryName: "Huevos", valuesLabel: "Presentación Maple", availability: "disponible", qty: 1 },
 ];
 
-const baForm: OrderForm = { zona: "buenos-aires", nombre: "Ana", telefono: "11 5555-5555", localidad: "Quilmes", direccion: "Calle 123" };
-const interiorForm: OrderForm = { zona: "otra-provincia", nombre: "Juan", telefono: "351 444", provincia: "Córdoba", expreso: "Vía Cargo" };
+const baForm: OrderForm = { cliente: "personal", zona: "buenos-aires", nombre: "Ana", telefono: "11 5555-5555", localidad: "Quilmes", direccion: "Calle 123" };
+const interiorForm: OrderForm = { cliente: "personal", zona: "otra-provincia", nombre: "Juan", telefono: "351 444", provincia: "Córdoba", expreso: "Vía Cargo" };
 
 describe("buildOrderMessage", () => {
   it("groups items by category with quantities and variants", () => {
@@ -48,6 +48,25 @@ describe("buildOrderMessage", () => {
 
   it("does not mention prices when no variant has one", () => {
     expect(buildOrderMessage(items, baForm, 100)).not.toMatch(/\$|precio|consultar/i);
+  });
+});
+
+describe("buildOrderMessage customer type", () => {
+  const shopForm: OrderForm = { ...baForm, cliente: "comercio", comercio: "Almacén Don Pepe" };
+  const saved = { number: 7, isWholesale: false, total: 0, hasUnpricedItems: true, items: [] };
+
+  it("names a personal customer next to the contact name", () => {
+    expect(buildOrderMessage(items, baForm, 100)).toContain("*Contacto*\nCliente: Personal\nNombre: Ana");
+    expect(buildOrderMessage(items, baForm, 100, saved)).toContain("*Contacto*\nCliente: Personal\nNombre: Ana");
+  });
+
+  it("names the business in both the saved and the fallback message", () => {
+    expect(buildOrderMessage(items, shopForm, 100)).toContain("*Contacto*\nCliente: Comercio — Almacén Don Pepe\nNombre: Ana");
+    expect(buildOrderMessage(items, shopForm, 100, saved)).toContain("Cliente: Comercio — Almacén Don Pepe");
+  });
+
+  it("never shows a business name for a personal order", () => {
+    expect(buildOrderMessage(items, { ...baForm, comercio: "Viejo" }, 100)).not.toContain("Viejo");
   });
 });
 

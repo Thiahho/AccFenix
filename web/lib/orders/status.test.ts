@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isOrderStatus, orderStatuses, orderStatusLabel, zoneLabel } from "@/lib/orders/status";
+import { customerTypeLabel, isOrderStatus, orderStatuses, orderStatusLabel, zoneLabel } from "@/lib/orders/status";
 
 describe("order statuses", () => {
   it("lists the five statuses in workflow order with Spanish labels", () => {
@@ -16,5 +16,10 @@ describe("order statuses", () => {
   it("labels delivery zones", () => {
     expect(zoneLabel.buenosAires).toBe("Buenos Aires");
     expect(zoneLabel.otherProvince).toBe("Otra provincia");
+  });
+
+  it("labels customer types", () => {
+    expect(customerTypeLabel.personal).toBe("Personal");
+    expect(customerTypeLabel.business).toBe("Comercio");
   });
 });

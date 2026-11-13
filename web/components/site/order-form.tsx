@@ -1,41 +1,67 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Controller, useForm, type FieldErrors } from "react-hook-form";
+import { useMemo, useRef, useState } from "react";
+import { Controller, useForm, type FieldErrors, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MapPinIcon, MessageCircleIcon } from "lucide-react";
+import { AnimatePresence } from "motion/react";
+import * as m from "motion/react-m";
+import { ArrowRightIcon, HomeIcon, MessageCircleIcon, StoreIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { MapsLinkCapture, type MapsLinkCaptureHandle } from "@/components/site/maps-link-capture";
-import { ProvinciaPicker } from "@/components/site/provincia-picker";
-import { SuggestInput } from "@/components/site/suggest-input";
-import type { PublicSettings } from "@/lib/api";
-import { alturaEscrita, fetchDirecciones, fetchLocalidades, type Coords, type DireccionSuggestion, type LocalidadSuggestion } from "@/lib/geo";
-import { isMapsUrl, mapsLink } from "@/lib/maps-url";
+import { CheckoutProgress, CheckoutStep } from "@/components/site/checkout-step";
+import { DeliveryFields, type CapturedLocation } from "@/components/site/delivery-fields";
+import { Field, fieldA11y } from "@/components/site/form-field";
 import { submitOrder } from "@/app/actions/orders";
-import { orderSchema, type OrderForm } from "@/lib/order";
+import type { PublicSettings } from "@/lib/api";
+import type { Coords } from "@/lib/geo";
+import { orderSchema, type CustomerChoice, type OrderForm } from "@/lib/order";
 import { unavailableResult, type SubmitOrderFailure } from "@/lib/orders/response";
+import { firstOpenStep, invalidSteps, orderSteps, stepFields, stepOfField, stepStatus, type StepId } from "@/lib/orders/steps";
+import { cartTotals, formatArs } from "@/lib/pricing";
 import { buildOrderMessage, whatsappUrl } from "@/lib/whatsapp";
-import { useCart, type CartItem } from "@/stores/cart";
-
-type AnyErrors = FieldErrors<Record<string, string>>;
-
-function Field({ id, label, error, children }: { id: string; label: string; error?: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      {children}
-      {error && <p id={`${id}-error`} className="text-sm text-destructive">{error}</p>}
-    </div>
-  );
-}
+import { totalUnits, useCart, type CartItem } from "@/stores/cart";
 
 /** A stored order: its number and the WhatsApp link with the message that names it. */
 export type PlacedOrder = { number: number; whatsappHref: string };
 
+const stepTitles: Record<StepId, string> = {
+  cliente: "¿Para quién es?",
+  contacto: "¿Cómo te llamás?",
+  entrega: "¿Dónde entregamos?",
+  revision: "Revisá y enviá",
+};
+
+const customerOptions: { value: CustomerChoice; label: string; hint: string; Icon: typeof HomeIcon }[] = [
+  { value: "personal", label: "Personal", hint: "Para tu casa", Icon: HomeIcon },
+  { value: "comercio", label: "Comercio", hint: "Almacén, restaurante, etc.", Icon: StoreIcon },
+];
+
+type Values = Partial<Record<string, unknown>>;
+const text = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+
+function summaryOf(step: StepId, v: Values): string {
+  switch (step) {
+    case "cliente":
+      return v.cliente === "comercio" ? "Comercio" : v.cliente === "personal" ? "Personal" : "";
+    case "contacto":
+      return [v.cliente === "comercio" ? text(v.comercio) : "", text(v.nombre), text(v.telefono)].filter(Boolean).join(" · ");
+    case "entrega":
+      return v.zona === "otra-provincia"
+        ? [text(v.provincia), text(v.expreso)].filter(Boolean).join(" · ")
+        : [text(v.direccion), text(v.localidad)].filter(Boolean).join(", ");
+    case "revision":
+      return "";
+  }
+}
+
+/**
+ * Step-by-step checkout over one react-hook-form instance: who the order is for, contact, delivery, then review and
+ * send. Each step validates its own fields (`trigger`) and unlocks the next; done steps collapse to an editable
+ * summary. The order is stored through the server action before WhatsApp opens.
+ */
 export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]; settings: PublicSettings; onPlaced: (order: PlacedOrder) => void }) {
   const clear = useCart((s) => s.clear);
   const [sent, setSent] = useState(false);
@@ -44,54 +70,70 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
   const [failure, setFailure] = useState<SubmitOrderFailure | null>(null);
   // Data of the last attempt, so "Enviar igual por WhatsApp" can send it without storing the order.
   const [lastOrder, setLastOrder] = useState<OrderForm | null>(null);
-  const {
-    register,
-    control,
-    handleSubmit,
-    watch,
-    setValue,
-    getValues,
-    setError,
-    formState: { errors },
-  } = useForm<OrderForm>({
+  const form = useForm<OrderForm>({
     resolver: zodResolver(orderSchema),
-    defaultValues: { zona: "buenos-aires", nombre: "", telefono: "", localidad: "", direccion: "", comentarios: "" },
-    shouldUnregister: true,
+    defaultValues: { zona: "buenos-aires", comercio: "", nombre: "", telefono: "", localidad: "", direccion: "", comentarios: "" },
+    // Errors show once a field is left, so a disabled "Continuar" never hides why.
+    mode: "onTouched",
+    // Collapsed steps unmount their fields; their values must survive.
+    shouldUnregister: false,
   });
-  const zona = watch("zona");
-  // Centro de la localidad elegida, para acercar las sugerencias de dirección.
+  const { register, control, handleSubmit, watch, getValues, setValue, setError, trigger, formState } = form;
+  const values = watch() as Values;
   const [near, setNear] = useState<Coords | null>(null);
-  // Punto exacto captado, junto con los textos con los que se confirmó.
-  const [ubicacion, setUbicacion] = useState<{ coords: Coords; localidad: string; direccion: string } | null>(null);
-  const captureRef = useRef<MapsLinkCaptureHandle>(null);
-  const e = errors as AnyErrors;
+  const [ubicacion, setUbicacion] = useState<CapturedLocation | null>(null);
+
+  const [confirmed, setConfirmed] = useState<ReadonlySet<StepId>>(() => new Set());
+  const [active, setActive] = useState(0);
+  // Steps only steal focus after the visitor starts moving through them.
+  const [moved, setMoved] = useState(false);
+  const invalid = useMemo(() => invalidSteps(values), [values]);
+  const open = firstOpenStep(confirmed, invalid);
+
+  const errors = Object.fromEntries(
+    Object.entries(formState.errors as FieldErrors<Record<string, string>>).map(([k, v]) => [k, v?.message]),
+  ) as Partial<Record<string, string>>;
   const canSend = settings.whatsappNumber.length > 0;
 
-  const fieldProps = (name: string) => ({
-    id: name,
-    "aria-invalid": e[name] ? true : undefined,
-    "aria-describedby": e[name] ? `${name}-error` : undefined,
-  });
+  function goTo(index: number) {
+    setMoved(true);
+    setActive(index);
+  }
+
+  async function confirmStep(index: number) {
+    const step = orderSteps[index];
+    const ok = await trigger(stepFields(step, getValues() as Values) as FieldPath<OrderForm>[], { shouldFocus: true });
+    if (!ok) return;
+    const next = new Set(confirmed).add(step);
+    setConfirmed(next);
+    goTo(firstOpenStep(next, invalidSteps(getValues())));
+  }
+
+  function chooseCustomer(value: CustomerChoice, advance: boolean) {
+    setValue("cliente", value, { shouldDirty: true });
+    if (advance) void confirmStep(0);
+  }
 
   // The order is stored first; WhatsApp opens only with the number the server assigned.
-  async function onSubmit(form: OrderForm) {
+  async function onSubmit(data: OrderForm) {
     if (savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
     setFailure(null);
-    const order = form.zona === "buenos-aires" && ubicacion ? { ...form, ubicacion: ubicacion.coords } : form;
+    const order = data.zona === "buenos-aires" && ubicacion ? { ...data, ubicacion: ubicacion.coords } : data;
     setLastOrder(order);
     try {
       const result = await submitOrder(order, items.map((i) => ({ variantId: i.variantId, qty: i.qty })));
       if (!result.ok) {
-        for (const [field, message] of Object.entries(result.fieldErrors)) {
-          setError(field as keyof OrderForm, { type: "server", message });
-        }
+        const fields = Object.entries(result.fieldErrors);
+        for (const [field, message] of fields) setError(field as FieldPath<OrderForm>, { type: "server", message });
+        // Reopen the earliest step that owns a rejected field.
+        if (fields.length > 0) goTo(Math.min(...fields.map(([f]) => orderSteps.indexOf(stepOfField(f)))));
         setFailure(result);
         return;
       }
-      const text = buildOrderMessage(items, order, settings.wholesaleThreshold, result.order);
-      const whatsappHref = whatsappUrl(settings.whatsappNumber, text);
+      const message = buildOrderMessage(items, order, settings.wholesaleThreshold, result.order);
+      const whatsappHref = whatsappUrl(settings.whatsappNumber, message);
       window.open(whatsappHref, "_blank", "noopener,noreferrer");
       clear();
       onPlaced({ number: result.order.number, whatsappHref });
@@ -103,11 +145,26 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
     }
   }
 
+  function onInvalid(fieldErrors: FieldErrors<OrderForm>) {
+    const steps = Object.keys(fieldErrors).map((f) => orderSteps.indexOf(stepOfField(f)));
+    if (steps.length > 0) goTo(Math.min(...steps));
+  }
+
+  // Enter in any field confirms the current step; only the last step submits the order.
+  function onFormSubmit(ev: React.FormEvent<HTMLFormElement>) {
+    if (active < orderSteps.length - 1) {
+      ev.preventDefault();
+      void confirmStep(active);
+      return;
+    }
+    void handleSubmit(onSubmit, onInvalid)(ev);
+  }
+
   // Fallback when the order could not be stored: the sale still reaches WhatsApp, without an order number.
   function sendWithoutSaving() {
     if (!lastOrder) return;
-    const text = buildOrderMessage(items, lastOrder, settings.wholesaleThreshold);
-    window.open(whatsappUrl(settings.whatsappNumber, text), "_blank", "noopener,noreferrer");
+    const message = buildOrderMessage(items, lastOrder, settings.wholesaleThreshold);
+    window.open(whatsappUrl(settings.whatsappNumber, message), "_blank", "noopener,noreferrer");
     setFailure(null);
     setSent(true);
   }
@@ -127,179 +184,102 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
     );
   }
 
-  return (
-    <aside className="h-fit rounded-xl border p-6 lg:sticky lg:top-24">
-      <h2 className="text-lg font-semibold">Tus datos</h2>
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-4 space-y-4">
-        <Field id="nombre" label="Nombre y apellido" error={e.nombre?.message}>
+  const fieldProps = (name: string) => fieldA11y(name, errors[name]);
+  const continueButton = (index: number) => (
+    <Button type="submit" className="w-full sm:w-auto" disabled={invalid.has(orderSteps[index])}>
+      Continuar <ArrowRightIcon aria-hidden />
+    </Button>
+  );
+
+  const bodies: Record<StepId, React.ReactNode> = {
+    cliente: (
+      <>
+        <Controller
+          control={control}
+          name="cliente"
+          render={({ field }) => (
+            <RadioGroup
+              aria-label={stepTitles.cliente}
+              aria-invalid={errors.cliente ? true : undefined}
+              aria-describedby={errors.cliente ? "cliente-error" : undefined}
+              value={field.value ?? ""}
+              onValueChange={(v) => chooseCustomer(v as CustomerChoice, false)}
+              onKeyDown={(ev) => {
+                // Arrow keys only move the choice; Enter confirms it.
+                if (ev.key === "Enter" && field.value) {
+                  ev.preventDefault();
+                  void confirmStep(0);
+                }
+              }}
+              className="grid grid-cols-2 gap-3"
+            >
+              {customerOptions.map(({ value, label, hint, Icon }) => (
+                <Label
+                  key={value}
+                  htmlFor={`cliente-${value}`}
+                  // A pointer click or tap on the card picks and moves on (detail > 0); arrow keys and Space only
+                  // select, so keyboard users confirm with Enter or "Continuar".
+                  onClick={(ev) => ev.detail > 0 && chooseCustomer(value, true)}
+                  className="relative flex min-h-32 cursor-pointer flex-col items-start gap-2 rounded-xl border-2 bg-background p-4 font-normal transition-[border-color,background-color,transform] duration-200 hover:border-brand/60 active:scale-[0.98] has-data-[state=checked]:border-brand has-data-[state=checked]:bg-brand-soft"
+                >
+                  <RadioGroupItem
+                    id={`cliente-${value}`}
+                    value={value}
+                    className="absolute top-3 right-3"
+                  />
+                  <Icon aria-hidden className="size-7 text-brand" />
+                  <span className="text-base font-semibold">{label}</span>
+                  <span className="text-xs text-muted-foreground">{hint}</span>
+                </Label>
+              ))}
+            </RadioGroup>
+          )}
+        />
+        {errors.cliente && (
+          <p id="cliente-error" role="alert" className="text-sm text-destructive">
+            {errors.cliente}
+          </p>
+        )}
+        {values.cliente ? continueButton(0) : null}
+      </>
+    ),
+    contacto: (
+      <>
+        <AnimatePresence initial={false}>
+          {values.cliente === "comercio" && (
+            <m.div
+              key="comercio"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.24, ease: "easeOut" }}
+              className="-m-1 overflow-hidden p-1"
+            >
+              <Field id="comercio" label="Nombre del comercio" error={errors.comercio}>
+                <Input autoComplete="organization" maxLength={120} {...fieldProps("comercio")} {...register("comercio")} />
+              </Field>
+            </m.div>
+          )}
+        </AnimatePresence>
+        <Field id="nombre" label={values.cliente === "comercio" ? "Nombre y apellido del responsable" : "Nombre y apellido"} error={errors.nombre}>
           <Input autoComplete="name" {...fieldProps("nombre")} {...register("nombre")} />
         </Field>
-        <Field id="telefono" label="Teléfono" error={e.telefono?.message}>
-          <Input type="tel" autoComplete="tel" {...fieldProps("telefono")} {...register("telefono")} />
+        <Field id="telefono" label="Teléfono" error={errors.telefono}>
+          <Input type="tel" autoComplete="tel" inputMode="tel" {...fieldProps("telefono")} {...register("telefono")} />
         </Field>
-
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">¿Dónde recibís el pedido?</legend>
-          <Controller
-            control={control}
-            name="zona"
-            render={({ field }) => (
-              <RadioGroup
-                value={field.value}
-                onValueChange={(value) => {
-                  field.onChange(value);
-                  setUbicacion(null);
-                  setNear(null);
-                }}
-                className="grid grid-cols-2 gap-2"
-              >
-                {[
-                  { value: "buenos-aires", label: "Buenos Aires" },
-                  { value: "otra-provincia", label: "Otra provincia" },
-                ].map((o) => (
-                  <Label
-                    key={o.value}
-                    htmlFor={`zona-${o.value}`}
-                    className="flex cursor-pointer items-center gap-2 rounded-md border p-3 font-normal has-data-[state=checked]:border-brand has-data-[state=checked]:bg-brand-soft"
-                  >
-                    <RadioGroupItem id={`zona-${o.value}`} value={o.value} />
-                    {o.label}
-                  </Label>
-                ))}
-              </RadioGroup>
-            )}
-          />
-        </fieldset>
-
-        {zona === "buenos-aires" ? (
-          <>
-            <Field id="localidad" label="Localidad" error={e.localidad?.message}>
-              <Controller
-                control={control}
-                name="localidad"
-                render={({ field }) => (
-                  <SuggestInput<LocalidadSuggestion>
-                    {...fieldProps("localidad")}
-                    ref={field.ref}
-                    name={field.name}
-                    onBlur={field.onBlur}
-                    value={field.value ?? ""}
-                    minChars={2}
-                    search={fetchLocalidades}
-                    onValueChange={(text) => {
-                      field.onChange(text);
-                      setNear(null);
-                      if (ubicacion && text !== ubicacion.localidad) setUbicacion(null);
-                    }}
-                    onPick={(l) => {
-                      field.onChange(l.nombre);
-                      setNear({ lat: l.lat, lng: l.lng });
-                      if (ubicacion && l.nombre !== ubicacion.localidad) setUbicacion(null);
-                    }}
-                    itemKey={(l) => `${l.nombre}|${l.partido}|${l.provincia}`}
-                    renderItem={(l) => (
-                      <>
-                        <span>{l.nombre}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {l.provincia === "Buenos Aires" ? `Partido de ${l.partido}` : ["CABA", l.partido].filter(Boolean).join(" · ")}
-                        </span>
-                      </>
-                    )}
-                  />
-                )}
-              />
-            </Field>
-            <Field id="direccion" label="Dirección" error={e.direccion?.message}>
-              <Controller
-                control={control}
-                name="direccion"
-                render={({ field }) => (
-                  <SuggestInput<DireccionSuggestion>
-                    {...fieldProps("direccion")}
-                    ref={field.ref}
-                    name={field.name}
-                    onBlur={field.onBlur}
-                    value={field.value ?? ""}
-                    placeholder="Calle y altura"
-                    search={(q, signal) => fetchDirecciones(q, near, signal)}
-                    onValueChange={(text) => {
-                      field.onChange(text);
-                      // Agregar piso o depto al final conserva el punto; reescribir la dirección lo descarta.
-                      if (ubicacion && !text.startsWith(ubicacion.direccion)) setUbicacion(null);
-                    }}
-                    onPick={(d) => {
-                      const altura = d.altura ?? alturaEscrita(field.value ?? "", d.calle);
-                      const direccion = altura ? `${d.calle} ${altura}` : d.calle;
-                      field.onChange(direccion);
-                      if (!getValues("localidad")?.trim() && d.localidad) setValue("localidad", d.localidad, { shouldValidate: true });
-                      // Solo se adjunta el punto cuando corresponde a una puerta; el de una calle entera sería engañoso.
-                      setUbicacion(d.exacta ? { coords: { lat: d.lat, lng: d.lng }, localidad: getValues("localidad") ?? "", direccion } : null);
-                    }}
-                    onPaste={(ev) => {
-                      const text = ev.clipboardData.getData("text");
-                      if (isMapsUrl(text)) {
-                        ev.preventDefault();
-                        captureRef.current?.capture(text);
-                      }
-                    }}
-                    itemKey={(d) => `${d.calle}|${d.altura ?? ""}|${d.localidad}|${d.partido}`}
-                    renderItem={(d) => (
-                      <>
-                        <span>{d.altura ? `${d.calle} ${d.altura}` : d.calle}</span>
-                        <span className="text-xs text-muted-foreground">{[d.localidad, d.partido].filter(Boolean).join(" · ")}</span>
-                      </>
-                    )}
-                  />
-                )}
-              />
-            </Field>
-
-            {ubicacion && (
-              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-brand-soft px-3 py-2 text-sm">
-                <span className="inline-flex items-center gap-1.5 font-medium text-brand">
-                  <MapPinIcon aria-hidden className="size-4" /> Ubicación captada
-                </span>
-                <a href={mapsLink(ubicacion.coords)} target="_blank" rel="noopener noreferrer" className="font-medium text-brand underline-offset-2 hover:underline">
-                  Ver en Maps
-                </a>
-                <button type="button" onClick={() => setUbicacion(null)} className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
-                  Quitar
-                </button>
-              </p>
-            )}
-
-            <MapsLinkCapture
-              ref={captureRef}
-              onApply={({ localidad, direccion, coords }) => {
-                setValue("localidad", localidad, { shouldValidate: true, shouldDirty: true });
-                setValue("direccion", direccion, { shouldValidate: true, shouldDirty: true });
-                setNear(coords);
-                setUbicacion({ coords, localidad, direccion });
-              }}
-              onSwitchProvincia={(provincia) => {
-                setUbicacion(null);
-                setValue("zona", "otra-provincia");
-                // El campo Provincia recién existe después de renderizar la otra zona.
-                setTimeout(() => setValue("provincia", provincia, { shouldValidate: true }));
-              }}
-            />
-          </>
-        ) : (
-          <>
-            <Field id="provincia" label="Provincia" error={e.provincia?.message}>
-              <Controller
-                control={control}
-                name="provincia"
-                render={({ field }) => <ProvinciaPicker value={field.value} onChange={field.onChange} {...fieldProps("provincia")} />}
-              />
-            </Field>
-            <Field id="expreso" label="Expreso de tu preferencia" error={e.expreso?.message}>
-              <Input placeholder="Ej.: Vía Cargo, Andreani…" {...fieldProps("expreso")} {...register("expreso")} />
-            </Field>
-          </>
-        )}
-
-        <Field id="comentarios" label="Comentarios (opcional)" error={e.comentarios?.message}>
+        {continueButton(1)}
+      </>
+    ),
+    entrega: (
+      <>
+        <DeliveryFields form={form} errors={errors} near={near} onNearChange={setNear} ubicacion={ubicacion} onUbicacionChange={setUbicacion} />
+        {continueButton(2)}
+      </>
+    ),
+    revision: (
+      <>
+        <OrderRecap items={items} threshold={settings.wholesaleThreshold} />
+        <Field id="comentarios" label="Comentarios (opcional)" error={errors.comentarios}>
           <Textarea rows={3} {...fieldProps("comentarios")} {...register("comentarios")} />
         </Field>
 
@@ -323,7 +303,60 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
             ? "Los precios no incluyen el envío: te contactamos para confirmar el pedido y coordinar la entrega."
             : "No calculamos precios ni envío online: te contactamos para cotizar y coordinar la entrega."}
         </p>
+      </>
+    ),
+  };
+
+  return (
+    <aside className="h-fit space-y-4 rounded-xl border p-4 sm:p-6 lg:sticky lg:top-24">
+      <h2 className="text-lg font-semibold">Tus datos</h2>
+      <CheckoutProgress current={active} total={orderSteps.length} />
+      <form onSubmit={onFormSubmit} noValidate>
+        <ol className="space-y-2">
+          {orderSteps.map((step, index) => (
+            <CheckoutStep
+              key={step}
+              index={index}
+              title={stepTitles[step]}
+              status={stepStatus(index, active, open)}
+              summary={summaryOf(step, values)}
+              focusOnOpen={moved}
+              onOpen={() => goTo(index)}
+            >
+              {bodies[step]}
+            </CheckoutStep>
+          ))}
+        </ol>
       </form>
     </aside>
+  );
+}
+
+/** What is being ordered, from the cart: one line per item, units and the estimated total. */
+function OrderRecap({ items, threshold }: { items: CartItem[]; threshold: number }) {
+  const units = totalUnits(items);
+  const totals = cartTotals(items, threshold);
+  return (
+    <div className="rounded-lg bg-brand-soft/50 p-3 text-sm">
+      <ul className="space-y-1">
+        {items.map((i) => (
+          <li key={i.variantId} className="flex justify-between gap-3">
+            <span className="min-w-0 truncate">
+              {i.productName} <span className="text-muted-foreground">— {i.valuesLabel}</span>
+            </span>
+            <span className="shrink-0 font-medium tabular-nums">× {i.qty}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 flex justify-between gap-3 border-t border-brand/15 pt-2 font-semibold">
+        <span>
+          {units} {units === 1 ? "unidad" : "unidades"}
+          {totals.wholesale && <span className="ml-1.5 font-normal text-muted-foreground">(mayorista)</span>}
+        </span>
+        <span className="tabular-nums">
+          {totals.pricedLines === 0 ? "A cotizar" : `${totals.partial ? "Parcial " : ""}${formatArs(totals.total)}`}
+        </span>
+      </p>
+    </div>
   );
 }

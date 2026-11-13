@@ -4,9 +4,14 @@ export type OrderStatus = "pending" | "confirmed" | "outForDelivery" | "delivere
 
 export type DeliveryZone = "buenosAires" | "otherProvince";
 
+export type CustomerType = "personal" | "business";
+
 /** Body of `POST /api/orders`. It carries no prices: the server prices every line. Other-zone fields are left out. */
 export type CreateOrderRequest = {
   zone: DeliveryZone;
+  customerType: CustomerType;
+  /** Required for a business; always null for a personal order. */
+  businessName: string | null;
   customerName: string;
   phone: string;
   locality?: string;

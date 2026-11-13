@@ -11,7 +11,7 @@ import { formatOrderDate, orderTotalLabel } from "@/lib/admin/orders";
 import { adminFetch, AdminApiError } from "@/lib/admin/session";
 import type { AdminOrder } from "@/lib/admin/types";
 import { mapsLink } from "@/lib/maps-url";
-import { zoneLabel } from "@/lib/orders/status";
+import { customerTypeLabel, zoneLabel } from "@/lib/orders/status";
 import { formatArs } from "@/lib/pricing";
 
 export const metadata: Metadata = { title: "Pedido" };
@@ -44,6 +44,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         description={formatOrderDate(order.createdAt)}
         actions={
           <div className="flex items-center gap-2">
+            <Badge variant={order.customerType === "business" ? "default" : "outline"}>{customerTypeLabel[order.customerType]}</Badge>
             {order.isWholesale && <Badge variant="secondary">Mayorista</Badge>}
             <OrderStatusBadge status={order.status} />
           </div>
@@ -54,7 +55,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         <section aria-labelledby="cliente" className="rounded-xl border bg-background p-5">
           <h2 id="cliente" className="font-semibold">Cliente</h2>
           <dl className="mt-3 grid gap-3 text-sm">
-            <Detail label="Nombre">{order.customerName}</Detail>
+            <Detail label="Tipo">{customerTypeLabel[order.customerType]}</Detail>
+            {order.businessName && <Detail label="Comercio">{order.businessName}</Detail>}
+            <Detail label={order.customerType === "business" ? "Responsable" : "Nombre"}>{order.customerName}</Detail>
             <Detail label="Teléfono">
               <a href={`tel:${order.phone}`} className="hover:text-brand">{order.phone}</a>
             </Detail>

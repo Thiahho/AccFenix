@@ -1,6 +1,6 @@
 // Reflejan los DTOs de api/src/AccFenix.Api/Endpoints/AdminCatalogEndpoints.cs
 import type { Availability } from "@/lib/api";
-import type { DeliveryZone, OrderItem, OrderStatus } from "@/lib/orders/types";
+import type { CustomerType, DeliveryZone, OrderItem, OrderStatus } from "@/lib/orders/types";
 
 export type AdminCategory = {
   id: number;
@@ -68,6 +68,9 @@ export type AdminOrderSummary = {
   number: number;
   createdAt: string;
   status: OrderStatus;
+  customerType: CustomerType;
+  /** Set for a business, null for a personal order. */
+  businessName: string | null;
   customerName: string;
   phone: string;
   zone: DeliveryZone;

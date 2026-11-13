@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatOrderDate, orderTotalLabel, ordersListPath, ordersPageHref, pageCount, parseOrdersQuery } from "@/lib/admin/orders";
 import { adminFetch } from "@/lib/admin/session";
 import type { AdminOrderPage } from "@/lib/admin/types";
-import { orderStatuses, orderStatusLabel, zoneLabel } from "@/lib/orders/status";
+import { customerTypeLabel, orderStatuses, orderStatusLabel, zoneLabel } from "@/lib/orders/status";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Pedidos" };
@@ -63,8 +63,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                     <p className="text-xs text-muted-foreground">{formatOrderDate(o.createdAt)}</p>
                   </TableCell>
                   <TableCell>
-                    {o.customerName}
-                    {o.isWholesale && <Badge variant="secondary" className="ml-2">Mayorista</Badge>}
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {o.customerName}
+                      <Badge variant={o.customerType === "business" ? "default" : "outline"}>{customerTypeLabel[o.customerType]}</Badge>
+                      {o.isWholesale && <Badge variant="secondary">Mayorista</Badge>}
+                    </span>
+                    {o.businessName && <p className="text-xs text-muted-foreground">{o.businessName}</p>}
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground md:table-cell">{zoneLabel[o.zone]}</TableCell>
                   <TableCell className="hidden text-right tabular-nums sm:table-cell">

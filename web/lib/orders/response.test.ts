@@ -27,6 +27,12 @@ describe("interpretOrderResponse", () => {
     expect(result.error).toBe("Revisá los datos marcados.");
   });
 
+  it("maps customer type and business name errors to their fields", () => {
+    const result = interpretOrderResponse(400, { errors: { CustomerType: ["Elegí el tipo de cliente"], BusinessName: ["Completá el nombre del comercio"] } });
+    if (result.ok) throw new Error("expected failure");
+    expect(result.fieldErrors).toEqual({ cliente: "Elegí el tipo de cliente", comercio: "Completá el nombre del comercio" });
+  });
+
   it("replaces default English validator messages with Spanish copy", () => {
     const result = interpretOrderResponse(400, { errors: { Locality: ["'Locality' must not be empty."] } });
     if (result.ok) throw new Error("expected failure");

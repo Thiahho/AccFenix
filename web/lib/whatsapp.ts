@@ -40,7 +40,7 @@ export function buildOrderMessage(items: CartItem[], form: OrderForm, threshold:
   }
   lines.push("", `Total: ${units} ${units === 1 ? "unidad" : "unidades"}`);
 
-  lines.push("", "*Contacto*", `Nombre: ${form.nombre}`, `Teléfono: ${form.telefono}`);
+  lines.push("", "*Contacto*", customerLine(form), `Nombre: ${form.nombre}`, `Teléfono: ${form.telefono}`);
 
   lines.push("", "*Envío*");
   if (form.zona === "buenos-aires") {
@@ -59,6 +59,11 @@ export function buildOrderMessage(items: CartItem[], form: OrderForm, threshold:
   }
 
   return lines.join("\n");
+}
+
+/** "Cliente: Comercio — Almacén Don Pepe" or "Cliente: Personal"; a personal order never shows a business name. */
+function customerLine(form: OrderForm) {
+  return form.cliente === "comercio" ? `Cliente: Comercio — ${form.comercio.trim()}` : "Cliente: Personal";
 }
 
 /** The parts of a stored order the message needs. */
