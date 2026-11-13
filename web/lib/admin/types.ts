@@ -1,5 +1,6 @@
 // Reflejan los DTOs de api/src/AccFenix.Api/Endpoints/AdminCatalogEndpoints.cs
 import type { Availability } from "@/lib/api";
+import type { DeliveryZone, OrderItem, OrderStatus } from "@/lib/orders/types";
 
 export type AdminCategory = {
   id: number;
@@ -60,3 +61,32 @@ export type AdminProduct = {
 export type AdminSettings = { whatsappNumber: string; wholesaleThreshold: number };
 
 export type ActionResult<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
+
+// Mirror api/src/AccFenix.Api/Endpoints/AdminOrderEndpoints.cs
+export type AdminOrderSummary = {
+  id: number;
+  number: number;
+  createdAt: string;
+  status: OrderStatus;
+  customerName: string;
+  phone: string;
+  zone: DeliveryZone;
+  isWholesale: boolean;
+  total: number;
+  hasUnpricedItems: boolean;
+  itemCount: number;
+  totalUnits: number;
+};
+
+export type AdminOrderPage = { total: number; page: number; pageSize: number; items: AdminOrderSummary[] };
+
+export type AdminOrder = Omit<AdminOrderSummary, "itemCount" | "totalUnits"> & {
+  locality: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  province: string | null;
+  carrier: string | null;
+  comments: string | null;
+  items: OrderItem[];
+};

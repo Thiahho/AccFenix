@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Trash2Icon } from "lucide-react";
+import { MessageCircleIcon, Trash2Icon } from "lucide-react";
 import { AvailabilityBadge } from "@/components/site/availability-badge";
-import { OrderFormCard } from "@/components/site/order-form";
+import { OrderFormCard, type PlacedOrder } from "@/components/site/order-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, type PublicSettings } from "@/lib/api";
@@ -17,6 +17,7 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
   const { items, setQty, remove, sync } = useCart();
   const [removedCount, setRemovedCount] = useState(0);
   const [refreshFailed, setRefreshFailed] = useState(false);
+  const [placed, setPlaced] = useState<PlacedOrder | null>(null);
 
   // Al entrar, refresca disponibilidad y precios, y quita variantes que ya no existen.
   // The prices stored with the cart are only a snapshot; the ones shown and sent come from this refresh.
@@ -33,6 +34,29 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
   }, [sync]);
 
   if (!hydrated) return <div className="mt-8 h-40 animate-pulse rounded-xl bg-muted" />;
+
+  // The cart is already empty here: it is cleared as soon as the order is stored.
+  if (placed) {
+    return (
+      <div role="status" className="mt-8 rounded-xl border bg-brand-soft/50 p-8 text-center">
+        <p className="eyebrow text-brass">Pedido #{placed.number}</p>
+        <h2 className="mt-2 text-xl font-semibold">¡Registramos tu pedido!</h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+          Abrimos WhatsApp con el detalle. Enviá el mensaje y te contactamos para confirmar el pedido y coordinar la entrega.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <Button asChild>
+            <a href={placed.whatsappHref} target="_blank" rel="noopener noreferrer">
+              <MessageCircleIcon aria-hidden /> Abrir WhatsApp
+            </a>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/">Volver al catálogo</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -136,7 +160,7 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
         </div>
       </section>
 
-      <OrderFormCard items={items} settings={settings} />
+      <OrderFormCard items={items} settings={settings} onPlaced={setPlaced} />
     </div>
   );
 }

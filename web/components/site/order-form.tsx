@@ -15,7 +15,9 @@ import { SuggestInput } from "@/components/site/suggest-input";
 import type { PublicSettings } from "@/lib/api";
 import { alturaEscrita, fetchDirecciones, fetchLocalidades, type Coords, type DireccionSuggestion, type LocalidadSuggestion } from "@/lib/geo";
 import { isMapsUrl, mapsLink } from "@/lib/maps-url";
+import { submitOrder } from "@/app/actions/orders";
 import { orderSchema, type OrderForm } from "@/lib/order";
+import { unavailableResult, type SubmitOrderFailure } from "@/lib/orders/response";
 import { buildOrderMessage, whatsappUrl } from "@/lib/whatsapp";
 import { useCart, type CartItem } from "@/stores/cart";
 
@@ -31,9 +33,17 @@ function Field({ id, label, error, children }: { id: string; label: string; erro
   );
 }
 
-export function OrderFormCard({ items, settings }: { items: CartItem[]; settings: PublicSettings }) {
+/** A stored order: its number and the WhatsApp link with the message that names it. */
+export type PlacedOrder = { number: number; whatsappHref: string };
+
+export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]; settings: PublicSettings; onPlaced: (order: PlacedOrder) => void }) {
   const clear = useCart((s) => s.clear);
   const [sent, setSent] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [failure, setFailure] = useState<SubmitOrderFailure | null>(null);
+  // Data of the last attempt, so "Enviar igual por WhatsApp" can send it without storing the order.
+  const [lastOrder, setLastOrder] = useState<OrderForm | null>(null);
   const {
     register,
     control,
@@ -41,6 +51,7 @@ export function OrderFormCard({ items, settings }: { items: CartItem[]; settings
     watch,
     setValue,
     getValues,
+    setError,
     formState: { errors },
   } = useForm<OrderForm>({
     resolver: zodResolver(orderSchema),
@@ -62,10 +73,42 @@ export function OrderFormCard({ items, settings }: { items: CartItem[]; settings
     "aria-describedby": e[name] ? `${name}-error` : undefined,
   });
 
-  function onSubmit(form: OrderForm) {
+  // The order is stored first; WhatsApp opens only with the number the server assigned.
+  async function onSubmit(form: OrderForm) {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    setFailure(null);
     const order = form.zona === "buenos-aires" && ubicacion ? { ...form, ubicacion: ubicacion.coords } : form;
-    const text = buildOrderMessage(items, order, settings.wholesaleThreshold);
+    setLastOrder(order);
+    try {
+      const result = await submitOrder(order, items.map((i) => ({ variantId: i.variantId, qty: i.qty })));
+      if (!result.ok) {
+        for (const [field, message] of Object.entries(result.fieldErrors)) {
+          setError(field as keyof OrderForm, { type: "server", message });
+        }
+        setFailure(result);
+        return;
+      }
+      const text = buildOrderMessage(items, order, settings.wholesaleThreshold, result.order);
+      const whatsappHref = whatsappUrl(settings.whatsappNumber, text);
+      window.open(whatsappHref, "_blank", "noopener,noreferrer");
+      clear();
+      onPlaced({ number: result.order.number, whatsappHref });
+    } catch {
+      setFailure(unavailableResult());
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }
+
+  // Fallback when the order could not be stored: the sale still reaches WhatsApp, without an order number.
+  function sendWithoutSaving() {
+    if (!lastOrder) return;
+    const text = buildOrderMessage(items, lastOrder, settings.wholesaleThreshold);
     window.open(whatsappUrl(settings.whatsappNumber, text), "_blank", "noopener,noreferrer");
+    setFailure(null);
     setSent(true);
   }
 
@@ -74,7 +117,7 @@ export function OrderFormCard({ items, settings }: { items: CartItem[]; settings
       <aside className="h-fit rounded-xl border bg-brand-soft/50 p-6">
         <h2 className="text-lg font-semibold">¿Se abrió WhatsApp?</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Enviá el mensaje desde WhatsApp y te respondemos con la cotización. Si ya lo enviaste, podés vaciar el pedido.
+          Enviá el mensaje desde WhatsApp y lo registramos al recibirlo. Si ya lo enviaste, podés vaciar el pedido.
         </p>
         <div className="mt-6 flex flex-col gap-2">
           <Button onClick={clear}>Ya lo envié, vaciar pedido</Button>
@@ -260,8 +303,19 @@ export function OrderFormCard({ items, settings }: { items: CartItem[]; settings
           <Textarea rows={3} {...fieldProps("comentarios")} {...register("comentarios")} />
         </Field>
 
-        <Button type="submit" size="lg" className="w-full" disabled={!canSend}>
-          <MessageCircleIcon aria-hidden /> Enviar pedido por WhatsApp
+        {failure && (
+          <div role="alert" className="space-y-3 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            <p>{failure.error}</p>
+            {failure.reason !== "invalid" && lastOrder && (
+              <Button type="button" variant="outline" size="sm" onClick={sendWithoutSaving}>
+                Enviar igual por WhatsApp
+              </Button>
+            )}
+          </div>
+        )}
+
+        <Button type="submit" size="lg" className="w-full" disabled={!canSend || saving} aria-busy={saving || undefined}>
+          <MessageCircleIcon aria-hidden /> {saving ? "Guardando pedido…" : failure && failure.reason !== "invalid" ? "Reintentar" : "Enviar pedido por WhatsApp"}
         </Button>
         {!canSend && <p className="text-sm text-destructive">El envío por WhatsApp no está disponible en este momento.</p>}
         <p className="text-xs text-muted-foreground">

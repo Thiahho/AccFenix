@@ -1,6 +1,7 @@
 import { availabilityLabel } from "@/lib/api";
 import { mapsLink } from "@/lib/maps-url";
 import type { OrderForm } from "@/lib/order";
+import type { CreatedOrder, OrderItem } from "@/lib/orders/types";
 import { cartTotals, formatArs, isWholesale, lineSubtotal, unitPrice } from "@/lib/pricing";
 import { totalUnits, type CartItem } from "@/stores/cart";
 
@@ -9,12 +10,17 @@ export { isWholesale };
 /**
  * Texto del pedido para WhatsApp: productos agrupados por catálogo, cantidades y datos de envío.
  * Si alguna variante tiene precio, cada línea lleva precio unitario y subtotal y el mensaje cierra con el total.
+ * When the order was already stored, the message names its number and uses the prices the server snapshotted.
  */
-export function buildOrderMessage(items: CartItem[], form: OrderForm, threshold: number): string {
+export function buildOrderMessage(items: CartItem[], form: OrderForm, threshold: number, saved?: SavedOrder): string {
   const units = totalUnits(items);
   const lines: string[] = ["¡Hola! Quiero hacer el siguiente pedido:"];
-  const totals = cartTotals(items, threshold);
+  if (saved) lines.push(`*Pedido #${saved.number}*`);
+  const totals = saved ? savedTotals(saved) : cartTotals(items, threshold);
   const hasPrices = totals.pricedLines > 0;
+  const linePrice = saved
+    ? savedLinePrice(saved)
+    : (item: CartItem): LinePrice => ({ price: unitPrice(item, totals.wholesale), subtotal: lineSubtotal(item, totals.wholesale) });
 
   if (totals.wholesale) {
     lines.push("", `*PEDIDO MAYORISTA* (${units} unidades)`);
@@ -29,7 +35,7 @@ export function buildOrderMessage(items: CartItem[], form: OrderForm, threshold:
     for (const i of categoryItems) {
       const detail = i.valuesLabel ? ` — ${i.valuesLabel}` : "";
       const pending = i.availability === "aPedido" ? ` _(${availabilityLabel.aPedido.toLowerCase()})_` : "";
-      lines.push(`• ${i.qty} × ${i.productName}${detail}${pending}${hasPrices ? priceSuffix(i, totals.wholesale) : ""}`);
+      lines.push(`• ${i.qty} × ${i.productName}${detail}${pending}${hasPrices ? priceSuffix(linePrice(i)) : ""}`);
     }
   }
   lines.push("", `Total: ${units} ${units === 1 ? "unidad" : "unidades"}`);
@@ -55,9 +61,27 @@ export function buildOrderMessage(items: CartItem[], form: OrderForm, threshold:
   return lines.join("\n");
 }
 
-function priceSuffix(item: CartItem, wholesale: boolean) {
-  const price = unitPrice(item, wholesale);
-  const subtotal = lineSubtotal(item, wholesale);
+/** The parts of a stored order the message needs. */
+export type SavedOrder = Pick<CreatedOrder, "number" | "isWholesale" | "total" | "hasUnpricedItems"> & {
+  items: Pick<OrderItem, "variantId" | "unitPrice" | "subtotal">[];
+};
+
+type LinePrice = { price: number | null; subtotal: number | null };
+
+function savedTotals(saved: SavedOrder) {
+  const pricedLines = saved.items.filter((i) => i.unitPrice !== null).length;
+  return { wholesale: saved.isWholesale, total: saved.total, pricedLines, partial: saved.hasUnpricedItems };
+}
+
+function savedLinePrice(saved: SavedOrder) {
+  const byVariant = new Map(saved.items.map((i) => [i.variantId, i]));
+  return (item: CartItem): LinePrice => {
+    const line = byVariant.get(item.variantId);
+    return { price: line?.unitPrice ?? null, subtotal: line?.subtotal ?? null };
+  };
+}
+
+function priceSuffix({ price, subtotal }: LinePrice) {
   if (price === null || subtotal === null) return " — precio a consultar";
   return ` — ${formatArs(price)} c/u = ${formatArs(subtotal)}`;
 }

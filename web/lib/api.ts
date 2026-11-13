@@ -60,7 +60,7 @@ export const availabilityLabel: Record<Availability, string> = {
   aPedido: "A pedido",
 };
 
-function baseUrl() {
+export function baseUrl() {
   // En el servidor preferimos la URL interna; en el navegador, la pública.
   return (typeof window === "undefined" ? process.env.API_URL : undefined) ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5080";
 }

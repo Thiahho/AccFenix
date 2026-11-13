@@ -87,6 +87,42 @@ describe("buildOrderMessage with prices", () => {
   });
 });
 
+describe("buildOrderMessage with a saved order", () => {
+  const saved = {
+    number: 123,
+    isWholesale: true,
+    total: 2960,
+    hasUnpricedItems: true,
+    items: [
+      { variantId: 1, unitPrice: 1000, subtotal: 2000 },
+      { variantId: 2, unitPrice: 8, subtotal: 960 },
+      { variantId: 3, unitPrice: null, subtotal: null },
+    ],
+  };
+
+  it("names the order number right after the greeting", () => {
+    const msg = buildOrderMessage(items, baForm, 1000, saved);
+    expect(msg.startsWith("¡Hola! Quiero hacer el siguiente pedido:\n*Pedido #123*")).toBe(true);
+  });
+
+  it("uses the prices and totals stored by the server instead of the cart ones", () => {
+    const cart = items.map((i) => ({ ...i, retailPrice: 5, wholesalePrice: 4 }));
+    const msg = buildOrderMessage(cart, baForm, 1000, saved);
+    expect(msg).toContain("*PEDIDO MAYORISTA* (123 unidades)");
+    expect(msg).toContain("Color Caoba — $ 1.000,00 c/u = $ 2.000,00");
+    expect(msg).toContain("_(a pedido)_ — $ 8,00 c/u = $ 960,00");
+    expect(msg).toContain("Color Cedro — precio a consultar");
+    expect(msg).toContain("*Total parcial: $ 2.960,00* (precios mayoristas)");
+  });
+
+  it("omits prices when the server priced nothing", () => {
+    const unpriced = { ...saved, isWholesale: false, total: 0, items: saved.items.map((i) => ({ ...i, unitPrice: null, subtotal: null })) };
+    const msg = buildOrderMessage(items, baForm, 100, unpriced);
+    expect(msg).toContain("*Pedido #123*");
+    expect(msg).not.toMatch(/\$|precio|consultar/i);
+  });
+});
+
 describe("whatsappUrl", () => {
   it("strips non-digits and encodes the text", () => {
     expect(whatsappUrl("+54 9 11 1234-5678", "Hola & chau")).toBe("https://wa.me/5491112345678?text=Hola%20%26%20chau");

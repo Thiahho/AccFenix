@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FolderTreeIcon, PackageIcon, SettingsIcon, TagsIcon } from "lucide-react";
+import { ClipboardListIcon, FolderTreeIcon, PackageIcon, SettingsIcon, TagsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
+  { href: "/admin/pedidos", label: "Pedidos", icon: ClipboardListIcon },
   { href: "/admin/productos", label: "Productos", icon: PackageIcon },
   { href: "/admin/categorias", label: "Categorías", icon: FolderTreeIcon },
   { href: "/admin/atributos", label: "Atributos", icon: TagsIcon },
