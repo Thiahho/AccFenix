@@ -16,7 +16,7 @@ export function stepFields(step: StepId, values: StepValues): string[] {
     case "cliente":
       return ["cliente"];
     case "contacto":
-      return values.cliente === "comercio" ? ["comercio", "nombre", "telefono"] : ["nombre", "telefono"];
+      return ["nombre"];
     case "entrega":
       return values.zona === "otra-provincia" ? ["zona", "provincia", "expreso"] : ["zona", "localidad", "direccion"];
     case "revision":
@@ -26,9 +26,7 @@ export function stepFields(step: StepId, values: StepValues): string[] {
 
 const stepByField: Record<string, StepId> = {
   cliente: "cliente",
-  comercio: "contacto",
   nombre: "contacto",
-  telefono: "contacto",
   zona: "entrega",
   localidad: "entrega",
   direccion: "entrega",

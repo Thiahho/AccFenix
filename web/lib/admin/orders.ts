@@ -51,3 +51,14 @@ export function formatOrderDate(iso: string) {
   const parts = Object.fromEntries(dateParts.formatToParts(new Date(iso)).map((p) => [p.type, p.value]));
   return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}`;
 }
+
+/**
+ * WhatsApp chat link for the phone a customer left on an order, or null when there is none. Orders placed from the site
+ * no longer carry a phone (they arrive from the customer's WhatsApp); older ones may hold a local Argentine number,
+ * which gets the international mobile prefix (54 9). Best effort: a "15" written after the area code is not removed.
+ */
+export function whatsappChatHref(phone: string | null): string | null {
+  let digits = (phone ?? "").replace(/\D/g, "").replace(/^00/, "");
+  if (!digits.startsWith("54")) digits = `549${digits.replace(/^0/, "")}`;
+  return digits.length >= 10 ? `https://wa.me/${digits}` : null;
+}

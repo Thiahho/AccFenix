@@ -3,8 +3,6 @@
 import { useMemo, useRef, useState } from "react";
 import { Controller, useForm, type FieldErrors, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AnimatePresence } from "motion/react";
-import * as m from "motion/react-m";
 import { ArrowRightIcon, HomeIcon, MessageCircleIcon, StoreIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +45,7 @@ function summaryOf(step: StepId, v: Values): string {
     case "cliente":
       return v.cliente === "comercio" ? "Comercio" : v.cliente === "personal" ? "Personal" : "";
     case "contacto":
-      return [v.cliente === "comercio" ? text(v.comercio) : "", text(v.nombre), text(v.telefono)].filter(Boolean).join(" · ");
+      return text(v.nombre);
     case "entrega":
       return v.zona === "otra-provincia"
         ? [text(v.provincia), text(v.expreso)].filter(Boolean).join(" · ")
@@ -72,7 +70,7 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
   const [lastOrder, setLastOrder] = useState<OrderForm | null>(null);
   const form = useForm<OrderForm>({
     resolver: zodResolver(orderSchema),
-    defaultValues: { zona: "buenos-aires", comercio: "", nombre: "", telefono: "", localidad: "", direccion: "", comentarios: "" },
+    defaultValues: { zona: "buenos-aires", nombre: "", localidad: "", direccion: "", comentarios: "" },
     // Errors show once a field is left, so a disabled "Continuar" never hides why.
     mode: "onTouched",
     // Collapsed steps unmount their fields; their values must survive.
@@ -245,28 +243,17 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
     ),
     contacto: (
       <>
-        <AnimatePresence initial={false}>
-          {values.cliente === "comercio" && (
-            <m.div
-              key="comercio"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.24, ease: "easeOut" }}
-              className="-m-1 overflow-hidden p-1"
-            >
-              <Field id="comercio" label="Nombre del comercio" error={errors.comercio}>
-                <Input autoComplete="organization" maxLength={120} {...fieldProps("comercio")} {...register("comercio")} />
-              </Field>
-            </m.div>
-          )}
-        </AnimatePresence>
-        <Field id="nombre" label={values.cliente === "comercio" ? "Nombre y apellido del responsable" : "Nombre y apellido"} error={errors.nombre}>
-          <Input autoComplete="name" {...fieldProps("nombre")} {...register("nombre")} />
+        <Field id="nombre" label={values.cliente === "comercio" ? "Tu nombre o el del comercio" : "Nombre y apellido"} error={errors.nombre}>
+          <Input
+            autoComplete={values.cliente === "comercio" ? "organization" : "name"}
+            placeholder={values.cliente === "comercio" ? "Ej.: Almacén Don Pepe" : "Ej.: Ana Pérez"}
+            maxLength={120}
+            {...fieldProps("nombre")}
+            {...register("nombre")}
+          />
         </Field>
-        <Field id="telefono" label="Teléfono" error={errors.telefono}>
-          <Input type="tel" autoComplete="tel" inputMode="tel" {...fieldProps("telefono")} {...register("telefono")} />
-        </Field>
+        {/* No phone: the order is sent from the customer's own WhatsApp, so the distributor already has the number. */}
+        <p className="text-sm text-muted-foreground">Te respondemos por WhatsApp, al número desde el que nos mandes el pedido.</p>
         {continueButton(1)}
       </>
     ),

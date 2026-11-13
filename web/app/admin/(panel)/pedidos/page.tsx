@@ -68,7 +68,6 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                       <Badge variant={o.customerType === "business" ? "default" : "outline"}>{customerTypeLabel[o.customerType]}</Badge>
                       {o.isWholesale && <Badge variant="secondary">Mayorista</Badge>}
                     </span>
-                    {o.businessName && <p className="text-xs text-muted-foreground">{o.businessName}</p>}
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground md:table-cell">{zoneLabel[o.zone]}</TableCell>
                   <TableCell className="hidden text-right tabular-nums sm:table-cell">

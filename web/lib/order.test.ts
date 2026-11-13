@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { orderSchema } from "@/lib/order";
 
-const ba = { cliente: "personal", zona: "buenos-aires", nombre: "Ana", telefono: "11 5555-5555", localidad: "Quilmes", direccion: "Calle 123" };
-const interior = { cliente: "personal", zona: "otra-provincia", nombre: "Juan", telefono: "351 444", provincia: "Córdoba", expreso: "Vía Cargo" };
+const ba = { cliente: "personal", zona: "buenos-aires", nombre: "Ana", localidad: "Quilmes", direccion: "Calle 123" };
+const interior = { cliente: "personal", zona: "otra-provincia", nombre: "Juan", provincia: "Córdoba", expreso: "Vía Cargo" };
 
 const ok = (input: unknown) => orderSchema.safeParse(input).success;
 
@@ -21,7 +21,6 @@ describe("orderSchema", () => {
 
   it("rejects text longer than each field allows", () => {
     expect(ok({ ...ba, nombre: "a".repeat(121) })).toBe(false);
-    expect(ok({ ...ba, telefono: "1".repeat(41) })).toBe(false);
     expect(ok({ ...ba, direccion: "a".repeat(201) })).toBe(false);
     expect(ok({ ...ba, comentarios: "a".repeat(501) })).toBe(false);
     expect(ok({ ...ba, comentarios: "a".repeat(500) })).toBe(true);
@@ -45,19 +44,14 @@ describe("orderSchema", () => {
     expect(ok({ ...ba, cliente: "empresa" })).toBe(false);
   });
 
-  it("requires a single-line business name of up to 120 characters for a business", () => {
-    const shop = { ...ba, cliente: "comercio" };
-    expect(orderSchema.parse({ ...shop, comercio: "  Almacén Don Pepe " })).toMatchObject({ cliente: "comercio", comercio: "Almacén Don Pepe" });
-    expect(ok(shop)).toBe(false);
-    expect(ok({ ...shop, comercio: "   " })).toBe(false);
-    expect(ok({ ...shop, comercio: "a".repeat(121) })).toBe(false);
-    expect(ok({ ...shop, comercio: "a".repeat(120) })).toBe(true);
-    expect(ok({ ...shop, comercio: "Almacén\nDon Pepe" })).toBe(false);
-    expect(ok({ ...shop, comercio: "Almacén\u0007" })).toBe(false);
+  it("asks a business for nothing more than a personal order", () => {
+    expect(ok({ ...ba, cliente: "comercio" })).toBe(true);
+    expect(ok({ ...interior, cliente: "comercio" })).toBe(true);
   });
 
-  it("ignores the business name for a personal order", () => {
-    expect(ok({ ...ba, comercio: "" })).toBe(true);
-    expect(ok({ ...interior, comercio: "x\ny" })).toBe(true);
+  it("asks for no phone: the order goes out from the customer's own WhatsApp", () => {
+    const parsed = orderSchema.parse({ ...ba, telefono: "11 5555-5555", comercio: "Almacén" });
+    expect(parsed).not.toHaveProperty("telefono");
+    expect(parsed).not.toHaveProperty("comercio");
   });
 });

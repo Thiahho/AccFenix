@@ -19,18 +19,25 @@ describe("interpretOrderResponse", () => {
   });
 
   it("maps validator keys to form fields", () => {
-    const result = interpretOrderResponse(400, { errors: { CustomerName: ["Hasta 120 caracteres"], Phone: ["Hasta 40 caracteres"], Carrier: ["Hasta 200 caracteres"] } });
+    const result = interpretOrderResponse(400, { errors: { CustomerName: ["Hasta 120 caracteres"], Carrier: ["Hasta 200 caracteres"] } });
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason).toBe("invalid");
-    expect(result.fieldErrors).toEqual({ nombre: "Hasta 120 caracteres", telefono: "Hasta 40 caracteres", expreso: "Hasta 200 caracteres" });
+    expect(result.fieldErrors).toEqual({ nombre: "Hasta 120 caracteres", expreso: "Hasta 200 caracteres" });
     expect(result.error).toBe("Revisá los datos marcados.");
   });
 
-  it("maps customer type and business name errors to their fields", () => {
-    const result = interpretOrderResponse(400, { errors: { CustomerType: ["Elegí el tipo de cliente"], BusinessName: ["Completá el nombre del comercio"] } });
+  it("maps customer type errors to their field", () => {
+    const result = interpretOrderResponse(400, { errors: { CustomerType: ["Elegí el tipo de cliente"] } });
     if (result.ok) throw new Error("expected failure");
-    expect(result.fieldErrors).toEqual({ cliente: "Elegí el tipo de cliente", comercio: "Completá el nombre del comercio" });
+    expect(result.fieldErrors).toEqual({ cliente: "Elegí el tipo de cliente" });
+  });
+
+  it("keeps a phone error, which the form never causes, as a general message", () => {
+    const result = interpretOrderResponse(400, { errors: { Phone: ["Hasta 40 caracteres"] } });
+    if (result.ok) throw new Error("expected failure");
+    expect(result.fieldErrors).toEqual({});
+    expect(result.error).toBe("Hasta 40 caracteres");
   });
 
   it("replaces default English validator messages with Spanish copy", () => {

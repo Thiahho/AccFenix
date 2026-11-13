@@ -4,7 +4,6 @@ import { firstOpenStep, invalidSteps, orderSteps, stepFields, stepOfField, stepS
 const complete = {
   cliente: "personal",
   nombre: "Ana",
-  telefono: "11 5555",
   zona: "buenos-aires",
   localidad: "Quilmes",
   direccion: "Calle 123",
@@ -19,16 +18,15 @@ describe("order steps", () => {
 
   it("lists the fields each step validates, following the chosen options", () => {
     expect(stepFields("cliente", {})).toEqual(["cliente"]);
-    expect(stepFields("contacto", { cliente: "personal" })).toEqual(["nombre", "telefono"]);
-    expect(stepFields("contacto", { cliente: "comercio" })).toEqual(["comercio", "nombre", "telefono"]);
+    expect(stepFields("contacto", { cliente: "personal" })).toEqual(["nombre"]);
+    expect(stepFields("contacto", { cliente: "comercio" })).toEqual(["nombre"]);
     expect(stepFields("entrega", { zona: "buenos-aires" })).toEqual(["zona", "localidad", "direccion"]);
     expect(stepFields("entrega", { zona: "otra-provincia" })).toEqual(["zona", "provincia", "expreso"]);
     expect(stepFields("revision", {})).toEqual(["comentarios"]);
   });
 
   it("finds the step that owns a field, so server errors can reopen it", () => {
-    expect(stepOfField("comercio")).toBe("contacto");
-    expect(stepOfField("telefono")).toBe("contacto");
+    expect(stepOfField("nombre")).toBe("contacto");
     expect(stepOfField("expreso")).toBe("entrega");
     expect(stepOfField("comentarios")).toBe("revision");
     expect(stepOfField("cliente")).toBe("cliente");
@@ -41,7 +39,7 @@ describe("invalidSteps", () => {
   });
 
   it("flags only the steps whose fields fail", () => {
-    expect(invalidSteps({ ...complete, telefono: "" })).toEqual(set("contacto"));
+    expect(invalidSteps({ ...complete, nombre: "" })).toEqual(set("contacto"));
     expect(invalidSteps({ ...complete, direccion: "" })).toEqual(set("entrega"));
     expect(invalidSteps({ ...complete, comentarios: "a".repeat(501) })).toEqual(set("revision"));
   });
@@ -50,9 +48,8 @@ describe("invalidSteps", () => {
     expect(invalidSteps({ ...complete, cliente: undefined }).has("cliente")).toBe(true);
   });
 
-  it("invalidates contact again when switching to a business without a name", () => {
-    expect(invalidSteps({ ...complete, cliente: "comercio" })).toEqual(set("contacto"));
-    expect(invalidSteps({ ...complete, cliente: "comercio", comercio: "Almacén" })).toEqual(set());
+  it("keeps contact valid when switching to a business", () => {
+    expect(invalidSteps({ ...complete, cliente: "comercio" })).toEqual(set());
   });
 });
 

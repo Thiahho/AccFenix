@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatOrderDate, orderTotalLabel, ordersListPath, ordersPageHref, pageCount, parseOrdersQuery } from "@/lib/admin/orders";
+import { formatOrderDate, orderTotalLabel, ordersListPath, ordersPageHref, pageCount, parseOrdersQuery, whatsappChatHref } from "@/lib/admin/orders";
 
 describe("parseOrdersQuery", () => {
   it("defaults to the first page and every status", () => {
@@ -56,5 +56,20 @@ describe("orderTotalLabel", () => {
 describe("formatOrderDate", () => {
   it("shows the date and time in Buenos Aires", () => {
     expect(formatOrderDate("2026-11-13T15:05:00Z")).toBe("13/11/2026 12:05");
+  });
+});
+
+describe("whatsappChatHref", () => {
+  it("opens a chat with an Argentine number written in any local format", () => {
+    expect(whatsappChatHref("11 5555-0000")).toBe("https://wa.me/5491155550000");
+    expect(whatsappChatHref("011 5555-0000")).toBe("https://wa.me/5491155550000");
+    expect(whatsappChatHref("+54 9 351 555-0000")).toBe("https://wa.me/5493515550000");
+    expect(whatsappChatHref("0054 9 11 5555 0000")).toBe("https://wa.me/5491155550000");
+  });
+
+  it("gives no link when there is no usable number", () => {
+    expect(whatsappChatHref(null)).toBeNull();
+    expect(whatsappChatHref("")).toBeNull();
+    expect(whatsappChatHref("1234")).toBeNull();
   });
 });

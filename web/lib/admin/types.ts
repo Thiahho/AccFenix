@@ -69,10 +69,9 @@ export type AdminOrderSummary = {
   createdAt: string;
   status: OrderStatus;
   customerType: CustomerType;
-  /** Set for a business, null for a personal order. */
-  businessName: string | null;
   customerName: string;
-  phone: string;
+  /** Null for orders placed from the site: they arrive from the customer's WhatsApp, which carries the number. */
+  phone: string | null;
   zone: DeliveryZone;
   isWholesale: boolean;
   total: number;

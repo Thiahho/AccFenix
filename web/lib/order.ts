@@ -3,25 +3,16 @@ import { provincias } from "@/lib/provincias";
 
 const required = (label: string, max = 120) => z.string().trim().min(1, `Completá ${label}`).max(max, "Es demasiado largo");
 
-/** Same rule as the API: one line, no control characters (tabs and line breaks included). */
-const singleLine = /^[^\p{Cc}]*$/u;
-
-/** Who the order is for. A business also names the shop; a personal order ignores any leftover business name. */
-const customerSchema = z.discriminatedUnion(
-  "cliente",
-  [
-    z.object({ cliente: z.literal("personal"), comercio: z.string().optional() }),
-    z.object({
-      cliente: z.literal("comercio"),
-      comercio: required("el nombre del comercio").regex(singleLine, "Escribilo en una sola línea"),
-    }),
-  ],
-  { error: "Elegí para quién es el pedido" },
-);
+/**
+ * Who the order is for. Neither a phone nor a business name is asked: the order goes out from the customer's own
+ * WhatsApp, so the distributor already has the number, and a business simply gives its name as the contact name.
+ */
+const customerSchema = z.object({
+  cliente: z.enum(["personal", "comercio"], { error: "Elegí para quién es el pedido" }),
+});
 
 const contactShape = {
   nombre: required("tu nombre"),
-  telefono: required("un teléfono de contacto", 40),
   comentarios: z.string().trim().max(500).optional(),
 };
 

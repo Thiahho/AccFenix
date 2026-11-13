@@ -1,7 +1,7 @@
 import type { CreatedOrder } from "@/lib/orders/types";
 
 /** Form fields that can show an error coming from the API. */
-export type OrderFormField = "cliente" | "comercio" | "nombre" | "telefono" | "localidad" | "direccion" | "provincia" | "expreso" | "comentarios";
+export type OrderFormField = "cliente" | "nombre" | "localidad" | "direccion" | "provincia" | "expreso" | "comentarios";
 
 export type OrderFieldErrors = Partial<Record<OrderFormField, string>>;
 
@@ -18,9 +18,7 @@ export type SubmitOrderResult = { ok: true; order: CreatedOrder } | SubmitOrderF
 /** Validator keys (PascalCase, compared lowercased) mapped to the form fields that show them. */
 const fieldByKey: Record<string, OrderFormField> = {
   customertype: "cliente",
-  businessname: "comercio",
   customername: "nombre",
-  phone: "telefono",
   locality: "localidad",
   address: "direccion",
   province: "provincia",

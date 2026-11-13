@@ -40,7 +40,7 @@ export function buildOrderMessage(items: CartItem[], form: OrderForm, threshold:
   }
   lines.push("", `Total: ${units} ${units === 1 ? "unidad" : "unidades"}`);
 
-  lines.push("", "*Contacto*", customerLine(form), `Nombre: ${form.nombre}`, `Teléfono: ${form.telefono}`);
+  lines.push("", "*Contacto*", customerLine(form), `Nombre: ${form.nombre}`);
 
   lines.push("", "*Envío*");
   if (form.zona === "buenos-aires") {
@@ -61,9 +61,9 @@ export function buildOrderMessage(items: CartItem[], form: OrderForm, threshold:
   return lines.join("\n");
 }
 
-/** "Cliente: Comercio — Almacén Don Pepe" or "Cliente: Personal"; a personal order never shows a business name. */
+/** "Cliente: Comercio" or "Cliente: Personal". No phone: the message is sent from the customer's own WhatsApp. */
 function customerLine(form: OrderForm) {
-  return form.cliente === "comercio" ? `Cliente: Comercio — ${form.comercio.trim()}` : "Cliente: Personal";
+  return form.cliente === "comercio" ? "Cliente: Comercio" : "Cliente: Personal";
 }
 
 /** The parts of a stored order the message needs. */

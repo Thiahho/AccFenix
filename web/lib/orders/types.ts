@@ -10,10 +10,9 @@ export type CustomerType = "personal" | "business";
 export type CreateOrderRequest = {
   zone: DeliveryZone;
   customerType: CustomerType;
-  /** Required for a business; always null for a personal order. */
-  businessName: string | null;
   customerName: string;
-  phone: string;
+  /** Optional in the API; the site never sends it because the order arrives from the customer's WhatsApp. */
+  phone?: string;
   locality?: string;
   address?: string;
   latitude?: number;

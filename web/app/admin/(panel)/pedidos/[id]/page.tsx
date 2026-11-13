@@ -7,7 +7,7 @@ import { OrderStatusForm } from "@/components/admin/orders/order-status-form";
 import { PageHeader } from "@/components/admin/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatOrderDate, orderTotalLabel } from "@/lib/admin/orders";
+import { formatOrderDate, orderTotalLabel, whatsappChatHref } from "@/lib/admin/orders";
 import { adminFetch, AdminApiError } from "@/lib/admin/session";
 import type { AdminOrder } from "@/lib/admin/types";
 import { mapsLink } from "@/lib/maps-url";
@@ -35,6 +35,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     throw e;
   });
   const hasLocation = order.latitude !== null && order.longitude !== null;
+  const chatHref = whatsappChatHref(order.phone);
 
   return (
     <div className="max-w-4xl">
@@ -56,10 +57,20 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <h2 id="cliente" className="font-semibold">Cliente</h2>
           <dl className="mt-3 grid gap-3 text-sm">
             <Detail label="Tipo">{customerTypeLabel[order.customerType]}</Detail>
-            {order.businessName && <Detail label="Comercio">{order.businessName}</Detail>}
-            <Detail label={order.customerType === "business" ? "Responsable" : "Nombre"}>{order.customerName}</Detail>
+            <Detail label="Nombre">{order.customerName}</Detail>
             <Detail label="Teléfono">
-              <a href={`tel:${order.phone}`} className="hover:text-brand">{order.phone}</a>
+              {order.phone ? (
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <a href={`tel:${order.phone}`} className="hover:text-brand">{order.phone}</a>
+                  {chatHref && (
+                    <a href={chatHref} target="_blank" rel="noopener noreferrer" className="font-medium text-brand underline-offset-2 hover:underline">
+                      Abrir chat
+                    </a>
+                  )}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">— (llegó por WhatsApp)</span>
+              )}
             </Detail>
             {order.comments && <Detail label="Comentarios"><span className="whitespace-pre-line">{order.comments}</span></Detail>}
           </dl>
