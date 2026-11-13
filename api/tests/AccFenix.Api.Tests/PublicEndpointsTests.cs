@@ -15,19 +15,17 @@ public class PublicEndpointsTests(ApiFactory factory)
     readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
-    public async Task Categories_lists_the_three_seeded_catalogs_in_order()
+    public async Task Categories_lists_the_seeded_egg_catalog()
     {
         var json = await _client.GetFromJsonAsync<JsonElement>("/api/categories");
 
         json.EnumerateArray().Select(c => c.GetProperty("slug").GetString())
-            .Should().Equal("barrales", "accesorios", "kits");
+            .Should().Equal("huevos");
     }
 
     [Theory]
-    [InlineData("barral", 60)]          // 10 medidas × 2 grosores × 3 colores
-    [InlineData("soporte-bocha", 6)]    // 2 grosores × 3 colores
-    [InlineData("kit-1-20-a-1-60-simple", 18)]  // 3 medidas × 2 × 3
-    [InlineData("kit-1-80-a-3-00-doble", 42)]   // 7 medidas × 2 × 3
+    [InlineData("huevos-n-1", 3)]   // Cajón, Medio cajón, Maple
+    [InlineData("huevos-n-2", 3)]
     public async Task Product_detail_exposes_one_variant_per_combination(string slug, int expected)
     {
         var json = await _client.GetFromJsonAsync<JsonElement>($"/api/products/{slug}");
@@ -47,10 +45,28 @@ public class PublicEndpointsTests(ApiFactory factory)
 
         byCategory.Should().BeEquivalentTo(new Dictionary<string, int>
         {
-            ["barrales"] = 60,
-            ["accesorios"] = 30,
-            ["kits"] = 120, // (3 + 3 + 7 + 7) medidas × 6
+            ["huevos"] = 6, // 2 productos × 3 presentaciones
         });
+    }
+
+    [Theory]
+    [InlineData("huevos-n-1", "Cajón", 60000)]
+    [InlineData("huevos-n-1", "Medio cajón", 35000)]
+    [InlineData("huevos-n-1", "Maple", 6500)]
+    [InlineData("huevos-n-2", "Cajón", 55000)]
+    [InlineData("huevos-n-2", "Medio cajón", 27000)]
+    [InlineData("huevos-n-2", "Maple", 5500)]
+    public async Task Seeded_egg_variants_carry_retail_prices(string productSlug, string presentation, decimal retail)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var variant = await db.Variants
+            .Where(v => v.IsActive && v.Product.Slug == productSlug)
+            .SingleAsync(v => v.Values.Any(x => x.AttributeValue.Label == presentation));
+
+        variant.RetailPrice.Should().Be(retail);
+        variant.WholesalePrice.Should().BeNull();
     }
 
     [Fact]
@@ -67,7 +83,7 @@ public class PublicEndpointsTests(ApiFactory factory)
 
     [Theory]
     [InlineData("/api/categories")]
-    [InlineData("/api/categories/barrales/products")]
+    [InlineData("/api/categories/huevos/products")]
     public async Task Catalog_listings_do_not_mention_prices(string url)
     {
         var body = await _client.GetStringAsync(url);
@@ -86,7 +102,7 @@ public class PublicEndpointsTests(ApiFactory factory)
     [Fact]
     public async Task Variants_status_returns_availability_for_requested_ids()
     {
-        var product = await _client.GetFromJsonAsync<JsonElement>("/api/products/argollas");
+        var product = await _client.GetFromJsonAsync<JsonElement>("/api/products/huevos-n-1");
         var ids = product.GetProperty("variants").EnumerateArray().Take(2).Select(v => v.GetProperty("id").GetInt32()).ToList();
 
         var json = await _client.GetFromJsonAsync<JsonElement>($"/api/variants?ids={string.Join(',', ids)},999999");

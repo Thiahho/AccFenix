@@ -46,13 +46,13 @@ public class SecurityTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public static TheoryData<string> SqlPayloads => new()
     {
         "' OR '1'='1",
-        "barral' OR '1'='1' --",
+        "huevos' OR '1'='1' --",
         "'; DROP TABLE \"Products\"; --",
-        "barral'; DELETE FROM \"Variants\"; --",
+        "huevos'; DELETE FROM \"Variants\"; --",
         "1 UNION SELECT \"PasswordHash\" FROM \"AdminUsers\"",
-        "barral\" OR \"\"=\"",
+        "huevos\" OR \"\"=\"",
         "%27%20OR%201=1",
-        "barral/**/OR/**/1=1",
+        "huevos/**/OR/**/1=1",
         "1; SELECT pg_sleep(5)",
         "\\'; DROP TABLE \"Categories\"; --",
     };
@@ -211,15 +211,15 @@ public class SecurityTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Duplicate_names_return_conflict()
     {
-        (await AdminClient().PostAsJsonAsync("/api/admin/attributes", new { name = "Color", sortOrder = 0 }))
+        (await AdminClient().PostAsJsonAsync("/api/admin/attributes", new { name = "Presentación", sortOrder = 0 }))
             .StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Theory]
-    [InlineData("/api/products/BARRAL")]
-    [InlineData("/api/products/barral%20")]
-    [InlineData("/api/products/barral%0A")]
-    [InlineData("/api/categories/kits%09/products")]
+    [InlineData("/api/products/HUEVOS-N-1")]
+    [InlineData("/api/products/huevos-n-1%20")]
+    [InlineData("/api/products/huevos-n-1%0A")]
+    [InlineData("/api/categories/huevos%09/products")]
     public async Task Malformed_slugs_are_not_found(string url)
     {
         (await _public.GetAsync(url)).StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -246,12 +246,12 @@ public class SecurityTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Theory]
-    [InlineData("barral", true)]
-    [InlineData("kit-1-20-a-1-60-simple", true)]
+    [InlineData("huevos", true)]
+    [InlineData("huevos-n-1", true)]
     [InlineData("", false)]
-    [InlineData("Barral", false)]
-    [InlineData("barral'--", false)]
-    [InlineData("barral\0", false)]
+    [InlineData("Huevos", false)]
+    [InlineData("huevos'--", false)]
+    [InlineData("huevos\0", false)]
     public void Slug_format_check(string text, bool expected)
     {
         Slug.IsValid(text).Should().Be(expected);

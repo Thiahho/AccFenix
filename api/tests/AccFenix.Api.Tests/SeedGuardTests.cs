@@ -15,7 +15,7 @@ public class SeedGuardTests(ApiFactory factory) : IClassFixture<ApiFactory>
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var removed = await db.Products.SingleAsync(p => p.Slug == "terminales");
+        var removed = await db.Products.SingleAsync(p => p.Slug == "huevos-n-2");
         db.Products.Remove(removed);
         await db.SaveChangesAsync();
         var products = await db.Products.CountAsync();
@@ -23,7 +23,7 @@ public class SeedGuardTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         await scope.ServiceProvider.GetRequiredService<CatalogSeeder>().SeedAsync();
 
-        (await db.Products.AnyAsync(p => p.Slug == "terminales")).Should().BeFalse();
+        (await db.Products.AnyAsync(p => p.Slug == "huevos-n-2")).Should().BeFalse();
         (await db.Products.CountAsync()).Should().Be(products);
         (await db.Variants.CountAsync()).Should().Be(variants);
     }

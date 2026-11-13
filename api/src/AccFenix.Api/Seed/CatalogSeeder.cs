@@ -12,9 +12,18 @@ namespace AccFenix.Api.Seed;
 /// </summary>
 public class CatalogSeeder(AppDbContext db, VariantGenerator generator, AdminAccountService admins, IConfiguration config, ILogger<CatalogSeeder> logger)
 {
-    static readonly string[] Medidas = ["1.20", "1.40", "1.60", "1.80", "2.00", "2.20", "2.40", "2.60", "2.80", "3.00"];
-    static readonly string[] Grosores = ["22", "34"];
-    static readonly (string Label, string Hex)[] Colores = [("Natural", "#D8B98A"), ("Caoba", "#6B2E1F"), ("Cedro", "#A0522D")];
+    // PLACEHOLDER: catálogo y precios de referencia a confirmar con el cliente.
+    // Presentaciones: Cajón = 360 huevos, Medio cajón = 180, Maple = 30.
+    static readonly string[] Presentaciones = ["Cajón", "Medio cajón", "Maple"];
+
+    /// <summary>Precio minorista (ARS) por producto y presentación. El mayorista queda sin cargar (a consultar).</summary>
+    static readonly (string Product, string Description, Dictionary<string, decimal> Retail)[] Huevos =
+    [
+        ("Huevos N°1", "Huevos frescos de granja, calibre N°1.",
+            new() { ["Cajón"] = 60000m, ["Medio cajón"] = 35000m, ["Maple"] = 6500m }),
+        ("Huevos N°2", "Huevos frescos de granja, calibre N°2.",
+            new() { ["Cajón"] = 55000m, ["Medio cajón"] = 27000m, ["Maple"] = 5500m }),
+    ];
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
@@ -38,39 +47,36 @@ public class CatalogSeeder(AppDbContext db, VariantGenerator generator, AdminAcc
 
     async Task SeedCatalogAsync(CancellationToken ct)
     {
-        var medida = await EnsureAttributeAsync("Medida", 0, Medidas.Select(m => (m, (string?)null)), ct);
-        var grosor = await EnsureAttributeAsync("Grosor", 1, Grosores.Select(g => (g, (string?)null)), ct);
-        var color = await EnsureAttributeAsync("Color", 2, Colores.Select(c => (c.Label, (string?)c.Hex)), ct);
+        var presentacion = await EnsureAttributeAsync("Presentación", 0, Presentaciones.Select(p => (p, (string?)null)), ct);
+        var huevos = await EnsureCategoryAsync("Huevos", 0, "Huevos frescos por cajón (360), medio cajón (180) o maple (30).", [presentacion], ct);
 
-        var barrales = await EnsureCategoryAsync("Barrales", 0, "Barrales de madera en 10 medidas, 2 grosores y 3 colores.", [medida, grosor, color], ct);
-        var accesorios = await EnsureCategoryAsync("Accesorios", 1, "Soportes, argollas y terminales para cada grosor y color.", [grosor, color], ct);
-        var kits = await EnsureCategoryAsync("Kits", 2, "Barral con sus accesorios, listo para instalar.", [medida, grosor, color], ct);
-
-        var allGrosor = grosor.Values.ToList();
-        var allColor = color.Values.ToList();
-        var corto = medida.Values.Where(v => string.CompareOrdinal(v.Label, "1.60") <= 0).ToList();
-        var largo = medida.Values.Where(v => string.CompareOrdinal(v.Label, "1.80") >= 0).ToList();
-
-        var products = new List<Product>
+        for (var i = 0; i < Huevos.Length; i++)
         {
-            await EnsureProductAsync(barrales, "Barral", 0, "Barral de madera para cortinas.", [.. medida.Values, .. allGrosor, .. allColor], ct),
-
-            await EnsureProductAsync(accesorios, "Soporte Bocha", 0, null, [.. allGrosor, .. allColor], ct),
-            await EnsureProductAsync(accesorios, "Soporte Doble", 1, null, [.. allGrosor, .. allColor], ct),
-            await EnsureProductAsync(accesorios, "Argollas", 2, null, [.. allGrosor, .. allColor], ct),
-            await EnsureProductAsync(accesorios, "Terminales", 3, null, [.. allGrosor, .. allColor], ct),
-            await EnsureProductAsync(accesorios, "Soporte Lateral", 4, null, [.. allGrosor, .. allColor], ct),
-
-            await EnsureProductAsync(kits, "Kit 1.20 a 1.60 Simple", 0, "1 barral + 2 soportes + 2 terminales.", [.. corto, .. allGrosor, .. allColor], ct),
-            await EnsureProductAsync(kits, "Kit 1.20 a 1.60 Doble", 1, "2 barrales + 2 soportes + 4 terminales.", [.. corto, .. allGrosor, .. allColor], ct),
-            await EnsureProductAsync(kits, "Kit 1.80 a 3.00 Simple", 2, "1 barral + 3 soportes + 3 terminales.", [.. largo, .. allGrosor, .. allColor], ct),
-            await EnsureProductAsync(kits, "Kit 1.80 a 3.00 Doble", 3, "2 barrales + 3 soportes + 4 terminales.", [.. largo, .. allGrosor, .. allColor], ct),
-        };
-
-        foreach (var p in products)
-        {
-            await generator.GenerateAsync(p.Id, ct);
+            var (name, description, retail) = Huevos[i];
+            var product = await EnsureProductAsync(huevos, name, i, description, [.. presentacion.Values], ct);
+            await generator.GenerateAsync(product.Id, ct);
+            await SetRetailPricesAsync(product.Id, retail, ct);
         }
+    }
+
+    /// <summary>Carga el precio minorista de cada variante según su presentación, sin pisar precios ya cargados.</summary>
+    async Task SetRetailPricesAsync(int productId, Dictionary<string, decimal> retail, CancellationToken ct)
+    {
+        var variants = await db.Variants
+            .Include(v => v.Values).ThenInclude(vv => vv.AttributeValue)
+            .Where(v => v.ProductId == productId && v.IsActive)
+            .ToListAsync(ct);
+
+        foreach (var variant in variants.Where(v => v.RetailPrice is null))
+        {
+            var label = variant.Values.Select(vv => vv.AttributeValue.Label).FirstOrDefault(retail.ContainsKey);
+            if (label is not null)
+            {
+                variant.RetailPrice = retail[label];
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
     }
 
     async Task<CatalogAttribute> EnsureAttributeAsync(string name, int sort, IEnumerable<(string Label, string? Hex)> values, CancellationToken ct)

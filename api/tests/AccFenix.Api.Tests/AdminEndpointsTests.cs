@@ -50,45 +50,45 @@ public class AdminEndpointsTests(ApiFactory factory)
     {
         var client = await AdminClient();
 
-        // Nuevo atributo "Largo cortina" con dos valores
-        var attrId = await CreatedId(await client.PostAsJsonAsync("/api/admin/attributes", new { name = "Largo cortina", sortOrder = 9 }));
-        var cortoId = await CreatedId(await client.PostAsJsonAsync($"/api/admin/attributes/{attrId}/values", new { label = "Corto", sortOrder = 0 }));
-        var largoId = await CreatedId(await client.PostAsJsonAsync($"/api/admin/attributes/{attrId}/values", new { label = "Largo", sortOrder = 1 }));
+        // Nuevo atributo "Color de cáscara" con dos valores
+        var attrId = await CreatedId(await client.PostAsJsonAsync("/api/admin/attributes", new { name = "Color de cáscara", sortOrder = 9 }));
+        var blancoId = await CreatedId(await client.PostAsJsonAsync($"/api/admin/attributes/{attrId}/values", new { label = "Blanco", sortOrder = 0 }));
+        var coloradoId = await CreatedId(await client.PostAsJsonAsync($"/api/admin/attributes/{attrId}/values", new { label = "Colorado", sortOrder = 1 }));
 
-        // Color ya existe por el seed
+        // Presentación ya existe por el seed
         var attributes = await client.GetFromJsonAsync<JsonElement>("/api/admin/attributes");
-        var color = attributes.EnumerateArray().Single(a => a.GetProperty("slug").GetString() == "color");
-        var colorValues = color.GetProperty("values").EnumerateArray().Select(v => v.GetProperty("id").GetInt32()).ToList();
+        var presentacion = attributes.EnumerateArray().Single(a => a.GetProperty("slug").GetString() == "presentacion");
+        var presentacionValues = presentacion.GetProperty("values").EnumerateArray().Select(v => v.GetProperty("id").GetInt32()).ToList();
 
         var categoryId = await CreatedId(await client.PostAsJsonAsync("/api/admin/categories", new
         {
-            name = "Cortinas Test", description = "x", sortOrder = 5, isActive = true,
-            attributeIds = new[] { attrId, color.GetProperty("id").GetInt32() },
+            name = "Huevos Test", description = "x", sortOrder = 5, isActive = true,
+            attributeIds = new[] { attrId, presentacion.GetProperty("id").GetInt32() },
         }));
 
         var create = await client.PostAsJsonAsync("/api/admin/products", new
         {
-            categoryId, name = "Cortina Test", sortOrder = 0, isActive = true,
-            allowedValueIds = colorValues.Append(cortoId).Append(largoId).ToArray(),
+            categoryId, name = "Huevo Test", sortOrder = 0, isActive = true,
+            allowedValueIds = presentacionValues.Append(blancoId).Append(coloradoId).ToArray(),
         });
         var productId = await CreatedId(create);
 
         var product = await client.GetFromJsonAsync<JsonElement>($"/api/admin/products/{productId}");
-        product.GetProperty("variants").GetArrayLength().Should().Be(6); // 2 largos × 3 colores
+        product.GetProperty("variants").GetArrayLength().Should().Be(6); // 2 colores × 3 presentaciones
 
-        // Bulk: todo "Largo" → a pedido
-        var bulk = await client.PatchAsJsonAsync("/api/admin/variants/bulk", new { productId, valueIds = new[] { largoId }, availability = "aPedido" });
+        // Bulk: todo "Colorado" → a pedido
+        var bulk = await client.PatchAsJsonAsync("/api/admin/variants/bulk", new { productId, valueIds = new[] { coloradoId }, availability = "aPedido" });
         (await bulk.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("updated").GetInt32().Should().Be(3);
 
-        var publicProduct = await factory.CreateClient().GetFromJsonAsync<JsonElement>("/api/products/cortina-test");
+        var publicProduct = await factory.CreateClient().GetFromJsonAsync<JsonElement>("/api/products/huevo-test");
         publicProduct.GetProperty("variants").EnumerateArray()
             .Count(v => v.GetProperty("availability").GetString() == "aPedido").Should().Be(3);
 
-        // Quitar el valor "Corto" desactiva sus variantes (no las borra)
+        // Quitar el valor "Blanco" desactiva sus variantes (no las borra)
         var update = await client.PutAsJsonAsync($"/api/admin/products/{productId}", new
         {
-            categoryId, name = "Cortina Test", sortOrder = 0, isActive = true,
-            allowedValueIds = colorValues.Append(largoId).ToArray(),
+            categoryId, name = "Huevo Test", sortOrder = 0, isActive = true,
+            allowedValueIds = presentacionValues.Append(coloradoId).ToArray(),
         });
         update.StatusCode.Should().Be(HttpStatusCode.OK, await update.Content.ReadAsStringAsync());
         var afterUpdate = await client.GetFromJsonAsync<JsonElement>($"/api/admin/products/{productId}");
@@ -96,7 +96,7 @@ public class AdminEndpointsTests(ApiFactory factory)
 
         // La categoría con productos no se puede borrar; el valor en uso tampoco
         (await client.DeleteAsync($"/api/admin/categories/{categoryId}")).StatusCode.Should().Be(HttpStatusCode.Conflict);
-        (await client.DeleteAsync($"/api/admin/attribute-values/{largoId}")).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await client.DeleteAsync($"/api/admin/attribute-values/{coloradoId}")).StatusCode.Should().Be(HttpStatusCode.Conflict);
 
         // Limpieza: producto → categoría → atributo
         (await client.DeleteAsync($"/api/admin/products/{productId}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -109,24 +109,25 @@ public class AdminEndpointsTests(ApiFactory factory)
     {
         var client = await AdminClient();
         var categories = await client.GetFromJsonAsync<JsonElement>("/api/admin/categories");
-        var accesorios = categories.EnumerateArray().Single(c => c.GetProperty("slug").GetString() == "accesorios").GetProperty("id").GetInt32();
-        var attributes = await client.GetFromJsonAsync<JsonElement>("/api/admin/attributes");
-        var medidaValue = attributes.EnumerateArray().Single(a => a.GetProperty("slug").GetString() == "medida")
-            .GetProperty("values")[0].GetProperty("id").GetInt32();
+        var huevos = categories.EnumerateArray().Single(c => c.GetProperty("slug").GetString() == "huevos").GetProperty("id").GetInt32();
+        // Atributo propio del test, ajeno a la categoría "Huevos"
+        var attrId = await CreatedId(await client.PostAsJsonAsync("/api/admin/attributes", new { name = "Calibre test", sortOrder = 9 }));
+        var foreignValue = await CreatedId(await client.PostAsJsonAsync($"/api/admin/attributes/{attrId}/values", new { label = "Jumbo", sortOrder = 0 }));
 
         var res = await client.PostAsJsonAsync("/api/admin/products", new
         {
-            categoryId = accesorios, name = "Accesorio inválido", sortOrder = 0, isActive = true, allowedValueIds = new[] { medidaValue },
+            categoryId = huevos, name = "Huevo inválido", sortOrder = 0, isActive = true, allowedValueIds = new[] { foreignValue },
         });
 
         res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await client.DeleteAsync($"/api/admin/attributes/{attrId}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Fact]
     public async Task Single_variant_toggle_is_reflected_publicly()
     {
         var client = await AdminClient();
-        var product = await factory.CreateClient().GetFromJsonAsync<JsonElement>("/api/products/terminales");
+        var product = await factory.CreateClient().GetFromJsonAsync<JsonElement>("/api/products/huevos-n-1");
         var variantId = product.GetProperty("variants")[0].GetProperty("id").GetInt32();
 
         (await client.PatchAsJsonAsync($"/api/admin/variants/{variantId}", new { availability = "aPedido" })).EnsureSuccessStatusCode();
