@@ -1,5 +1,8 @@
+using System.Globalization;
 using AccFenix.Api.Domain;
+using AccFenix.Api.Endpoints;
 using Microsoft.EntityFrameworkCore;
+using static System.FormattableString;
 
 namespace AccFenix.Api.Data;
 
@@ -75,6 +78,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(x => x.Sku).IsUnique();
             e.HasIndex(x => new { x.ProductId, x.CombinationKey }).IsUnique();
             e.HasOne(x => x.Product).WithMany(p => p.Variants).HasForeignKey(x => x.ProductId);
+            // Same bounds as the API validators; a missing price means "price on request".
+            e.ToTable(t =>
+            {
+                t.HasCheckConstraint("CK_Variants_RetailPrice", OptionalPriceRule("RetailPrice"));
+                t.HasCheckConstraint("CK_Variants_WholesalePrice", OptionalPriceRule("WholesalePrice"));
+            });
         });
 
         b.Entity<VariantValue>(e =>
@@ -121,6 +130,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             // The admin list is read newest first, optionally by status.
             e.HasIndex(x => x.CreatedAt);
             e.HasIndex(x => new { x.Status, x.CreatedAt });
+            // Enums are stored as integers; these rules mirror the order validator of the API.
+            e.ToTable(t =>
+            {
+                t.HasCheckConstraint("CK_Orders_Status", $"\"Status\" IN ({EnumValues<OrderStatus>()})");
+                t.HasCheckConstraint("CK_Orders_Zone", $"\"Zone\" IN ({EnumValues<DeliveryZone>()})");
+                t.HasCheckConstraint("CK_Orders_Number", "\"Number\" > 0");
+                t.HasCheckConstraint("CK_Orders_Total", "\"Total\" >= 0");
+                t.HasCheckConstraint("CK_Orders_Coordinates", "(\"Latitude\" IS NULL) = (\"Longitude\" IS NULL)");
+                t.HasCheckConstraint("CK_Orders_Latitude", "\"Latitude\" IS NULL OR \"Latitude\" BETWEEN -90 AND 90");
+                t.HasCheckConstraint("CK_Orders_Longitude", "\"Longitude\" IS NULL OR \"Longitude\" BETWEEN -180 AND 180");
+                // Each zone carries only its own delivery fields (a single line keeps the migration SQL stable).
+                t.HasCheckConstraint("CK_Orders_ZoneFields",
+                    Invariant($"(\"Zone\" = {(int)DeliveryZone.BuenosAires} AND \"Locality\" IS NOT NULL AND \"Address\" IS NOT NULL AND \"Province\" IS NULL AND \"Carrier\" IS NULL)")
+                    + Invariant($" OR (\"Zone\" = {(int)DeliveryZone.OtherProvince} AND \"Province\" IS NOT NULL AND \"Carrier\" IS NOT NULL")
+                    + " AND \"Locality\" IS NULL AND \"Address\" IS NULL AND \"Latitude\" IS NULL AND \"Longitude\" IS NULL)");
+            });
         });
 
         b.Entity<OrderItem>(e =>
@@ -133,6 +158,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(x => x.Order).WithMany(o => o.Items).HasForeignKey(x => x.OrderId);
             // Removing a variant from the catalog keeps the order line and its snapshot.
             e.HasOne(x => x.Variant).WithMany().HasForeignKey(x => x.VariantId).OnDelete(DeleteBehavior.SetNull);
+            e.ToTable(t =>
+            {
+                t.HasCheckConstraint("CK_OrderItems_Quantity", Invariant($"\"Quantity\" BETWEEN 1 AND {OrderLimits.MaxQuantity}"));
+                t.HasCheckConstraint("CK_OrderItems_UnitPrice", "\"UnitPrice\" IS NULL OR \"UnitPrice\" >= 0");
+                t.HasCheckConstraint("CK_OrderItems_Subtotal", "\"Subtotal\" IS NULL OR \"Subtotal\" >= 0");
+            });
         });
     }
+
+    static string OptionalPriceRule(string column) =>
+        Invariant($"\"{column}\" IS NULL OR \"{column}\" BETWEEN 0 AND {ValidationExtensions.MaxPrice}");
+
+    static string EnumValues<TEnum>() where TEnum : struct, Enum =>
+        string.Join(", ", Enum.GetValues<TEnum>().Select(v => Convert.ToInt32(v, CultureInfo.InvariantCulture)));
 }

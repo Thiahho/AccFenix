@@ -66,6 +66,8 @@ Variables de entorno (formato ASP.NET, `__` separa secciones):
 
 Migraciones nuevas: `dotnet ef migrations add <Nombre> --project src/AccFenix.Api -o Data/Migrations`.
 
+Script SQL idempotente con todas las migraciones (para aplicar a mano en producción con `psql "$DATABASE_URL" -f api/db/migrations.sql`): `api/db/migrations.sql`. Regenerarlo tras cada migración nueva con `dotnet ef migrations script --idempotent --project src/AccFenix.Api -o db/migrations.sql` (desde `api/`) y volver a agregar el encabezado.
+
 ## Deploy sugerido
 
 - **Web**: Vercel. Configurar `API_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_BRAND_NAME` y `API_TRUSTED_KEY` (el mismo valor que `TrustedWeb__Key` en la API).

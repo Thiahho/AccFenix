@@ -276,7 +276,24 @@ namespace AccFenix.Api.Data.Migrations
 
                     b.HasIndex("Status", "CreatedAt");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", t =>
+                        {
+                            t.HasCheckConstraint("CK_Orders_Coordinates", "(\"Latitude\" IS NULL) = (\"Longitude\" IS NULL)");
+
+                            t.HasCheckConstraint("CK_Orders_Latitude", "\"Latitude\" IS NULL OR \"Latitude\" BETWEEN -90 AND 90");
+
+                            t.HasCheckConstraint("CK_Orders_Longitude", "\"Longitude\" IS NULL OR \"Longitude\" BETWEEN -180 AND 180");
+
+                            t.HasCheckConstraint("CK_Orders_Number", "\"Number\" > 0");
+
+                            t.HasCheckConstraint("CK_Orders_Status", "\"Status\" IN (0, 1, 2, 3, 4)");
+
+                            t.HasCheckConstraint("CK_Orders_Total", "\"Total\" >= 0");
+
+                            t.HasCheckConstraint("CK_Orders_Zone", "\"Zone\" IN (0, 1)");
+
+                            t.HasCheckConstraint("CK_Orders_ZoneFields", "(\"Zone\" = 0 AND \"Locality\" IS NOT NULL AND \"Address\" IS NOT NULL AND \"Province\" IS NULL AND \"Carrier\" IS NULL) OR (\"Zone\" = 1 AND \"Province\" IS NOT NULL AND \"Carrier\" IS NOT NULL AND \"Locality\" IS NULL AND \"Address\" IS NULL AND \"Latitude\" IS NULL AND \"Longitude\" IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("AccFenix.Api.Domain.OrderItem", b =>
@@ -325,7 +342,14 @@ namespace AccFenix.Api.Data.Migrations
 
                     b.HasIndex("VariantId");
 
-                    b.ToTable("OrderItems");
+                    b.ToTable("OrderItems", t =>
+                        {
+                            t.HasCheckConstraint("CK_OrderItems_Quantity", "\"Quantity\" BETWEEN 1 AND 100000");
+
+                            t.HasCheckConstraint("CK_OrderItems_Subtotal", "\"Subtotal\" IS NULL OR \"Subtotal\" >= 0");
+
+                            t.HasCheckConstraint("CK_OrderItems_UnitPrice", "\"UnitPrice\" IS NULL OR \"UnitPrice\" >= 0");
+                        });
                 });
 
             modelBuilder.Entity("AccFenix.Api.Domain.Product", b =>
@@ -442,7 +466,12 @@ namespace AccFenix.Api.Data.Migrations
                     b.HasIndex("ProductId", "CombinationKey")
                         .IsUnique();
 
-                    b.ToTable("Variants");
+                    b.ToTable("Variants", t =>
+                        {
+                            t.HasCheckConstraint("CK_Variants_RetailPrice", "\"RetailPrice\" IS NULL OR \"RetailPrice\" BETWEEN 0 AND 99999999.99");
+
+                            t.HasCheckConstraint("CK_Variants_WholesalePrice", "\"WholesalePrice\" IS NULL OR \"WholesalePrice\" BETWEEN 0 AND 99999999.99");
+                        });
                 });
 
             modelBuilder.Entity("AccFenix.Api.Domain.VariantValue", b =>
