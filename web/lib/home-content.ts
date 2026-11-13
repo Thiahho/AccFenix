@@ -13,6 +13,9 @@ export const steps: Step[] = [
   { title: "Entregamos", text: "Llevamos el pedido con nuestro camión propio, cuidado para que llegue entero." },
 ];
 
+/** Where the "Cómo trabajamos" journey ends. */
+export const journeyGoal: Step = { title: "Tus huevos, en tu puerta", text: "El día y en la franja que acordamos, listos para usar." };
+
 export type Faq = { question: string; answer: string };
 
 // A confirmar con el cliente: zones, payment methods and wholesale rules are proposals.

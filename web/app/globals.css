@@ -437,3 +437,12 @@ html {
     }
   }
 }
+
+/* Truck riding the tip of the "Cómo trabajamos" trail (components/home/journey.tsx). */
+.journey-truck {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.journey-truck[data-visible="true"] {
+  opacity: 1;
+}
