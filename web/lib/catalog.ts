@@ -1,4 +1,5 @@
 import { api, type Availability, type ProductDetail } from "@/lib/api";
+import type { CartItem } from "@/stores/cart";
 
 /**
  * Every active product with its variants, for the home price board and order grid.
@@ -54,4 +55,33 @@ export function priceRows(product: Pick<ProductDetail, "attributes" | "variants"
       retailPrice: v.retailPrice,
       wholesalePrice: v.wholesalePrice,
     }));
+}
+
+/**
+ * The cart line a price-board row adds: the same shape the product card adds, labelled like `describeSelection`
+ * ("Presentación Cajón") so both entry points merge into one line. Null when the variant is not in the product.
+ */
+export function priceRowCartItem(
+  product: Pick<ProductDetail, "name" | "slug" | "category" | "attributes" | "variants">,
+  variantId: number,
+): Omit<CartItem, "qty"> | null {
+  const variant = product.variants.find((v) => v.id === variantId);
+  if (!variant) return null;
+  const valuesLabel = product.attributes
+    .map((a) => {
+      const value = a.values.find((v) => variant.valueIds.includes(v.id));
+      return value ? `${a.name} ${value.label}` : null;
+    })
+    .filter(Boolean)
+    .join(" · ");
+  return {
+    variantId: variant.id,
+    productSlug: product.slug,
+    productName: product.name,
+    categoryName: product.category.name,
+    valuesLabel,
+    availability: variant.availability,
+    retailPrice: variant.retailPrice,
+    wholesalePrice: variant.wholesalePrice,
+  };
 }

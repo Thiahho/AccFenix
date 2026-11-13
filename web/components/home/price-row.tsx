@@ -5,9 +5,15 @@ import * as m from "motion/react-m";
 import type { TargetAndTransition, Transition, Variants } from "motion/react";
 import { GrowX, Pop } from "@/components/motion/reveal";
 import { usePrefersReducedMotion } from "@/components/motion/use-reduced-motion";
+import { notifyAdded } from "@/components/site/order-toast";
 import { playCrack } from "@/lib/crack-sound";
+import { useCart, type CartItem } from "@/stores/cart";
 
 type Props = {
+  /** Cart line this row adds; null disables the row (variant missing from the product data). */
+  item: Omit<CartItem, "qty"> | null;
+  /** Product cover for the "added" toast. */
+  imageUrl: string | null;
   productName: string;
   label: string;
   /** Formatted retail price, or "Consultar". */
@@ -20,7 +26,8 @@ type Props = {
  * One price row of the board. Entrance (Pop, GrowX) inherits the parent Stagger's hidden/visible variants, so the
  * hover layers below drive their own `rest`/`hover` state from React instead of whileHover (a variant-controlling
  * parent would cut the inherited entrance). Transforms and opacity only; MotionConfig reducedMotion="user" turns the
- * transforms into instant changes for people who ask for less motion.
+ * transforms into instant changes for people who ask for less motion. A click also adds one unit to the cart and shows
+ * the same "added" toast the product card shows.
  */
 
 const soft: Transition = { type: "spring", stiffness: 380, damping: 26 };
@@ -42,27 +49,32 @@ const shake: TargetAndTransition = {
   transition: { duration: 0.36, ease: "easeOut" },
 };
 
-export function PriceRow({ productName, label, price, wholesale }: Props) {
+export function PriceRow({ item, imageUrl, productName, label, price, wholesale }: Props) {
+  const add = useCart((s) => s.add);
   const [active, setActive] = useState(false);
   const [cracks, setCracks] = useState(0);
   const reduce = usePrefersReducedMotion();
   const state = active ? "hover" : "rest";
 
-  const name = `${productName}, ${label}, ${price}${wholesale ? `, mayorista ${wholesale}` : ""}`;
+  const name = `${item ? "Agregar al pedido: " : ""}${productName}, ${label}, ${price}${wholesale ? `, mayorista ${wholesale}` : ""}`;
 
   return (
     <button
       type="button"
       aria-label={name}
+      disabled={!item}
       onClick={() => {
+        if (!item) return;
         playCrack();
         setCracks((n) => n + 1);
+        add(item, 1);
+        notifyAdded({ title: item.productName, detail: item.valuesLabel, availability: item.availability, imageUrl });
       }}
       onPointerEnter={(e) => e.pointerType === "mouse" && setActive(true)}
       onPointerLeave={(e) => e.pointerType === "mouse" && setActive(false)}
       onFocus={(e) => e.currentTarget.matches(":focus-visible") && setActive(true)}
       onBlur={() => setActive(false)}
-      className="relative -mx-3 w-[calc(100%+1.5rem)] cursor-pointer touch-manipulation rounded-xl px-3 py-2 text-left select-none focus-visible:ring-3 focus-visible:ring-yolk-light focus-visible:outline-none"
+      className="relative -mx-3 w-[calc(100%+1.5rem)] cursor-pointer touch-manipulation rounded-xl px-3 py-2 text-left select-none disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-3 focus-visible:ring-yolk-light focus-visible:outline-none"
     >
       <m.span
         aria-hidden

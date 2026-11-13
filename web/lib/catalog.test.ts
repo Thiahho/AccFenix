@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProductAttribute, Variant } from "@/lib/api";
-import { priceRows, splitProductName } from "@/lib/catalog";
+import { priceRowCartItem, priceRows, splitProductName } from "@/lib/catalog";
 
 describe("splitProductName", () => {
   it("splits the grade off for the board heading", () => {
@@ -43,5 +43,49 @@ describe("priceRows", () => {
 
   it("falls back to the SKU when a variant has no known values", () => {
     expect(priceRows({ attributes: [], variants: [variant(7, 99, 1)] })[0].label).toBe("H1-7");
+  });
+});
+
+describe("priceRowCartItem", () => {
+  const product = {
+    name: "Huevos N°1",
+    slug: "huevos-n1",
+    category: { name: "Huevos", slug: "huevos" },
+    attributes: [
+      {
+        id: 1,
+        name: "Presentación",
+        slug: "presentacion",
+        values: [
+          { id: 10, label: "Cajón", colorHex: null },
+          { id: 12, label: "Maple", colorHex: null },
+        ],
+      },
+    ],
+    variants: [
+      { id: 5, sku: "H1-C", valueIds: [10], availability: "disponible", retailPrice: 60000, wholesalePrice: 55000 },
+      { id: 6, sku: "H1-M", valueIds: [12], availability: "aPedido", retailPrice: null, wholesalePrice: null },
+    ] satisfies Variant[],
+  };
+
+  it("builds the same cart item the product card adds", () => {
+    expect(priceRowCartItem(product, 5)).toEqual({
+      variantId: 5,
+      productSlug: "huevos-n1",
+      productName: "Huevos N°1",
+      categoryName: "Huevos",
+      valuesLabel: "Presentación Cajón",
+      availability: "disponible",
+      retailPrice: 60000,
+      wholesalePrice: 55000,
+    });
+  });
+
+  it("keeps on-request variants addable without a price", () => {
+    expect(priceRowCartItem(product, 6)).toMatchObject({ variantId: 6, valuesLabel: "Presentación Maple", availability: "aPedido", retailPrice: null });
+  });
+
+  it("returns null for an unknown variant", () => {
+    expect(priceRowCartItem(product, 99)).toBeNull();
   });
 });

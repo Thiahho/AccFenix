@@ -3,7 +3,7 @@ import { ArrowDownIcon } from "lucide-react";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import { PriceRow } from "@/components/home/price-row";
 import type { ProductDetail } from "@/lib/api";
-import { priceRows, splitProductName } from "@/lib/catalog";
+import { priceRowCartItem, priceRows, splitProductName } from "@/lib/catalog";
 import { formatArs } from "@/lib/pricing";
 
 type Props = { products: ProductDetail[]; threshold: number };
@@ -21,7 +21,7 @@ export function PriceBoard({ products, threshold }: Props) {
             Precios de hoy
           </h2>
           <p className="mt-3 max-w-xl text-cream/80 text-pretty">
-            Precio minorista por presentación.
+            Precio minorista por presentación. Tocá un precio para sumarlo a tu pedido.
             {threshold > 0 && <> Desde {threshold} unidades en el mismo pedido se aplica el precio mayorista.</>}
           </p>
         </Reveal>
@@ -56,6 +56,7 @@ export function PriceBoard({ products, threshold }: Props) {
 function BoardBlock({ product }: { product: ProductDetail }) {
   const { main, grade } = splitProductName(product.name);
   const rows = priceRows(product);
+  const cover = product.media.find((m) => m.type === "image")?.url ?? null;
 
   return (
     <Stagger as="article" aria-label={product.name} stagger={0.1}>
@@ -74,6 +75,8 @@ function BoardBlock({ product }: { product: ProductDetail }) {
         {rows.map((row) => (
           <StaggerItem as="li" key={row.variantId} y={12}>
             <PriceRow
+              item={priceRowCartItem(product, row.variantId)}
+              imageUrl={cover}
               productName={product.name}
               label={row.label}
               price={row.retailPrice !== null ? formatArs(row.retailPrice) : "Consultar"}
