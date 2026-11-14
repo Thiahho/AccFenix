@@ -73,6 +73,11 @@ export type AdminOrderSummary = {
   /** Null for orders placed from the site: they arrive from the customer's WhatsApp, which carries the number. */
   phone: string | null;
   zone: DeliveryZone;
+  /** Own delivery (buenosAires) only; null for carrier orders. */
+  locality: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   isWholesale: boolean;
   total: number;
   hasUnpricedItems: boolean;
@@ -83,10 +88,6 @@ export type AdminOrderSummary = {
 export type AdminOrderPage = { total: number; page: number; pageSize: number; items: AdminOrderSummary[] };
 
 export type AdminOrder = Omit<AdminOrderSummary, "itemCount" | "totalUnits"> & {
-  locality: string | null;
-  address: string | null;
-  latitude: number | null;
-  longitude: number | null;
   province: string | null;
   carrier: string | null;
   comments: string | null;

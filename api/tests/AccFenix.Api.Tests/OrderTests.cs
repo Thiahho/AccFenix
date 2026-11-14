@@ -641,6 +641,34 @@ public class OrderTests(ApiFactory factory)
         Items(pendingList).Select(o => o.GetProperty("id").GetInt32()).Should().Contain(kept).And.NotContain(cancelled);
     }
 
+    [Fact]
+    public async Task Admin_list_exposes_the_delivery_location()
+    {
+        await using var product = await CreateProduct();
+        var withCoords = (await Created(With(With(BuenosAires((product.First, 1)), "latitude", -34.65), "longitude", -58.62))).GetProperty("id").GetInt32();
+        var addressOnly = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
+        var carrier = (await Created(OtherProvince((product.First, 1)))).GetProperty("id").GetInt32();
+
+        var list = Items(await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}?pageSize=100"));
+        JsonElement Find(int id) => list.Single(o => o.GetProperty("id").GetInt32() == id);
+
+        var c = Find(withCoords);
+        c.GetProperty("locality").GetString().Should().Be("Morón");
+        c.GetProperty("address").GetString().Should().Be("Av. Siempre Viva 742");
+        c.GetProperty("latitude").GetDouble().Should().Be(-34.65);
+        c.GetProperty("longitude").GetDouble().Should().Be(-58.62);
+
+        var a = Find(addressOnly);
+        a.GetProperty("address").GetString().Should().Be("Av. Siempre Viva 742");
+        a.GetProperty("latitude").ValueKind.Should().Be(JsonValueKind.Null);
+        a.GetProperty("longitude").ValueKind.Should().Be(JsonValueKind.Null);
+
+        var p = Find(carrier);
+        p.GetProperty("locality").ValueKind.Should().Be(JsonValueKind.Null);
+        p.GetProperty("address").ValueKind.Should().Be(JsonValueKind.Null);
+        p.GetProperty("latitude").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
     [Theory]
     [InlineData("?status=shipped")]
     [InlineData("?status=1")]

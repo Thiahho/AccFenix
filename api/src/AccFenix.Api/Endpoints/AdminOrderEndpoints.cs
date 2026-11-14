@@ -12,6 +12,7 @@ public record OrderStatusRequest(OrderStatus? Status);
 public record AdminOrderSummaryDto(
     int Id, int Number, DateTime CreatedAt, OrderStatus Status, CustomerType CustomerType,
     string CustomerName, string? Phone, DeliveryZone Zone,
+    string? Locality, string? Address, double? Latitude, double? Longitude,
     bool IsWholesale, decimal Total, bool HasUnpricedItems, int ItemCount, int TotalUnits);
 
 public record AdminOrderPageDto(int Total, int Page, int PageSize, List<AdminOrderSummaryDto> Items);
@@ -66,6 +67,7 @@ public static class AdminOrderEndpoints
                 .Skip((int)Math.Min((long)(pageNumber - 1) * size, int.MaxValue)).Take(size)
                 .Select(o => new AdminOrderSummaryDto(
                     o.Id, o.Number, o.CreatedAt, o.Status, o.CustomerType, o.CustomerName, o.Phone, o.Zone,
+                    o.Locality, o.Address, o.Latitude, o.Longitude,
                     o.IsWholesale, o.Total, o.HasUnpricedItems, o.Items.Count, o.Items.Sum(i => i.Quantity)))
                 .ToListAsync(ct);
             return Results.Ok(new AdminOrderPageDto(total, pageNumber, size, items));

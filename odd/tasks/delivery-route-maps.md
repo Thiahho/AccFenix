@@ -1,0 +1,38 @@
+# Delivery route in Google Maps
+
+## Objective
+From the admin orders, open any order's location in Google Maps, and build a delivery route from several orders in a manually chosen order.
+
+## Problem
+- The order detail shows "Ver en Maps" only when the order has coordinates; address-only orders have no link.
+- There is no way to open several deliveries as one route.
+
+## Why / constraints (verified)
+- Google Maps URLs (https://developers.google.com/maps/documentation/urls/get-started): `https://www.google.com/maps/dir/?api=1&origin=&destination=&waypoints=a|b` (URL-encoded); places may be addresses or `lat,lng`; origin optional (defaults to device location); waypoints kept in listed order, no optimization; max 9 waypoints (3 in mobile browsers); URL ≤ 2048 chars.
+- User decision: route order is MANUAL. No automatic ordering or suggestions.
+- Only own-delivery orders (`Zone = BuenosAires`) have an address/coordinates; other-province orders ship by carrier and are not routable.
+- Prefer coordinates when present; otherwise "address, locality" text.
+- Routes longer than 10 stops split into consecutive legs (9 waypoints + destination); each later leg starts at the previous leg's last stop.
+
+## Scope
+- API: add `Locality`, `Address`, `Latitude`, `Longitude` to `AdminOrderSummaryDto` (additive).
+- Web: maps URL helpers, address-only link on order detail, route builder on the orders list.
+- Selection is per listed page (the user filters by status, e.g. "En reparto"/pending, before building).
+
+## Tasks
+- [x] T1 API: summary DTO exposes delivery location fields; API tests updated. Route: delegated.
+  - Evidence: new `OrderTests.Admin_list_exposes_the_delivery_location` RED (KeyNotFoundException) then GREEN; `dotnet build` 0 warnings; full `dotnet test` 213/214 (only `Source_code_has_no_raw_sql` failed, environmental: run with an out-of-repo `--artifacts-path` because the dev API process locks bin/, and that test locates `src/` from its binary dir). DB: ACCFENIX_TEST_DB against local Postgres (no Docker). `tsc --noEmit` clean after `web/lib/admin/types.ts`.
+- [ ] T2 Web helpers: `mapsPlaceLink` (coords or address search) and `mapsRouteLegs(stops)` with tests; order detail shows the Maps link for address-only orders. Route: delegated.
+- [ ] T3 Web route builder on `/admin/pedidos`: "Armar ruta" mode, select own-delivery orders, reorder manually (up/down, accessible, mobile-friendly), open each leg in Maps; per-row Maps link. Route: delegated.
+
+## Acceptance criteria
+- Address-only and coordinate orders both open in Google Maps.
+- Selected orders open in Maps in exactly the order the admin set.
+- More than 10 stops produce multiple leg buttons; no URL exceeds 2048 chars.
+- Works at 360px and on desktop.
+
+## Progress
+- Exploration done; user chose manual route order.
+
+## Next step
+T2.
