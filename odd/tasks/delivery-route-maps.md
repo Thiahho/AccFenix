@@ -25,7 +25,9 @@ From the admin orders, open any order's location in Google Maps, and build a del
 - [x] T2 Web helpers: `mapsPlaceLink` (coords or address search) and `mapsRouteLegs(stops)` with tests; order detail shows the Maps link for address-only orders. Route: delegated.
   - `mapsRouteLegs` returns `{ url, from, to }` (1-based stop numbers) so the UI can label legs; `routeStop(place)` builds each stop.
   - Evidence: 12 new vitest cases RED, then GREEN (20/20 in maps-url.test.ts; full suite 205/205); `tsc --noEmit` clean; eslint clean on changed files.
-- [ ] T3 Web route builder on `/admin/pedidos`: "Armar ruta" mode, select own-delivery orders, reorder manually (up/down, accessible, mobile-friendly), open each leg in Maps; per-row Maps link. Route: delegated.
+- [x] T3 Web route builder on `/admin/pedidos`: "Armar ruta" mode, select own-delivery orders, reorder manually (up/down, accessible, mobile-friendly), open each leg in Maps; per-row Maps link. Route: delegated.
+  - `components/admin/orders/route-builder.tsx`: a client context (`RouteBuilderProvider`) wraps the server-rendered page; `RouteModeToggle` in the PageHeader actions, `RouteSelectHead`/`RouteSelectCell` add a checkbox column only in route mode (above the stretched row link), `RoutePanel` is sticky at the bottom after the table. Stops keep selection order; up/down/remove buttons are icon-size (44px on mobile). Per-row Maps pin sits in the Zona column (md+ only).
+  - Evidence: `tsc --noEmit` clean; eslint clean; vitest 205/205. Not checked in a browser (no visual run).
 
 ## Acceptance criteria
 - Address-only and coordinate orders both open in Google Maps.
@@ -37,4 +39,4 @@ From the admin orders, open any order's location in Google Maps, and build a del
 - Exploration done; user chose manual route order.
 
 ## Next step
-T3.
+Manual check at 360px and desktop with real orders.

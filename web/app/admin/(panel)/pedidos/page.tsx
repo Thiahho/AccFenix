@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { OrderStatusBadge } from "@/components/admin/orders/order-status-badge";
+import { OrderMapsLink, RouteBuilderProvider, RouteModeToggle, RoutePanel, RouteSelectCell, RouteSelectHead } from "@/components/admin/orders/route-builder";
 import { PageHeader } from "@/components/admin/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const pages = pageCount(data.total, data.pageSize);
 
   return (
-    <>
-      <PageHeader title="Pedidos" description="Pedidos enviados desde el sitio, con los precios vigentes al momento de pedir." />
+    <RouteBuilderProvider>
+      <PageHeader
+        title="Pedidos"
+        description="Pedidos enviados desde el sitio, con los precios vigentes al momento de pedir."
+        actions={data.items.length > 0 ? <RouteModeToggle /> : undefined}
+      />
 
       <nav aria-label="Filtrar por estado" className="mb-4 flex flex-wrap gap-2">
         {[undefined, ...orderStatuses].map((s) => {
@@ -45,6 +50,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <Table>
             <TableHeader>
               <TableRow>
+                <RouteSelectHead />
                 <TableHead>Pedido</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead className="hidden md:table-cell">Zona</TableHead>
@@ -56,6 +62,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
             <TableBody>
               {data.items.map((o) => (
                 <TableRow key={o.id} className="relative">
+                  <RouteSelectCell order={o} />
                   <TableCell>
                     <Link href={`/admin/pedidos/${o.id}`} className="font-medium tabular-nums after:absolute after:inset-0 hover:text-brand">
                       #{o.number}
@@ -70,7 +77,10 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                       {o.isWholesale && <Badge variant="secondary">Mayorista</Badge>}
                     </span>
                   </TableCell>
-                  <TableCell className="hidden text-muted-foreground md:table-cell">{zoneLabel[o.zone]}</TableCell>
+                  <TableCell className="hidden text-muted-foreground md:table-cell">
+                    {zoneLabel[o.zone]}
+                    <OrderMapsLink order={o} />
+                  </TableCell>
                   <TableCell className="hidden text-right tabular-nums sm:table-cell">
                     {o.itemCount} <span className="text-muted-foreground">({o.totalUnits} u.)</span>
                   </TableCell>
@@ -82,6 +92,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           </Table>
         )}
       </div>
+
+      <RoutePanel />
 
       {pages > 1 && (
         <nav aria-label="Páginas" className="mt-4 flex items-center justify-between gap-2 text-sm">
@@ -97,6 +109,6 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           </Button>
         </nav>
       )}
-    </>
+    </RouteBuilderProvider>
   );
 }
