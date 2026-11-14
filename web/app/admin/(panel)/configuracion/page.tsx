@@ -10,7 +10,7 @@ export default async function SettingsPage() {
   const settings = await adminFetch<AdminSettings>("/api/admin/settings");
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-4xl">
       <PageHeader title="Configuración" />
       <SettingsForm settings={settings} />
     </div>

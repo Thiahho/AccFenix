@@ -25,15 +25,17 @@ export function SettingsForm({ settings }: { settings: AdminSettings }) {
         });
       }}
     >
-      <div className="space-y-1.5">
-        <Label htmlFor="wa">Número de WhatsApp para pedidos</Label>
-        <Input id="wa" type="tel" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} placeholder="5491122334455" required aria-describedby="wa-help" />
-        <p id="wa-help" className="text-xs text-muted-foreground">Con código de país y área, sin el 0 ni el 15. Ej.: 54 9 11 2233 4455.</p>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="threshold">Umbral mayorista (unidades)</Label>
-        <Input id="threshold" type="number" min={1} className="w-40" value={wholesaleThreshold} onChange={(e) => setWholesaleThreshold(Number(e.target.value) || 0)} required aria-describedby="threshold-help" />
-        <p id="threshold-help" className="text-xs text-muted-foreground">Desde esta cantidad total de unidades, el pedido se marca como mayorista en el mensaje.</p>
+      <div className="grid gap-5 md:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="wa">Número de WhatsApp para pedidos</Label>
+          <Input id="wa" type="tel" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} placeholder="5491122334455" required aria-describedby="wa-help" />
+          <p id="wa-help" className="text-xs text-muted-foreground">Con código de país y área, sin el 0 ni el 15. Ej.: 54 9 11 2233 4455.</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="threshold">Umbral mayorista (unidades)</Label>
+          <Input id="threshold" type="number" min={1} className="w-40" value={wholesaleThreshold} onChange={(e) => setWholesaleThreshold(Number(e.target.value) || 0)} required aria-describedby="threshold-help" />
+          <p id="threshold-help" className="text-xs text-muted-foreground">Desde esta cantidad total de unidades, el pedido se marca como mayorista en el mensaje.</p>
+        </div>
       </div>
       <Button type="submit" disabled={pending}>{pending ? "Guardando…" : "Guardar"}</Button>
     </form>

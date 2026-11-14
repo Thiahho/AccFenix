@@ -98,10 +98,10 @@ export function AttributesEditor({ attributes }: { attributes: AdminAttribute[] 
   const nextOrder = (attributes.at(-1)?.sortOrder ?? -1) + 1;
 
   return (
-    <div className="space-y-4">
+    <div className="grid items-start gap-4 lg:grid-cols-2">
       {attributes.map((a) => <AttributeCard key={a.id} attribute={a} />)}
       <form
-        className="flex gap-2 rounded-xl border border-dashed bg-background p-4"
+        className="flex gap-2 rounded-xl border border-dashed bg-background p-4 lg:col-span-2"
         onSubmit={(e) => {
           e.preventDefault();
           run(() => saveAttribute(null, { name: newName, sortOrder: nextOrder }), "Atributo creado", () => setNewName(""));

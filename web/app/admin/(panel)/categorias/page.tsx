@@ -22,7 +22,7 @@ export default async function CategoriesPage() {
   const attributeList = (ids: AdminCategory["attributeIds"]) => ids.map((id) => attrName.get(id)).join(" → ") || "—";
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <PageHeader
         title="Categorías"
         description="Cada categoría define qué atributos tienen sus productos."

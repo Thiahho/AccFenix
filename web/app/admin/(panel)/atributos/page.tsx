@@ -10,7 +10,7 @@ export default async function AttributesPage() {
   const attributes = await adminFetch<AdminAttribute[]>("/api/admin/attributes");
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <PageHeader title="Atributos" description="Opciones que combinan los productos: presentación, calibre u otras nuevas." />
       <AttributesEditor attributes={attributes} />
     </div>
