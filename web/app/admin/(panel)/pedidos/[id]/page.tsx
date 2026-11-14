@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { formatOrderDate, orderTotalLabel, whatsappChatHref } from "@/lib/admin/orders";
 import { adminFetch, AdminApiError } from "@/lib/admin/session";
 import type { AdminOrder } from "@/lib/admin/types";
-import { mapsLink } from "@/lib/maps-url";
+import { mapsPlaceLink } from "@/lib/maps-url";
 import { customerTypeLabel, zoneLabel } from "@/lib/orders/status";
 import { formatArs } from "@/lib/pricing";
 
@@ -34,7 +34,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     if (e instanceof AdminApiError && e.status === 404) notFound();
     throw e;
   });
-  const hasLocation = order.latitude !== null && order.longitude !== null;
+  const placeLink = order.zone === "buenosAires" ? mapsPlaceLink(order) : null;
   const chatHref = whatsappChatHref(order.phone);
 
   return (
@@ -85,9 +85,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 <Detail label="Localidad">{order.locality}</Detail>
                 <Detail label="Dirección">
                   {order.address}
-                  {hasLocation && (
+                  {placeLink && (
                     <a
-                      href={mapsLink({ lat: order.latitude!, lng: order.longitude! })}
+                      href={placeLink}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="ml-2 inline-flex items-center gap-1 font-medium text-brand hover:underline"

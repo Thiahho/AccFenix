@@ -22,7 +22,9 @@ From the admin orders, open any order's location in Google Maps, and build a del
 ## Tasks
 - [x] T1 API: summary DTO exposes delivery location fields; API tests updated. Route: delegated.
   - Evidence: new `OrderTests.Admin_list_exposes_the_delivery_location` RED (KeyNotFoundException) then GREEN; `dotnet build` 0 warnings; full `dotnet test` 213/214 (only `Source_code_has_no_raw_sql` failed, environmental: run with an out-of-repo `--artifacts-path` because the dev API process locks bin/, and that test locates `src/` from its binary dir). DB: ACCFENIX_TEST_DB against local Postgres (no Docker). `tsc --noEmit` clean after `web/lib/admin/types.ts`.
-- [ ] T2 Web helpers: `mapsPlaceLink` (coords or address search) and `mapsRouteLegs(stops)` with tests; order detail shows the Maps link for address-only orders. Route: delegated.
+- [x] T2 Web helpers: `mapsPlaceLink` (coords or address search) and `mapsRouteLegs(stops)` with tests; order detail shows the Maps link for address-only orders. Route: delegated.
+  - `mapsRouteLegs` returns `{ url, from, to }` (1-based stop numbers) so the UI can label legs; `routeStop(place)` builds each stop.
+  - Evidence: 12 new vitest cases RED, then GREEN (20/20 in maps-url.test.ts; full suite 205/205); `tsc --noEmit` clean; eslint clean on changed files.
 - [ ] T3 Web route builder on `/admin/pedidos`: "Armar ruta" mode, select own-delivery orders, reorder manually (up/down, accessible, mobile-friendly), open each leg in Maps; per-row Maps link. Route: delegated.
 
 ## Acceptance criteria
@@ -35,4 +37,4 @@ From the admin orders, open any order's location in Google Maps, and build a del
 - Exploration done; user chose manual route order.
 
 ## Next step
-T2.
+T3.
