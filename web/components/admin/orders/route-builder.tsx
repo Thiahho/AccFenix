@@ -88,10 +88,19 @@ export function RouteSelectCell({ order }: { order: AdminOrderSummary }) {
   const stop = stopOf(order);
   const position = stops.findIndex((s) => s.id === order.id);
   return (
-    // Above the row's stretched link, so selecting does not open the order.
-    <TableCell className="relative z-10 w-10 whitespace-normal">
+    // Not `relative`: the overlay below must stretch over the whole (relative) row.
+    <TableCell className="w-10 whitespace-normal">
+      {/* In route mode the whole row selects the order instead of opening it. */}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden
+        disabled={!stop}
+        onClick={() => stop && toggle(stop, position < 0)}
+        className="absolute inset-0 z-10 cursor-pointer disabled:cursor-not-allowed"
+      />
       {stop ? (
-        <span className="flex items-center gap-1.5">
+        <span className="relative z-20 flex items-center gap-1.5">
           <Checkbox
             checked={position >= 0}
             onCheckedChange={(v) => toggle(stop, v === true)}
@@ -100,7 +109,7 @@ export function RouteSelectCell({ order }: { order: AdminOrderSummary }) {
           {position >= 0 && <span className="text-xs font-semibold tabular-nums text-brand">{position + 1}</span>}
         </span>
       ) : (
-        <span className="block text-xs leading-tight text-muted-foreground">{order.zone === "buenosAires" ? "Sin dirección" : "Expreso"}</span>
+        <span className="relative z-20 block text-xs leading-tight text-muted-foreground">{order.zone === "buenosAires" ? "Sin dirección" : "Expreso"}</span>
       )}
     </TableCell>
   );
@@ -117,7 +126,7 @@ export function OrderMapsLink({ order }: { order: Place & { number: number } }) 
       rel="noopener noreferrer"
       aria-label={`Ver el pedido #${order.number} en Google Maps`}
       title="Ver en Google Maps"
-      className="relative z-10 -my-2 ml-1 inline-flex size-8 items-center justify-center rounded-md text-brand hover:bg-muted"
+      className="relative z-20 -my-2 ml-1 inline-flex size-8 items-center justify-center rounded-md text-brand hover:bg-muted"
     >
       <MapPinIcon aria-hidden className="size-4" />
     </a>
