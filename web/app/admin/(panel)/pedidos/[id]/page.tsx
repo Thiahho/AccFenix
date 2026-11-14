@@ -122,7 +122,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <TableBody>
             {order.items.map((i) => (
               <TableRow key={i.id}>
-                <TableCell>
+                <TableCell className="whitespace-normal">
                   <p className="font-medium">{i.productName}</p>
                   <p className="text-xs text-muted-foreground">{i.variantLabel}</p>
                 </TableCell>
@@ -139,7 +139,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell colSpan={2} className="font-medium">
+              <TableCell colSpan={2} className="font-medium whitespace-normal">
                 Total <span className="font-normal text-muted-foreground">(precios {order.isWholesale ? "mayoristas" : "minoristas"}, sin envío)</span>
               </TableCell>
               <TableCell colSpan={3} className="text-right font-semibold tabular-nums whitespace-nowrap">{orderTotalLabel(order)}</TableCell>

@@ -73,7 +73,7 @@ export function ProductsTable({ products }: { products: AdminProductSummary[] })
           </p>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" disabled={pending}>
+              <Button variant="destructive" size="sm" className="h-11 md:h-7" disabled={pending}>
                 <Trash2Icon /> Eliminar
               </Button>
             </AlertDialogTrigger>
@@ -129,7 +129,7 @@ export function ProductsTable({ products }: { products: AdminProductSummary[] })
               <TableCell>
                 <ProductImage src={p.coverUrl} alt="" className="size-10 rounded-md" sizes="40px" />
               </TableCell>
-              <TableCell>
+              <TableCell className="whitespace-normal">
                 <Link href={`/admin/productos/${p.id}`} className="font-medium after:absolute after:inset-0 hover:text-brand">
                   {p.name}
                 </Link>

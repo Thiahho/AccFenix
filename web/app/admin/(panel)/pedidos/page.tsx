@@ -50,7 +50,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 <TableHead className="hidden md:table-cell">Zona</TableHead>
                 <TableHead className="hidden text-right sm:table-cell">Productos</TableHead>
                 <TableHead className="text-right">Total</TableHead>
-                <TableHead>Estado</TableHead>
+                <TableHead className="hidden sm:table-cell">Estado</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -61,8 +61,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                       #{o.number}
                     </Link>
                     <p className="text-xs text-muted-foreground">{formatOrderDate(o.createdAt)}</p>
+                    <div className="mt-1 sm:hidden"><OrderStatusBadge status={o.status} /></div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-normal">
                     <span className="flex flex-wrap items-center gap-1.5">
                       {o.customerName}
                       <Badge variant={o.customerType === "business" ? "default" : "outline"}>{customerTypeLabel[o.customerType]}</Badge>
@@ -74,7 +75,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                     {o.itemCount} <span className="text-muted-foreground">({o.totalUnits} u.)</span>
                   </TableCell>
                   <TableCell className="text-right tabular-nums whitespace-nowrap">{orderTotalLabel(o)}</TableCell>
-                  <TableCell><OrderStatusBadge status={o.status} /></TableCell>
+                  <TableCell className="hidden sm:table-cell"><OrderStatusBadge status={o.status} /></TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -84,11 +85,14 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
       {pages > 1 && (
         <nav aria-label="Páginas" className="mt-4 flex items-center justify-between gap-2 text-sm">
-          <Button asChild variant="outline" size="sm" className={cn(query.page <= 1 && "pointer-events-none opacity-50")}>
+          <Button asChild variant="outline" size="sm" className={cn("h-11 md:h-7", query.page <= 1 && "pointer-events-none opacity-50")}>
             <Link href={ordersPageHref({ ...query, page: query.page - 1 })} aria-disabled={query.page <= 1}>Anterior</Link>
           </Button>
-          <span className="text-muted-foreground tabular-nums">Página {query.page} de {pages} · {data.total} pedidos</span>
-          <Button asChild variant="outline" size="sm" className={cn(query.page >= pages && "pointer-events-none opacity-50")}>
+          <span className="text-muted-foreground tabular-nums">
+            Página {query.page} de {pages}
+            <span className="hidden sm:inline"> · {data.total} pedidos</span>
+          </span>
+          <Button asChild variant="outline" size="sm" className={cn("h-11 md:h-7", query.page >= pages && "pointer-events-none opacity-50")}>
             <Link href={ordersPageHref({ ...query, page: query.page + 1 })} aria-disabled={query.page >= pages}>Siguiente</Link>
           </Button>
         </nav>

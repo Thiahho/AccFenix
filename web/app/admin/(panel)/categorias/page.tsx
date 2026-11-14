@@ -19,6 +19,7 @@ export default async function CategoriesPage() {
     adminFetch<AdminAttribute[]>("/api/admin/attributes"),
   ]);
   const attrName = new Map(attributes.map((a) => [a.id, a.name]));
+  const attributeList = (ids: AdminCategory["attributeIds"]) => ids.map((id) => attrName.get(id)).join(" → ") || "—";
 
   return (
     <div className="max-w-5xl">
@@ -32,7 +33,7 @@ export default async function CategoriesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
-              <TableHead>Atributos</TableHead>
+              <TableHead className="hidden sm:table-cell">Atributos</TableHead>
               <TableHead className="text-right">Productos</TableHead>
               <TableHead className="w-24"><span className="sr-only">Acciones</span></TableHead>
             </TableRow>
@@ -40,12 +41,13 @@ export default async function CategoriesPage() {
           <TableBody>
             {categories.map((c) => (
               <TableRow key={c.id}>
-                <TableCell>
+                <TableCell className="whitespace-normal">
                   <span className="font-medium">{c.name}</span>
                   {!c.isActive && <Badge variant="secondary" className="ml-2">Oculta</Badge>}
                   <p className="text-xs text-muted-foreground">/catalogo/{c.slug}</p>
+                  <p className="mt-1 text-xs text-muted-foreground sm:hidden">{attributeList(c.attributeIds)}</p>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">{c.attributeIds.map((id) => attrName.get(id)).join(" → ") || "—"}</TableCell>
+                <TableCell className="hidden text-sm text-muted-foreground sm:table-cell">{attributeList(c.attributeIds)}</TableCell>
                 <TableCell className="text-right tabular-nums">
                   <Link href={`/admin/productos?categoria=${c.id}`} className="hover:text-brand hover:underline">{c.productCount}</Link>
                 </TableCell>

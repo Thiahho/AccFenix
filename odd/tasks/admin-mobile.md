@@ -16,7 +16,7 @@ An audit found tables whose actions start off-screen (categorías, pedidos), a v
 
 ## Tasks
 - [x] T1 Mobile header: Volver/Salir as icon buttons in the brand row, compact sticky header, nav scrolls active link into view, `py-3 md:py-2` links. Route: delegated (2+ files, writer trigger).
-- [ ] T2 Tables and headers: categorías hides Atributos below `sm` (shown under name), pedidos moves status badge into first cell below `sm` and wraps names, pedido detail and products-table wrap text cells, pagination/bulk buttons touch-sized on mobile, `PageHeader` actions `flex-wrap`. Route: delegated.
+- [x] T2 Tables and headers: categorías hides Atributos below `sm` (shown under name), pedidos moves status badge into first cell below `sm` and wraps names, pedido detail and products-table wrap text cells, pagination/bulk buttons touch-sized on mobile, `PageHeader` actions `flex-wrap`. Route: delegated.
 - [ ] T3 Variants grid: card list per variant below `sm`, table from `sm` up; bulk buttons touch-sized on mobile; price-fill row stacks cleanly. Route: delegated.
 - [ ] T4 Small fixes: attributes-editor value row fits on one line, product tabs `h-11 md:h-8`, product-form submit full width on mobile and larger Todos/Ninguno target, media-manager `sizes` fix. Route: delegated.
 
@@ -28,6 +28,7 @@ An audit found tables whose actions start off-screen (categorías, pedidos), a v
 ## Progress
 - Audit done (explorer).
 - T1 done (`fix(admin): compact sticky mobile header`): icon-only Volver/Salir in the mobile brand row (desktop block unchanged via `hidden md:block`), header `sticky top-0 z-30 md:z-auto`, nav links `py-3 md:py-2`, active link scrolled into view below `md`. Checks: `npx tsc --noEmit -p .` pass; `npx eslint` on changed files pass.
+- T2 done (`fix(admin): fit tables and page headers on phones`): categorías Atributos column `hidden sm:table-cell` with a `sm:hidden` line under the name; pedidos Estado column hidden below `sm` with the badge in the Pedido cell; wrapped name/product/total-label cells; pagination and bulk Eliminar `h-11 md:h-7`; "· N pedidos" hidden below `sm`; `PageHeader` actions `flex-wrap`. Checks: `npx tsc --noEmit -p .` pass; `npx eslint` on changed files pass.
 
 ## Next step
-T2.
+T3.
