@@ -108,7 +108,7 @@ export function MediaManager({ product }: { product: AdminProduct }) {
                 {m.type === "video" ? (
                   <video src={m.url} controls className="size-full object-contain" />
                 ) : (
-                  <Image src={m.url} alt="" fill sizes="(min-width: 1024px) 33vw, 50vw" className="object-cover" />
+                  <Image src={m.url} alt="" fill sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="object-cover" />
                 )}
                 {i === 0 && <span className="absolute top-2 left-2 rounded bg-background/90 px-2 py-0.5 text-xs font-medium">Portada</span>}
               </div>

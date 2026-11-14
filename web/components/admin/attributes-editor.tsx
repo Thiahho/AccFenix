@@ -33,8 +33,8 @@ function ValueRow({ attributeId, value }: { attributeId: number; value: AdminVal
 
   return (
     <li className="flex flex-wrap items-center gap-2">
-      <Input aria-label="Orden" type="number" className="w-16" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value) || 0)} />
-      <Input aria-label="Valor" className="min-w-36 flex-1" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={80} />
+      <Input aria-label="Orden" type="number" className="w-14 md:w-16" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value) || 0)} />
+      <Input aria-label="Valor" className="min-w-0 flex-1 md:min-w-36" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={80} />
       <label className="relative grid size-11 shrink-0 cursor-pointer md:size-9 place-items-center rounded-md border" title="Color de muestra (opcional)">
         <span className="size-5 rounded-full border" style={{ backgroundColor: colorHex || "transparent" }} />
         <input type="color" aria-label="Color de muestra" className="absolute inset-0 cursor-pointer opacity-0" value={colorHex || "#ffffff"} onChange={(e) => setColorHex(e.target.value)} />
@@ -63,7 +63,7 @@ function AttributeCard({ attribute }: { attribute: AdminAttribute }) {
 
   return (
     <section className="rounded-xl border bg-background p-5">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Input aria-label="Nombre del atributo" className="max-w-xs font-medium" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
         {name !== attribute.name && (
           <Button size="sm" disabled={pending || !name.trim()} onClick={() => run(() => saveAttribute(attribute.id, { name, sortOrder: attribute.sortOrder }), "Atributo guardado")}>

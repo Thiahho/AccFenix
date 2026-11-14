@@ -127,7 +127,7 @@ export function ProductForm({ categories, attributes, product }: Props) {
                 <fieldset key={attr.id}>
                   <div className="mb-2 flex items-center gap-3">
                     <legend className="text-sm font-medium">{attr.name}</legend>
-                    <button type="button" className="text-xs text-brand hover:underline" onClick={() => toggle(ids, !all)}>
+                    <button type="button" className="-mx-2 -my-3.5 px-2 py-3.5 text-xs text-brand hover:underline md:m-0 md:p-0" onClick={() => toggle(ids, !all)}>
                       {all ? "Ninguno" : "Todos"}
                     </button>
                   </div>
@@ -156,7 +156,7 @@ export function ProductForm({ categories, attributes, product }: Props) {
       </section>
 
       <div className="flex justify-end gap-2">
-        <Button type="submit" disabled={pending || !categoryId || !name.trim()}>
+        <Button type="submit" className="w-full sm:w-auto" disabled={pending || !categoryId || !name.trim()}>
           {pending ? "Guardando…" : product ? "Guardar cambios" : "Crear producto"}
         </Button>
       </div>

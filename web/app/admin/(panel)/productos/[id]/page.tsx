@@ -58,7 +58,7 @@ export default async function ProductEditPage({ params, searchParams }: Props) {
       />
 
       <Tabs defaultValue={tab}>
-        <TabsList>
+        <TabsList className="w-full group-data-horizontal/tabs:h-11 sm:w-fit md:group-data-horizontal/tabs:h-8">
           <TabsTrigger value="variantes">Variantes</TabsTrigger>
           <TabsTrigger value="datos">Datos</TabsTrigger>
           <TabsTrigger value="media">Fotos y videos</TabsTrigger>
