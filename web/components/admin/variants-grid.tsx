@@ -46,6 +46,8 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
   const onRequest = visible.filter((v) => v.isActive && v.availability === "aPedido").length;
 
   const priceText = (v: AdminVariant, field: PriceField) => drafts[v.id]?.[field] ?? priceToInput(v[field]);
+  const valueLabel = (v: AdminVariant, attr: (typeof attributes)[number]) =>
+    labelOf.get(v.valueIds.find((id) => attr.values.some((x) => x.id === id)) ?? -1) ?? "—";
 
   // Rows whose typed prices differ from the stored ones, and how many of the typed values are invalid.
   const changes: VariantPrices[] = [];
@@ -133,7 +135,7 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
       <section className="space-y-3 rounded-xl border bg-background p-4" aria-label="Filtros">
         {attributes.map((attr) => (
           <div key={attr.id} className="flex flex-wrap items-center gap-2">
-            <span className="w-20 shrink-0 text-sm font-medium">{attr.name}</span>
+            <span className="w-full shrink-0 text-sm font-medium sm:w-20">{attr.name}</span>
             {[{ id: undefined, label: "Todos" }, ...attr.values].map((v) => {
               const active = filter[attr.id] === v.id;
               return (
@@ -155,10 +157,10 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
             {visible.length} variantes{onRequest > 0 && ` · ${onRequest} a pedido`}
           </span>
           <div className="ml-auto flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" disabled={pending} onClick={() => applyBulk("disponible")}>
+            <Button size="sm" variant="outline" className="h-11 md:h-7" disabled={pending} onClick={() => applyBulk("disponible")}>
               Marcar {filterIds.length ? "filtradas" : "todas"} disponibles
             </Button>
-            <Button size="sm" variant="outline" disabled={pending} onClick={() => applyBulk("aPedido")}>
+            <Button size="sm" variant="outline" className="h-11 md:h-7" disabled={pending} onClick={() => applyBulk("aPedido")}>
               Marcar {filterIds.length ? "filtradas" : "todas"} a pedido
             </Button>
           </div>
@@ -168,7 +170,7 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
       <section className="space-y-3 rounded-xl border bg-background p-4" aria-label="Precios">
         <div className="flex flex-wrap items-end gap-3">
           {priceFields.map(({ field, label }) => (
-            <div key={field} className="space-y-1.5">
+            <div key={field} className="min-w-0 flex-1 space-y-1.5 sm:flex-none">
               <Label htmlFor={`fill-${field}`}>{label} ($)</Label>
               <Input
                 id={`fill-${field}`}
@@ -177,14 +179,14 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
                 value={fill[field]}
                 aria-invalid={!parsePriceInput(fill[field]).ok}
                 onChange={(e) => setFill((f) => ({ ...f, [field]: e.target.value }))}
-                className="w-32 text-right tabular-nums"
+                className="w-full text-right tabular-nums sm:w-32"
               />
             </div>
           ))}
-          <Button size="sm" variant="outline" disabled={pending || visible.length === 0} onClick={fillVisible}>
+          <Button size="sm" variant="outline" className="h-11 md:h-7" disabled={pending || visible.length === 0} onClick={fillVisible}>
             Aplicar a las {visible.length} visibles
           </Button>
-          <Button size="sm" className="ml-auto" disabled={pending || !hasDrafts} onClick={savePrices}>
+          <Button size="sm" className="h-11 w-full sm:ml-auto sm:w-auto md:h-7" disabled={pending || !hasDrafts} onClick={savePrices}>
             {changes.length > 0 ? `Guardar precios (${changes.length})` : "Guardar precios"}
           </Button>
         </div>
@@ -199,7 +201,48 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
         <Label htmlFor="inactive" className="font-normal text-muted-foreground">Mostrar combinaciones desactivadas</Label>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border bg-background">
+      {/* Below sm: one card per variant, bound to the same state as the table. */}
+      <ul className="space-y-2 sm:hidden" aria-label="Variantes">
+        {visible.map((v) => (
+          <li key={v.id} className={cn("space-y-3 rounded-xl border bg-background p-3", !v.isActive && "opacity-50")}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium tabular-nums">{attributes.map((a) => valueLabel(v, a)).join(" · ") || v.sku}</p>
+              {v.isActive ? <AvailabilityBadge availability={v.availability} /> : <span className="text-xs">Desactivada</span>}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {priceFields.map(({ field, label }) => {
+                const text = priceText(v, field);
+                const id = `variant-card-${v.id}-${field}`;
+                return (
+                  <div key={field} className="min-w-0 space-y-1.5">
+                    <Label htmlFor={id} className="text-xs text-muted-foreground">{label} ($)</Label>
+                    <Input
+                      id={id}
+                      inputMode="numeric"
+                      placeholder="—"
+                      aria-invalid={!parsePriceInput(text).ok}
+                      value={text}
+                      onChange={(e) => setDraft(v.id, field, e.target.value)}
+                      className="w-full text-right tabular-nums"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor={`variant-card-${v.id}-available`} className="font-normal">Disponible</Label>
+              <Switch
+                id={`variant-card-${v.id}-available`}
+                checked={v.availability === "disponible"}
+                disabled={!v.isActive}
+                onCheckedChange={(on) => toggleOne(v, on ? "disponible" : "aPedido")}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden overflow-x-auto rounded-xl border bg-background sm:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -215,7 +258,7 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
               <TableRow key={v.id} className={cn(!v.isActive && "opacity-50")}>
                 {attributes.map((a) => (
                   <TableCell key={a.id} className="tabular-nums">
-                    {labelOf.get(v.valueIds.find((id) => a.values.some((x) => x.id === id)) ?? -1) ?? "—"}
+                    {valueLabel(v, a)}
                   </TableCell>
                 ))}
                 <TableCell className="hidden font-mono text-xs text-muted-foreground md:table-cell">{v.sku}</TableCell>
