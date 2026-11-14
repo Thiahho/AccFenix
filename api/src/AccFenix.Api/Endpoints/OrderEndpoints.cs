@@ -20,7 +20,16 @@ public record CreateOrderRequest(
     DeliveryZone? Zone, CustomerType? CustomerType, string? CustomerName, string? Phone,
     string? Locality, string? Address, double? Latitude, double? Longitude,
     string? Province, string? Carrier,
-    string? Comments, List<OrderLineRequest>? Items);
+    string? Comments, List<OrderLineRequest>? Items) : IBuenosAiresLocation;
+
+/// <summary>Delivery location of an own-delivery (Buenos Aires) order: locality, address and an optional map point.</summary>
+public interface IBuenosAiresLocation
+{
+    string? Locality { get; }
+    string? Address { get; }
+    double? Latitude { get; }
+    double? Longitude { get; }
+}
 
 // ---- Responses ----
 public record OrderItemDto(int Id, int? VariantId, string ProductName, string Sku, string VariantLabel, int Quantity, decimal? UnitPrice, decimal? Subtotal);
@@ -45,12 +54,7 @@ public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequest>
 
         When(x => x.Zone == DeliveryZone.BuenosAires, () =>
         {
-            RequiredText(x => x.Locality!, OrderLimits.Locality);
-            RequiredText(x => x.Address!, OrderLimits.Address);
-            RuleFor(x => x.Latitude).InclusiveBetween(-90, 90);
-            RuleFor(x => x.Longitude).InclusiveBetween(-180, 180);
-            RuleFor(x => x.Longitude).Must((req, longitude) => (longitude is null) == (req.Latitude is null))
-                .WithMessage("La ubicación necesita latitud y longitud");
+            Include(BuenosAiresLocationValidator.Instance);
             RuleFor(x => x.Province).Null().WithMessage(WrongZone);
             RuleFor(x => x.Carrier).Null().WithMessage(WrongZone);
         });
@@ -78,9 +82,33 @@ public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequest>
         });
     }
 
+    void RequiredText(Expression<Func<CreateOrderRequest, string>> field, int max) => RuleFor(field).RequiredText(max);
+}
+
+/// <summary>
+/// Rules of a Buenos Aires delivery location, shared by public order creation and the admin location edit.
+/// Internal so assembly scanning does not register it as a validator of its own.
+/// </summary>
+internal sealed class BuenosAiresLocationValidator : AbstractValidator<IBuenosAiresLocation>
+{
+    public static readonly BuenosAiresLocationValidator Instance = new();
+
+    BuenosAiresLocationValidator()
+    {
+        RuleFor(x => x.Locality!).RequiredText(OrderLimits.Locality);
+        RuleFor(x => x.Address!).RequiredText(OrderLimits.Address);
+        RuleFor(x => x.Latitude).InclusiveBetween(-90, 90);
+        RuleFor(x => x.Longitude).InclusiveBetween(-180, 180);
+        RuleFor(x => x.Longitude).Must((req, longitude) => (longitude is null) == (req.Latitude is null))
+            .WithMessage("La ubicación necesita latitud y longitud");
+    }
+}
+
+internal static class OrderTextRules
+{
     /// <summary>Required single-line text. Like the form of the site, the length is measured once trimmed.</summary>
-    void RequiredText(Expression<Func<CreateOrderRequest, string>> field, int max) =>
-        RuleFor(field).Cascade(CascadeMode.Stop)
+    public static IRuleBuilderOptions<T, string> RequiredText<T>(this IRuleBuilderInitial<T, string> rule, int max) =>
+        rule.Cascade(CascadeMode.Stop)
             .NotEmpty()
             .Must(s => s.Trim().Length <= max).WithMessage($"Hasta {max} caracteres")
             .SingleLine();

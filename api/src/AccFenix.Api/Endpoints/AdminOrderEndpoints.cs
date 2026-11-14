@@ -8,6 +8,9 @@ namespace AccFenix.Api.Endpoints;
 // ---- Requests ----
 public record OrderStatusRequest(OrderStatus? Status);
 
+/// <summary>New delivery location of an own-delivery order. Without coordinates the map point is removed.</summary>
+public record OrderLocationRequest(string? Locality, string? Address, double? Latitude, double? Longitude) : IBuenosAiresLocation;
+
 // ---- Responses ----
 public record AdminOrderSummaryDto(
     int Id, int Number, DateTime CreatedAt, OrderStatus Status, CustomerType CustomerType,
@@ -31,6 +34,15 @@ public class OrderStatusRequestValidator : AbstractValidator<OrderStatusRequest>
     public OrderStatusRequestValidator()
     {
         RuleFor(x => x.Status).NotNull().IsInEnum();
+    }
+}
+
+/// <summary>Same location rules as public order creation.</summary>
+public class OrderLocationRequestValidator : AbstractValidator<OrderLocationRequest>
+{
+    public OrderLocationRequestValidator()
+    {
+        Include(BuenosAiresLocationValidator.Instance);
     }
 }
 
@@ -76,14 +88,24 @@ public static class AdminOrderEndpoints
         admin.MapGet("/orders/{id:int}", async (int id, AppDbContext db, CancellationToken ct) =>
         {
             var o = await db.Orders.AsNoTracking().Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id, ct);
-            if (o is null) return Results.NotFound();
-
-            return Results.Ok(new AdminOrderDto(
-                o.Id, o.Number, o.CreatedAt, o.Status, o.CustomerType, o.CustomerName, o.Phone, o.Zone,
-                o.Locality, o.Address, o.Latitude, o.Longitude, o.Province, o.Carrier, o.Comments,
-                o.IsWholesale, o.Total, o.HasUnpricedItems,
-                o.Items.OrderBy(i => i.Id).Select(OrderEndpoints.ToDto).ToList()));
+            return o is null ? Results.NotFound() : Results.Ok(ToDto(o));
         });
+
+        // Only own-delivery orders have a locality and address; carrier orders are a 409 (their state forbids it).
+        admin.MapPatch("/orders/{id:int}/location", async (int id, OrderLocationRequest req, AppDbContext db, CancellationToken ct) =>
+        {
+            var order = await db.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id, ct);
+            if (order is null) return Results.NotFound();
+            if (order.Zone != DeliveryZone.BuenosAires)
+                return ValidationExtensions.Conflict("Solo se puede editar la ubicación de pedidos con envío propio");
+
+            order.Locality = req.Locality!.Trim();
+            order.Address = req.Address!.Trim();
+            order.Latitude = req.Latitude;
+            order.Longitude = req.Longitude;
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(ToDto(order));
+        }).Validate<OrderLocationRequest>();
 
         // Any status may follow any other: the admin can also undo a mistaken change.
         admin.MapPatch("/orders/{id:int}/status", async (int id, OrderStatusRequest req, AppDbContext db, CancellationToken ct) =>
@@ -97,4 +119,10 @@ public static class AdminOrderEndpoints
 
         return admin;
     }
+
+    static AdminOrderDto ToDto(Order o) => new(
+        o.Id, o.Number, o.CreatedAt, o.Status, o.CustomerType, o.CustomerName, o.Phone, o.Zone,
+        o.Locality, o.Address, o.Latitude, o.Longitude, o.Province, o.Carrier, o.Comments,
+        o.IsWholesale, o.Total, o.HasUnpricedItems,
+        o.Items.OrderBy(i => i.Id).Select(OrderEndpoints.ToDto).ToList());
 }

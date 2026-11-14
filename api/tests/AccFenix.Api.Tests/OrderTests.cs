@@ -773,12 +773,116 @@ public class OrderTests(ApiFactory factory)
         res.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    // ---- Delivery location ----
+
+    Task<HttpResponseMessage> PatchLocation(HttpClient admin, int id, object body) =>
+        admin.PatchAsJsonAsync($"{AdminOrdersUrl}/{id}/location", body);
+
+    [Fact]
+    public async Task Admin_updates_the_location_and_sets_the_map_point()
+    {
+        await using var product = await CreateProduct();
+        var id = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
+
+        var res = await PatchLocation(product.Admin, id, new { locality = "  Castelar ", address = " Arias 2100 ", latitude = -34.651, longitude = -58.644 });
+
+        res.StatusCode.Should().Be(HttpStatusCode.OK, await res.Content.ReadAsStringAsync());
+        var updated = await res.Content.ReadFromJsonAsync<JsonElement>();
+        updated.GetProperty("id").GetInt32().Should().Be(id);
+        updated.GetProperty("locality").GetString().Should().Be("Castelar");
+        updated.GetProperty("address").GetString().Should().Be("Arias 2100");
+        updated.GetProperty("latitude").GetDouble().Should().Be(-34.651);
+        updated.GetProperty("longitude").GetDouble().Should().Be(-58.644);
+        Items(updated).Should().HaveCount(1);
+
+        var detail = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
+        detail.GetProperty("locality").GetString().Should().Be("Castelar");
+        detail.GetProperty("address").GetString().Should().Be("Arias 2100");
+        detail.GetProperty("latitude").GetDouble().Should().Be(-34.651);
+        detail.GetProperty("customerName").GetString().Should().Be("Ana Pérez");
+    }
+
+    [Fact]
+    public async Task Admin_removes_the_map_point_by_omitting_the_coordinates()
+    {
+        await using var product = await CreateProduct();
+        var id = (await Created(With(With(BuenosAires((product.First, 1)), "latitude", -34.65), "longitude", -58.62))).GetProperty("id").GetInt32();
+
+        var res = await PatchLocation(product.Admin, id, new { locality = "Morón", address = "Av. Siempre Viva 742", latitude = (double?)null, longitude = (double?)null });
+
+        res.StatusCode.Should().Be(HttpStatusCode.OK, await res.Content.ReadAsStringAsync());
+        var detail = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
+        detail.GetProperty("address").GetString().Should().Be("Av. Siempre Viva 742");
+        detail.GetProperty("latitude").ValueKind.Should().Be(JsonValueKind.Null);
+        detail.GetProperty("longitude").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task Location_update_of_an_unknown_order_is_not_found()
+    {
+        var res = await PatchLocation(AdminClient(), int.MaxValue, new { locality = "Morón", address = "Rivadavia 1" });
+
+        res.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    /// <summary>Carrier orders have no locality or address: the order's own state forbids the change, hence 409.</summary>
+    [Fact]
+    public async Task Location_of_an_other_province_order_cannot_be_edited()
+    {
+        await using var product = await CreateProduct();
+        var id = (await Created(OtherProvince((product.First, 1)))).GetProperty("id").GetInt32();
+
+        var res = await PatchLocation(product.Admin, id, new { locality = "Morón", address = "Rivadavia 1" });
+
+        res.StatusCode.Should().Be(HttpStatusCode.Conflict, await res.Content.ReadAsStringAsync());
+        var detail = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
+        detail.GetProperty("locality").ValueKind.Should().Be(JsonValueKind.Null);
+        detail.GetProperty("province").GetString().Should().Be("Córdoba");
+    }
+
+    [Theory]
+    [InlineData("""{"address":"Rivadavia 1"}""", "Locality")]
+    [InlineData("""{"locality":"  ","address":"Rivadavia 1"}""", "Locality")]
+    [InlineData("""{"locality":"Morón"}""", "Address")]
+    [InlineData("""{"locality":"Morón","address":"Rivadavia\n1"}""", "Address")]
+    [InlineData("""{"locality":"Morón","address":"Rivadavia 1","latitude":-34.6}""", "Longitude")]
+    [InlineData("""{"locality":"Morón","address":"Rivadavia 1","latitude":91,"longitude":-58}""", "Latitude")]
+    [InlineData("""{"locality":"Morón","address":"Rivadavia 1","latitude":-34,"longitude":181}""", "Longitude")]
+    public async Task Location_update_rejects_invalid_input(string body, string field)
+    {
+        await using var product = await CreateProduct();
+        var id = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
+
+        var res = await product.Admin.PatchAsync($"{AdminOrdersUrl}/{id}/location", new StringContent(body, Encoding.UTF8, "application/json"));
+
+        res.StatusCode.Should().Be(HttpStatusCode.BadRequest, await res.Content.ReadAsStringAsync());
+        var errors = (await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors");
+        errors.EnumerateObject().Select(e => e.Name).Should().Contain(field);
+        (await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}")).GetProperty("address").GetString().Should().Be("Av. Siempre Viva 742");
+    }
+
+    [Fact]
+    public async Task Location_update_enforces_the_creation_length_limits()
+    {
+        await using var product = await CreateProduct();
+        var id = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
+
+        var tooLong = await PatchLocation(product.Admin, id, new { locality = new string('a', OrderLimits.Locality + 1), address = new string('b', OrderLimits.Address + 1) });
+        tooLong.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var errors = (await tooLong.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors");
+        errors.EnumerateObject().Select(e => e.Name).Should().Contain(new[] { "Locality", "Address" });
+
+        var atLimit = await PatchLocation(product.Admin, id, new { locality = new string('a', OrderLimits.Locality), address = new string('b', OrderLimits.Address) });
+        atLimit.StatusCode.Should().Be(HttpStatusCode.OK, await atLimit.Content.ReadAsStringAsync());
+    }
+
     // ---- Privacy and security ----
 
     [Theory]
     [InlineData("GET", "/api/admin/orders")]
     [InlineData("GET", "/api/admin/orders/1")]
     [InlineData("PATCH", "/api/admin/orders/1/status")]
+    [InlineData("PATCH", "/api/admin/orders/1/location")]
     public async Task Admin_order_endpoints_require_a_token(string method, string url)
     {
         var req = new HttpRequestMessage(new HttpMethod(method), url);
