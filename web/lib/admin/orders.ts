@@ -1,3 +1,5 @@
+import type { Coords, GeoError } from "@/lib/geo";
+import { isMapsUrl, isShortMapsUrl, parseMapsUrl } from "@/lib/maps-url";
 import { isOrderStatus } from "@/lib/orders/status";
 import type { OrderStatus } from "@/lib/orders/types";
 import { formatArs } from "@/lib/pricing";
@@ -61,4 +63,32 @@ export function whatsappChatHref(phone: string | null): string | null {
   let digits = (phone ?? "").replace(/\D/g, "").replace(/^00/, "");
   if (!digits.startsWith("54")) digits = `549${digits.replace(/^0/, "")}`;
   return digits.length >= 10 ? `https://wa.me/${digits}` : null;
+}
+
+export type MapsLinkPoint = { coords: Coords } | { resolve: true } | { error: GeoError };
+
+/**
+ * Point of a pasted Google Maps link. Full links are read here; short links (maps.app.goo.gl)
+ * must be resolved on the server, like the public order form does.
+ */
+export function mapsLinkPoint(text: string): MapsLinkPoint {
+  const link = text.trim();
+  if (!isMapsUrl(link)) return { error: "link-invalido" };
+  const coords = parseMapsUrl(link);
+  if (coords) return { coords };
+  return isShortMapsUrl(link) ? { resolve: true } : { error: "sin-coordenadas" };
+}
+
+export type LocationField = "locality" | "address" | "point";
+
+const locationFieldKeys: Record<string, LocationField> = { Locality: "locality", Address: "address", Latitude: "point", Longitude: "point" };
+
+/** First message per field from the API's validation errors of a location update. */
+export function locationFieldErrors(errors: Record<string, string[]> | undefined): Partial<Record<LocationField, string>> {
+  const result: Partial<Record<LocationField, string>> = {};
+  for (const [key, messages] of Object.entries(errors ?? {})) {
+    const field = locationFieldKeys[key];
+    if (field && !result[field] && messages[0]) result[field] = messages[0];
+  }
+  return result;
 }

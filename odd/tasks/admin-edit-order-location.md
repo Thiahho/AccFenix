@@ -20,7 +20,8 @@ Admin order endpoints only change status; a wrong or missing address/pin cannot 
 ## Tasks
 - [x] T1 API: `PATCH /api/admin/orders/{id}/location` with validator and tests (404, non-own-delivery 400/409, invalid input 400, success, coordinates cleared). Route: delegated.
   - Evidence: location rules extracted to `BuenosAiresLocationValidator` (over `IBuenosAiresLocation`), included by both `CreateOrderRequestValidator` and `OrderLocationRequestValidator`. Other-province orders return 409 Conflict. Returns `AdminOrderDto`. RED: 11 new tests failing before the endpoint; GREEN: `dotnet test` 226/227 passed, the 1 failure is the environmental `SecurityTests.Source_code_has_no_raw_sql` (artifacts-path build).
-- [ ] T2 Web: server action + edit form on the order detail (locality, address, Maps link to set the pin, remove pin), updating the page after save. Route: delegated.
+- [x] T2 Web: server action + edit form on the order detail (locality, address, Maps link to set the pin, remove pin), updating the page after save. Route: delegated.
+  - Evidence: `OrderLocationDialog` (components/admin/orders/order-location-dialog.tsx) opened from the "Entrega" card of own-delivery orders; `updateOrderLocation` server action maps 400 field errors and revalidates `/admin/pedidos` (layout scope: detail + list). Pure helpers `mapsLinkPoint` (reuses `isMapsUrl`/`parseMapsUrl`/`isShortMapsUrl`) and `locationFieldErrors` in lib/admin/orders.ts; short links resolved through `fetchUbicacion` (same `/api/geo/ubicacion` route as the public form). RED: 6 new vitest tests failing; GREEN: vitest 211/211, `tsc --noEmit` clean, eslint clean on changed files.
 
 ## Acceptance criteria
 - Admin can change locality/address and set or remove the map point of an own-delivery order.
@@ -31,4 +32,4 @@ Admin order endpoints only change status; a wrong or missing address/pin cannot 
 - Scope set by parent (user asked to edit "the location field of an order").
 
 ## Next step
-T1.
+Done. Next: manual check on a phone (360px) and desktop.

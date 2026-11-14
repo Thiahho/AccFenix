@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MapPinIcon } from "lucide-react";
+import { OrderLocationDialog } from "@/components/admin/orders/order-location-dialog";
 import { OrderStatusBadge } from "@/components/admin/orders/order-status-badge";
 import { OrderStatusForm } from "@/components/admin/orders/order-status-form";
 import { PageHeader } from "@/components/admin/page-header";
@@ -77,7 +78,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </section>
 
         <section aria-labelledby="entrega" className="rounded-xl border bg-background p-5">
-          <h2 id="entrega" className="font-semibold">Entrega</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="entrega" className="font-semibold">Entrega</h2>
+            {order.zone === "buenosAires" && (
+              <OrderLocationDialog
+                orderId={order.id}
+                location={{ locality: order.locality, address: order.address, latitude: order.latitude, longitude: order.longitude }}
+              />
+            )}
+          </div>
           <dl className="mt-3 grid gap-3 text-sm">
             <Detail label="Zona">{zoneLabel[order.zone]}</Detail>
             {order.zone === "buenosAires" ? (

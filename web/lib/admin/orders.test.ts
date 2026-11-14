@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatOrderDate, orderTotalLabel, ordersListPath, ordersPageHref, pageCount, parseOrdersQuery, whatsappChatHref } from "@/lib/admin/orders";
+import { formatOrderDate, locationFieldErrors, mapsLinkPoint, orderTotalLabel, ordersListPath, ordersPageHref, pageCount, parseOrdersQuery, whatsappChatHref } from "@/lib/admin/orders";
 
 describe("parseOrdersQuery", () => {
   it("defaults to the first page and every status", () => {
@@ -71,5 +71,39 @@ describe("whatsappChatHref", () => {
     expect(whatsappChatHref(null)).toBeNull();
     expect(whatsappChatHref("")).toBeNull();
     expect(whatsappChatHref("1234")).toBeNull();
+  });
+});
+
+describe("mapsLinkPoint", () => {
+  it("reads the point of a full Google Maps link without the network", () => {
+    expect(mapsLinkPoint("https://www.google.com/maps/place/X/@-34.6,-58.4,17z/data=!3d-34.651!4d-58.644")).toEqual({
+      coords: { lat: -34.651, lng: -58.644 },
+    });
+  });
+
+  it("asks to resolve short links on the server", () => {
+    expect(mapsLinkPoint(" https://maps.app.goo.gl/abc123 ")).toEqual({ resolve: true });
+  });
+
+  it("rejects links that are not from Google Maps", () => {
+    expect(mapsLinkPoint("https://example.com/@-34.6,-58.4")).toEqual({ error: "link-invalido" });
+    expect(mapsLinkPoint("Rivadavia 1234")).toEqual({ error: "link-invalido" });
+  });
+
+  it("reports a Maps link without coordinates", () => {
+    expect(mapsLinkPoint("https://www.google.com/maps/search/ferreteria")).toEqual({ error: "sin-coordenadas" });
+  });
+});
+
+describe("locationFieldErrors", () => {
+  it("maps API validation keys to the form fields", () => {
+    expect(
+      locationFieldErrors({ Locality: ["Requerida"], Address: ["Hasta 200 caracteres"], Longitude: ["La ubicación necesita latitud y longitud"] }),
+    ).toEqual({ locality: "Requerida", address: "Hasta 200 caracteres", point: "La ubicación necesita latitud y longitud" });
+  });
+
+  it("returns nothing without field errors", () => {
+    expect(locationFieldErrors(undefined)).toEqual({});
+    expect(locationFieldErrors({ Other: ["x"] })).toEqual({});
   });
 });
