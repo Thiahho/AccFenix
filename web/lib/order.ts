@@ -1,7 +1,9 @@
-import { z } from "zod";
+// zod/mini keeps this schema tree-shakable: it ships in the client bundle of /pedido through the form resolver.
+import * as z from "zod/mini";
 import { provincias } from "@/lib/provincias";
 
-const required = (label: string, max = 120) => z.string().trim().min(1, `Completá ${label}`).max(max, "Es demasiado largo");
+const required = (label: string, max = 120) =>
+  z.string().check(z.trim(), z.minLength(1, `Completá ${label}`), z.maxLength(max, "Es demasiado largo"));
 
 /**
  * Who the order is for. Neither a phone nor a business name is asked: the order goes out from the customer's own
@@ -13,7 +15,7 @@ const customerSchema = z.object({
 
 const contactShape = {
   nombre: required("tu nombre"),
-  comentarios: z.string().trim().max(500).optional(),
+  comentarios: z.optional(z.string().check(z.trim(), z.maxLength(500, "Es demasiado largo"))),
 };
 
 const deliverySchema = z.discriminatedUnion("zona", [
@@ -23,7 +25,9 @@ const deliverySchema = z.discriminatedUnion("zona", [
     localidad: required("la localidad"),
     direccion: required("la dirección", 200),
     /** Punto exacto captado desde un link de Maps o una dirección con puerta; viaja como link en el mensaje. */
-    ubicacion: z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).optional(),
+    ubicacion: z.optional(
+      z.object({ lat: z.number().check(z.gte(-90), z.lte(90)), lng: z.number().check(z.gte(-180), z.lte(180)) }),
+    ),
   }),
   z.object({
     zona: z.literal("otra-provincia"),

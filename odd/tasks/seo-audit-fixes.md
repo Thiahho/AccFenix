@@ -17,7 +17,7 @@ ask-on-risk. Forecast ~250 authored lines.
 - [x] T3 `public/llms.txt`, explicit AI crawler allowance in `robots.ts`, root `app/not-found.tsx`. Route: delegated.
 - [x] T4 Product-gallery thumbnails: buttons already labelled; label now names the product, decorative `alt=""` kept. Route: delegated.
 - [x] T5 Verify. Route: delegated verification.
-- [ ] T6 Reduce `/pedido` bundle (531 kB raw chunk, mostly full `zod` imported by `lib/order.ts`). Pending user decision.
+- [x] T6 Reduce `/pedido` bundle: `lib/order.ts` moved to `zod/mini` (user approved). Route: inline (one file). First Load JS 365 → 286 kB, page 139 → 59.9 kB; the 531 kB zod chunk is gone. Server action keeps classic `zod` (server-only). Tests 211/211, tsc clean.
 
 ## Verification evidence
 - `pnpm lint`: clean (exit 0 on rerun; first run hit pnpm dependency check).
@@ -31,4 +31,4 @@ ask-on-risk. Forecast ~250 authored lines.
 `pnpm lint`, `pnpm test`, `pnpm build` in `web/`.
 
 ## Progress
-T1–T5 done. Next: T6 pending decision.
+All tasks done.
