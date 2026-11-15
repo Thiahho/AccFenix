@@ -227,6 +227,24 @@ public class OrderTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task Units_quoted_on_request_do_not_count_towards_the_wholesale_threshold()
+    {
+        await using var product = await CreateProduct();
+        await product.SetPrices(product.First, 100m, 80m);
+        await product.SetPrices(product.Second, null, null);
+        var threshold = await WholesaleThreshold();
+
+        // Priced units stay one short of the threshold; the unpriced line alone would push it over.
+        var order = await Created(BuenosAires((product.First, threshold - 1), (product.Second, 5)));
+
+        order.GetProperty("isWholesale").GetBoolean().Should().BeFalse();
+        order.GetProperty("hasUnpricedItems").GetBoolean().Should().BeTrue();
+        var lines = Items(order).ToDictionary(l => l.GetProperty("variantId").GetInt32());
+        Money(lines[product.First], "unitPrice").Should().Be(100m);
+        Money(order, "total").Should().Be(100m * (threshold - 1));
+    }
+
+    [Fact]
     public async Task Unpriced_variants_have_null_line_prices_and_flag_the_order()
     {
         await using var product = await CreateProduct();

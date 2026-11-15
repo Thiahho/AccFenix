@@ -154,7 +154,10 @@ public static class OrderEndpoints
 
             var thresholdSetting = await db.Settings.Where(s => s.Key == SettingKeys.WholesaleThreshold).Select(s => s.Value).FirstOrDefaultAsync(ct);
             var threshold = WholesaleThreshold.Parse(thresholdSetting);
-            var isWholesale = OrderPricing.IsWholesale(lines.Sum(l => l.Quantity), threshold);
+            var pricedUnits = lines
+                .Where(l => OrderPricing.CountsTowardWholesale(variants[l.VariantId].RetailPrice, variants[l.VariantId].WholesalePrice))
+                .Sum(l => l.Quantity);
+            var isWholesale = OrderPricing.IsWholesale(pricedUnits, threshold);
 
             var items = lines.Select(line =>
             {

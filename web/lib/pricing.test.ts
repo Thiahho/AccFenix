@@ -46,13 +46,22 @@ describe("lineSubtotal", () => {
 
 describe("isWholesale", () => {
   it("is wholesale exactly at the threshold and above it", () => {
-    expect(isWholesale([line(99)], 100)).toBe(false);
-    expect(isWholesale([line(60), line(40)], 100)).toBe(true);
-    expect(isWholesale([line(101)], 100)).toBe(true);
+    expect(isWholesale([line(99, 10)], 100)).toBe(false);
+    expect(isWholesale([line(60, 10), line(40, 12)], 100)).toBe(true);
+    expect(isWholesale([line(101, 10)], 100)).toBe(true);
   });
 
   it("is never wholesale when the threshold is disabled", () => {
-    expect(isWholesale([line(5000)], 0)).toBe(false);
+    expect(isWholesale([line(5000, 10)], 0)).toBe(false);
+  });
+
+  it("does not count units quoted on request (no price) towards the threshold", () => {
+    expect(isWholesale([line(60, 10), line(40)], 100)).toBe(false);
+    expect(isWholesale([line(500)], 100)).toBe(false);
+  });
+
+  it("counts a variant priced only for wholesale, since it can be charged", () => {
+    expect(isWholesale([line(60, 10), line(40, null, 8)], 100)).toBe(true);
   });
 });
 

@@ -41,9 +41,14 @@ describe("buildOrderMessage", () => {
   });
 
   it("flags wholesale orders at or above the threshold", () => {
-    expect(buildOrderMessage(items, baForm, 123)).toContain("*PEDIDO MAYORISTA* (123 unidades)");
-    expect(buildOrderMessage(items, baForm, 124)).not.toContain("MAYORISTA");
-    expect(isWholesale(items, 0)).toBe(false);
+    const priced = items.map((i) => ({ ...i, retailPrice: 1000 }));
+    expect(buildOrderMessage(priced, baForm, 123)).toContain("*PEDIDO MAYORISTA* (123 unidades)");
+    expect(buildOrderMessage(priced, baForm, 124)).not.toContain("MAYORISTA");
+    expect(isWholesale(priced, 0)).toBe(false);
+  });
+
+  it("never flags wholesale when every item is quoted on request", () => {
+    expect(buildOrderMessage(items, baForm, 100)).not.toContain("MAYORISTA");
   });
 
   it("does not mention prices when no variant has one", () => {
