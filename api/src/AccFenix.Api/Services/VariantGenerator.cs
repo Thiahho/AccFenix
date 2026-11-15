@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using AccFenix.Api.Data;
 using AccFenix.Api.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +16,8 @@ public class VariantGenerator(AppDbContext db)
     /// agrupados por los atributos de su categoría. Las variantes existentes conservan su disponibilidad y sus precios;
     /// las que ya no corresponden se desactivan (no se borran).
     /// </summary>
-    public async Task<GenerateResult> GenerateAsync(int productId, CancellationToken ct = default)
+    /// <remarks>Virtual so tests can substitute a failing generator.</remarks>
+    public virtual async Task<GenerateResult> GenerateAsync(int productId, CancellationToken ct = default)
     {
         var product = await db.Products
             .Include(p => p.Category).ThenInclude(c => c.Attributes)
@@ -53,7 +57,7 @@ public class VariantGenerator(AppDbContext db)
 
             product.Variants.Add(new Variant
             {
-                Sku = SkuFor(product.Slug, combo),
+                Sku = SkuFor(product.Id, product.Slug, combo),
                 CombinationKey = key,
                 Values = combo.Select(v => new VariantValue { AttributeValueId = v.Id }).ToList(),
             });
@@ -83,6 +87,21 @@ public class VariantGenerator(AppDbContext db)
 
     public static string KeyFor(IEnumerable<int> valueIds) => string.Join('-', valueIds.Order());
 
-    public static string SkuFor(string productSlug, IEnumerable<AttributeValue> combo) =>
-        string.Join('-', new[] { productSlug }.Concat(combo.Select(v => Slug.From(v.Label))).Where(s => s.Length > 0));
+    /// <summary>
+    /// SKU = <c>{productId}-{productSlug}-{label slugs}</c>. The product id keeps SKUs unique across products.
+    /// When longer than <see cref="Variant.SkuMaxLength"/>, it is cut and suffixed with <c>-</c> plus an 8-char hash
+    /// of the full value, so it fits the column and stays deterministic and distinct.
+    /// </summary>
+    public static string SkuFor(int productId, string productSlug, IEnumerable<AttributeValue> combo)
+    {
+        var full = string.Join('-',
+            new[] { productId.ToString(CultureInfo.InvariantCulture), productSlug }
+                .Concat(combo.Select(v => Slug.From(v.Label)))
+                .Where(s => s.Length > 0));
+        if (full.Length <= Variant.SkuMaxLength) return full;
+
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(full)), 0, 4).ToLowerInvariant();
+        var prefix = full[..(Variant.SkuMaxLength - hash.Length - 1)].TrimEnd('-');
+        return $"{prefix}-{hash}";
+    }
 }

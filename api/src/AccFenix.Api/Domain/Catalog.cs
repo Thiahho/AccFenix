@@ -77,6 +77,9 @@ public enum Availability
 
 public class Variant
 {
+    /// <summary>Max length of a SKU, shared by the variant and the order line snapshot.</summary>
+    public const int SkuMaxLength = 120;
+
     public int Id { get; set; }
     public int ProductId { get; set; }
     public Product Product { get; set; } = null!;

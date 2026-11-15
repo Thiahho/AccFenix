@@ -197,6 +197,8 @@ public static class AdminCatalogEndpoints
             if (await UnknownAttributes(db, req.AttributeIds, ct)) return Results.ValidationProblem(new Dictionary<string, string[]> { ["attributeIds"] = ["Atributo inexistente"] });
 
             var attributesChanged = !category.Attributes.OrderBy(a => a.SortOrder).Select(a => a.AttributeId).SequenceEqual(req.AttributeIds.Distinct());
+            // Category and variant regeneration commit together: a failed regeneration leaves the category untouched.
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
             category.Name = req.Name.Trim();
             category.Slug = slug;
             category.Description = req.Description;
@@ -213,6 +215,7 @@ public static class AdminCatalogEndpoints
                     await generator.GenerateAsync(productId, ct);
                 }
             }
+            await tx.CommitAsync(ct);
             return Results.NoContent();
         }).Validate<CategoryRequest>();
 
@@ -355,9 +358,13 @@ public static class AdminCatalogEndpoints
                 SortOrder = req.SortOrder, IsActive = req.IsActive,
                 AllowedValues = req.AllowedValueIds.Distinct().Select(v => new ProductAllowedValue { AttributeValueId = v }).ToList(),
             };
+            // The product is saved first (its id goes into the SKUs); the transaction keeps it from
+            // surviving a failed variant generation.
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
             db.Products.Add(product);
             await db.SaveChangesAsync(ct);
             var generated = await generator.GenerateAsync(product.Id, ct);
+            await tx.CommitAsync(ct);
             return Results.Created($"/api/admin/products/{product.Id}", new { product.Id, product.Slug, Variants = generated });
         }).Validate<ProductRequest>();
 
@@ -370,6 +377,8 @@ public static class AdminCatalogEndpoints
             var error = await ValidateProductValues(db, req, ct);
             if (error is not null) return error;
 
+            // Product changes and variant regeneration commit together.
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
             product.CategoryId = req.CategoryId;
             product.Name = req.Name.Trim();
             product.Slug = slug;
@@ -383,8 +392,9 @@ public static class AdminCatalogEndpoints
                 product.AllowedValues.Add(new ProductAllowedValue { ProductId = id, AttributeValueId = valueId });
             }
             await db.SaveChangesAsync(ct);
-
-            return Results.Ok(new { Variants = await generator.GenerateAsync(id, ct) });
+            var generated = await generator.GenerateAsync(id, ct);
+            await tx.CommitAsync(ct);
+            return Results.Ok(new { Variants = generated });
         }).Validate<ProductRequest>();
 
         admin.MapDelete("/products/{id:int}", async (int id, AppDbContext db, IMediaStorage storage, CancellationToken ct) =>

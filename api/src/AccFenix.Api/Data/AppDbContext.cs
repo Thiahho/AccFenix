@@ -71,7 +71,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         b.Entity<Variant>(e =>
         {
-            e.Property(x => x.Sku).HasMaxLength(120);
+            e.Property(x => x.Sku).HasMaxLength(Variant.SkuMaxLength);
             e.Property(x => x.CombinationKey).HasMaxLength(200);
             e.Property(x => x.RetailPrice).HasPrecision(12, 2);
             e.Property(x => x.WholesalePrice).HasPrecision(12, 2);
@@ -152,7 +152,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<OrderItem>(e =>
         {
             e.Property(x => x.ProductName).HasMaxLength(160);
-            e.Property(x => x.Sku).HasMaxLength(120);
+            e.Property(x => x.Sku).HasMaxLength(Variant.SkuMaxLength);
             e.Property(x => x.VariantLabel).HasMaxLength(OrderLimits.VariantLabel);
             e.Property(x => x.UnitPrice).HasPrecision(12, 2);
             e.Property(x => x.Subtotal).HasPrecision(12, 2);

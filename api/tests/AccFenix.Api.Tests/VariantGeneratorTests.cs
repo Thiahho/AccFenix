@@ -29,11 +29,43 @@ public class VariantGeneratorTests
     }
 
     [Fact]
-    public void SkuFor_joins_product_slug_and_value_labels()
+    public void SkuFor_joins_product_id_slug_and_value_labels()
     {
         AttributeValue[] combo = [new() { Label = "Colorado" }, new() { Label = "Medio cajón" }];
 
-        VariantGenerator.SkuFor("huevos-n-1", combo).Should().Be("huevos-n-1-colorado-medio-cajon");
+        VariantGenerator.SkuFor(42, "huevos-n-1", combo).Should().Be("42-huevos-n-1-colorado-medio-cajon");
+    }
+
+    [Fact]
+    public void SkuFor_differs_between_products_with_the_same_slug()
+    {
+        AttributeValue[] combo = [new() { Label = "Colorado" }];
+
+        VariantGenerator.SkuFor(1, "huevos", combo).Should().NotBe(VariantGenerator.SkuFor(2, "huevos", combo));
+    }
+
+    [Fact]
+    public void SkuFor_caps_long_values_to_the_column_length_deterministically()
+    {
+        var slug = new string('a', 180);
+        AttributeValue[] combo = [new() { Label = new string('b', 80) }, new() { Label = new string('c', 80) }];
+        AttributeValue[] other = [new() { Label = new string('b', 80) }, new() { Label = new string('d', 80) }];
+
+        var sku = VariantGenerator.SkuFor(7, slug, combo);
+
+        sku.Length.Should().BeLessOrEqualTo(Variant.SkuMaxLength);
+        sku.Should().StartWith("7-aaa").And.MatchRegex("-[0-9a-f]{8}$");
+        VariantGenerator.SkuFor(7, slug, combo).Should().Be(sku);
+        // Same 111-char prefix, different tail: the hash keeps them apart.
+        VariantGenerator.SkuFor(7, slug, other).Should().NotBe(sku);
+    }
+
+    [Fact]
+    public void SkuFor_keeps_values_that_fit_unchanged()
+    {
+        var slug = new string('a', Variant.SkuMaxLength - 2);
+
+        VariantGenerator.SkuFor(7, slug, []).Should().Be($"7-{slug}").And.HaveLength(Variant.SkuMaxLength);
     }
 
     [Theory]

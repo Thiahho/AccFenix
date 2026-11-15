@@ -15,12 +15,19 @@ Fix the four "fix now" findings from the 2026-11-15 system audit.
 - Transactions via `db.Database.BeginTransactionAsync()` around the multi-step handlers.
 
 ## Tasks
-- [ ] T1 JSON-LD escape helper + unit tests (RED → GREEN). Route: inline (2 small files, already understood).
-- [ ] T2 SKU format with product id + length cap, transactions on product POST/PUT and category PUT, regression tests. Route: delegated writer (2+ non-trivial C# files).
-- [ ] T3 Verification: web tests/lint/tsc; `dotnet build`; `dotnet test` (needs Docker; currently down).
+- [x] T1 JSON-LD escape helper + unit tests (RED → GREEN). Route: inline (2 small files, already understood).
+- [x] T2 SKU format with product id + length cap, transactions on product POST/PUT and category PUT, regression tests. Route: delegated writer (2+ non-trivial C# files).
+- [x] T3 Verification: web tests/lint/tsc; `dotnet build`; `dotnet test` (needs Docker; currently down).
 
 ## Checks
 `npx vitest run`, `npx tsc --noEmit`, `npx eslint`, `dotnet build`, `dotnet test`.
 
+## Verification evidence
+- T1 (commit 16b27db): RED observed (module missing), GREEN 220/220 web tests; tsc and eslint clean.
+- T2: SKU = {productId}-{slug}-{labels}, capped at Variant.SkuMaxLength (120) with an 8-hex SHA-256 suffix when cut. Transactions on product POST/PUT and category PUT; no execution strategy needed (plain UseNpgsql). No RED was recorded for the API tests: the writer wrote fix and tests together.
+- dotnet build: 0 warnings, 0 errors. dotnet test (Docker up): 232/232 passed, including the new long-name and rollback integration tests.
+- The raw-SQL test fails when the build output is outside the repo (audit L9); running with OutDir inside the repo passes.
+- Not covered: rollback tests for product PUT and category PUT. Existing SKUs are not rewritten.
+
 ## Progress
-Created. Docker is down: API integration tests pending until it is available.
+All tasks done.
