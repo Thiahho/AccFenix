@@ -1,11 +1,13 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using AccFenix.Api.Data;
 using AccFenix.Api.Domain;
+using AccFenix.Api.Seed;
 using AccFenix.Api.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
@@ -26,7 +28,7 @@ public class SecurityTests(ApiFactory factory) : IClassFixture<ApiFactory>
     /// <summary>Cliente admin con un token emitido directamente, sin gastar intentos de login.</summary>
     HttpClient AdminClient()
     {
-        var token = factory.Services.GetRequiredService<TokenService>().Create(new AdminUser { Id = 1, Email = ApiFactory.AdminEmail }).Token;
+        var token = factory.AdminToken();
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return client;
@@ -117,11 +119,7 @@ public class SecurityTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public void Source_code_has_no_raw_sql()
     {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "src", "AccFenix.Api"))) dir = dir.Parent;
-        dir.Should().NotBeNull("los tests se ejecutan dentro del repositorio");
-
-        var src = Path.Combine(dir!.FullName, "src", "AccFenix.Api");
+        var src = Path.Combine(ApiRoot(), "src", "AccFenix.Api");
         var forbidden = new Regex(@"FromSql|ExecuteSql|SqlQuery|NpgsqlCommand|CommandText");
         var offenders = Directory.EnumerateFiles(src, "*.cs", SearchOption.AllDirectories)
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}")
@@ -132,6 +130,26 @@ public class SecurityTests(ApiFactory factory) : IClassFixture<ApiFactory>
             .ToList();
 
         offenders.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// The folder that holds AccFenix.sln. Searched upwards from the test binaries; when they are built outside
+    /// the repository (a custom OutDir), it falls back to the location of this source file.
+    /// </summary>
+    static string ApiRoot([CallerFilePath] string sourceFile = "")
+    {
+        static string? FindUp(string? start)
+        {
+            for (var dir = start is null ? null : new DirectoryInfo(start); dir is not null; dir = dir.Parent)
+            {
+                if (File.Exists(Path.Combine(dir.FullName, "AccFenix.sln"))) return dir.FullName;
+            }
+            return null;
+        }
+
+        var root = FindUp(AppContext.BaseDirectory) ?? FindUp(Path.GetDirectoryName(sourceFile));
+        root.Should().NotBeNull("the tests run from the repository or were compiled from it");
+        return root!;
     }
 
     // ---- Autorización ----
@@ -158,6 +176,62 @@ public class SecurityTests(ApiFactory factory) : IClassFixture<ApiFactory>
         if (authorization.Length > 0) req.Headers.TryAddWithoutValidation("Authorization", authorization);
 
         (await _public.SendAsync(req)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    async Task<string> NewAdmin(string password)
+    {
+        var email = $"stamp-{Guid.NewGuid():N}@test.local";
+        using var scope = factory.Services.CreateScope();
+        (await scope.ServiceProvider.GetRequiredService<AdminAccountService>().CreateIfMissingAsync(email, password)).Should().BeTrue();
+        return email;
+    }
+
+    async Task<HttpStatusCode> AdminRequest(string token)
+    {
+        var req = new HttpRequestMessage(HttpMethod.Get, "/api/admin/settings");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        return (await _public.SendAsync(req)).StatusCode;
+    }
+
+    [Fact]
+    public async Task Token_stops_working_after_a_password_reset()
+    {
+        var email = await NewAdmin("old-password-123");
+        var token = factory.AdminToken(email);
+        (await AdminRequest(token)).Should().Be(HttpStatusCode.OK);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<AdminAccountService>().CreateOrResetAsync(email, "new-password-456");
+        }
+
+        (await AdminRequest(token)).Should().Be(HttpStatusCode.Unauthorized);
+        (await AdminRequest(factory.AdminToken(email))).Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Token_of_a_deleted_admin_is_rejected()
+    {
+        var email = await NewAdmin("deleted-password-1");
+        var token = factory.AdminToken(email);
+        (await AdminRequest(token)).Should().Be(HttpStatusCode.OK);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<AppDbContext>().AdminUsers.Where(u => u.Email == email).ExecuteDeleteAsync();
+        }
+
+        (await AdminRequest(token)).Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Token_without_a_security_stamp_is_rejected()
+    {
+        // Signed with the right key but issued before stamps existed (or for a user that is not stored).
+        var token = factory.Services.GetRequiredService<TokenService>()
+            .Create(new AdminUser { Id = 1, Email = ApiFactory.AdminEmail, SecurityStamp = "" }).Token;
+
+        (await AdminRequest(token)).Should().Be(HttpStatusCode.Unauthorized);
     }
 
     // ---- Validación de entradas ----

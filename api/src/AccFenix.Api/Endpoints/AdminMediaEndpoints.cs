@@ -79,13 +79,14 @@ public static class AdminMediaEndpoints
             return Results.NoContent();
         }).Validate<MediaPatchRequest>();
 
-        admin.MapDelete("/media/{id:int}", async (int id, AppDbContext db, IMediaStorage storage, CancellationToken ct) =>
+        // The row goes first; the stored file is removed afterwards, best effort.
+        admin.MapDelete("/media/{id:int}", async (int id, AppDbContext db, IMediaStorage storage, ILogger<Media> logger, CancellationToken ct) =>
         {
             var media = await db.Media.FindAsync([id], ct);
             if (media is null) return Results.NotFound();
-            if (media.CloudinaryPublicId is not null) await storage.DeleteAsync(media.CloudinaryPublicId, media.Type, ct);
             db.Media.Remove(media);
             await db.SaveChangesAsync(ct);
+            await storage.DeleteBestEffortAsync([media], logger);
             return Results.NoContent();
         });
 

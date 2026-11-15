@@ -136,9 +136,34 @@ public static class SettingKeys
     public const string WhatsappNumber = "WhatsappNumber";
 }
 
+/// <summary>Units from which an order is priced as wholesale, when the setting is missing or invalid.</summary>
+public static class WholesaleThreshold
+{
+    public const int Default = 100;
+
+    /// <summary>The stored setting value, or <see cref="Default"/> when it is missing or not a number.</summary>
+    public static int Parse(string? value) => int.TryParse(value, out var threshold) ? threshold : Default;
+}
+
+/// <summary>Bounds shared by the API validators and the database constraints of the catalog.</summary>
+public static class CatalogLimits
+{
+    public const int MaxSortOrder = 100_000;
+    /// <summary>Upper bound for a unit price; it fits the numeric(12,2) price columns.</summary>
+    public const decimal MaxPrice = 99_999_999.99m;
+}
+
 public class AdminUser
 {
+    public const int SecurityStampMaxLength = 64;
+
     public int Id { get; set; }
     public required string Email { get; set; }
     public string PasswordHash { get; set; } = "";
+    /// <summary>
+    /// Copied into every token at login. Changing it (on a password reset) invalidates the tokens issued before.
+    /// </summary>
+    public string SecurityStamp { get; set; } = NewSecurityStamp();
+
+    public static string NewSecurityStamp() => Guid.NewGuid().ToString("N");
 }

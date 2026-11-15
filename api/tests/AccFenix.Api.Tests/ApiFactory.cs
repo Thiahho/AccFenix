@@ -1,5 +1,6 @@
 using AccFenix.Api.Data;
 using AccFenix.Api.Seed;
+using AccFenix.Api.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -71,6 +72,20 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await conn.OpenAsync();
         await using var cmd = new NpgsqlCommand($"DROP DATABASE IF EXISTS \"{_databaseName}\" WITH (FORCE)", conn);
         await cmd.ExecuteNonQueryAsync();
+    }
+}
+
+public static class AdminTokens
+{
+    /// <summary>
+    /// A token for an admin as it is stored now (with its current security stamp), issued directly so it does not
+    /// spend login attempts. Defaults to the seeded admin.
+    /// </summary>
+    public static string AdminToken(this WebApplicationFactory<Program> app, string email = ApiFactory.AdminEmail)
+    {
+        using var scope = app.Services.CreateScope();
+        var admin = scope.ServiceProvider.GetRequiredService<AppDbContext>().AdminUsers.AsNoTracking().Single(u => u.Email == email);
+        return scope.ServiceProvider.GetRequiredService<TokenService>().Create(admin).Token;
     }
 }
 

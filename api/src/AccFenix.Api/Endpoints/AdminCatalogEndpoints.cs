@@ -204,12 +204,14 @@ public static class AdminCatalogEndpoints
             category.Description = req.Description;
             category.SortOrder = req.SortOrder;
             category.IsActive = req.IsActive;
-            SyncCategoryAttributes(category, req.AttributeIds.Distinct().ToList());
+            var attributeIds = req.AttributeIds.Distinct().ToList();
+            SyncCategoryAttributes(category, attributeIds);
             await db.SaveChangesAsync(ct);
 
             // Si cambian los atributos de la categoría, las combinaciones de sus productos también cambian.
             if (attributesChanged)
             {
+                await RemoveValuesOfDroppedAttributes(db, id, attributeIds, ct);
                 foreach (var productId in await db.Products.Where(p => p.CategoryId == id).Select(p => p.Id).ToListAsync(ct))
                 {
                     await generator.GenerateAsync(productId, ct);
@@ -397,22 +399,21 @@ public static class AdminCatalogEndpoints
             return Results.Ok(new { Variants = generated });
         }).Validate<ProductRequest>();
 
-        admin.MapDelete("/products/{id:int}", async (int id, AppDbContext db, IMediaStorage storage, CancellationToken ct) =>
+        // The rows go first; the stored files are removed afterwards, best effort (see DeleteBestEffortAsync).
+        admin.MapDelete("/products/{id:int}", async (int id, AppDbContext db, IMediaStorage storage, ILogger<Product> logger, CancellationToken ct) =>
         {
             var product = await db.Products.Include(p => p.Media).FirstOrDefaultAsync(p => p.Id == id, ct);
             if (product is null) return Results.NotFound();
-            foreach (var media in product.Media.Where(m => m.CloudinaryPublicId is not null))
-            {
-                await storage.DeleteAsync(media.CloudinaryPublicId!, media.Type, ct);
-            }
+            var media = product.Media.ToList();
             db.Products.Remove(product);
             await db.SaveChangesAsync(ct);
+            await storage.DeleteBestEffortAsync(media, logger);
             return Results.NoContent();
         });
 
         // Deletes several products in one request. All or nothing: an unknown id rejects the whole request.
-        // Duplicated ids are ignored. Media is removed from storage before the products, as in the single delete.
-        admin.MapPost("/products/bulk-delete", async (ProductBulkDeleteRequest req, AppDbContext db, IMediaStorage storage, CancellationToken ct) =>
+        // Duplicated ids are ignored. As in the single delete, stored files are removed after the rows, best effort.
+        admin.MapPost("/products/bulk-delete", async (ProductBulkDeleteRequest req, AppDbContext db, IMediaStorage storage, ILogger<Product> logger, CancellationToken ct) =>
         {
             var ids = req.Ids.Distinct().ToList();
             var products = await db.Products.Include(p => p.Media).Where(p => ids.Contains(p.Id)).ToListAsync(ct);
@@ -421,12 +422,10 @@ public static class AdminCatalogEndpoints
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["ids"] = ["Hay productos inexistentes"] });
             }
 
-            foreach (var media in products.SelectMany(p => p.Media).Where(m => m.CloudinaryPublicId is not null))
-            {
-                await storage.DeleteAsync(media.CloudinaryPublicId!, media.Type, ct);
-            }
+            var media = products.SelectMany(p => p.Media).ToList();
             db.Products.RemoveRange(products);
             await db.SaveChangesAsync(ct);
+            await storage.DeleteBestEffortAsync(media, logger);
             return Results.Ok(new { Deleted = products.Count });
         }).Validate<ProductBulkDeleteRequest>();
 
@@ -462,14 +461,15 @@ public static class AdminCatalogEndpoints
     {
         admin.MapPatch("/variants/{id:int}", async (int id, VariantPatchRequest req, AppDbContext db, CancellationToken ct) =>
         {
-            var variant = await db.Variants.FindAsync([id], ct);
+            var variant = await db.Variants.Include(v => v.Values).FirstOrDefaultAsync(v => v.Id == id, ct);
             if (variant is null) return Results.NotFound();
             if (req.Availability is { } availability) variant.Availability = availability;
             if (req.IsActive is { } active) variant.IsActive = active;
             if (req.HasRetailPrice) variant.RetailPrice = req.RetailPrice;
             if (req.HasWholesalePrice) variant.WholesalePrice = req.WholesalePrice;
             await db.SaveChangesAsync(ct);
-            return Results.Ok(new AdminVariantDto(variant.Id, variant.Sku, [], variant.Availability, variant.IsActive, variant.RetailPrice, variant.WholesalePrice));
+            var valueIds = variant.Values.Select(x => x.AttributeValueId).Order().ToList();
+            return Results.Ok(new AdminVariantDto(variant.Id, variant.Sku, valueIds, variant.Availability, variant.IsActive, variant.RetailPrice, variant.WholesalePrice));
         }).Validate<VariantPatchRequest>();
 
         // Cambia la disponibilidad de todas las variantes del producto que contengan todos los valores indicados
@@ -494,7 +494,7 @@ public static class AdminCatalogEndpoints
             var s = await db.Settings.ToDictionaryAsync(x => x.Key, x => x.Value, ct);
             return new AdminSettingsDto(
                 s.GetValueOrDefault(SettingKeys.WhatsappNumber, ""),
-                int.TryParse(s.GetValueOrDefault(SettingKeys.WholesaleThreshold), out var t) ? t : 100);
+                WholesaleThreshold.Parse(s.GetValueOrDefault(SettingKeys.WholesaleThreshold)));
         });
 
         admin.MapPut("/settings", async (SettingsRequest req, AppDbContext db, CancellationToken ct) =>
@@ -537,6 +537,21 @@ public static class AdminCatalogEndpoints
         return valid == ids.Count
             ? null
             : Results.ValidationProblem(new Dictionary<string, string[]> { ["allowedValueIds"] = ["Hay valores que no corresponden a los atributos de la categoría"] });
+    }
+
+    /// <summary>
+    /// The products of the category stop allowing values of attributes the category no longer has, and their media
+    /// stops pointing at those values. Runs inside the caller's transaction.
+    /// </summary>
+    static async Task RemoveValuesOfDroppedAttributes(AppDbContext db, int categoryId, List<int> attributeIds, CancellationToken ct)
+    {
+        await db.Media
+            .Where(m => m.Product.CategoryId == categoryId && m.AttributeValueId != null
+                && !attributeIds.Contains(m.AttributeValue!.AttributeId))
+            .ExecuteUpdateAsync(s => s.SetProperty(m => m.AttributeValueId, (int?)null), ct);
+        await db.ProductAllowedValues
+            .Where(a => a.Product.CategoryId == categoryId && !attributeIds.Contains(a.AttributeValue.AttributeId))
+            .ExecuteDeleteAsync(ct);
     }
 
     static void SyncCategoryAttributes(Category category, List<int> attributeIds)

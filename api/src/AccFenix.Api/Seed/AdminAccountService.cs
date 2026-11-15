@@ -46,6 +46,8 @@ public class AdminAccountService(AppDbContext db)
         else
         {
             user.PasswordHash = Hasher.HashPassword(user, password);
+            // Tokens issued with the old password stop working.
+            user.SecurityStamp = AdminUser.NewSecurityStamp();
             result = AdminResetResult.PasswordReset;
         }
 

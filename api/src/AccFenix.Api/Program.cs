@@ -7,6 +7,7 @@ using AccFenix.Api.Seed;
 using AccFenix.Api.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -40,8 +41,20 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
             IssuerSigningKey = jwt.Value.SigningKey(),
             ClockSkew = TimeSpan.FromMinutes(1),
         };
+        // A deleted admin, or one whose password was reset, cannot keep using the tokens issued before.
+        o.Events = new JwtBearerEvents { OnTokenValidated = TokenService.ValidateAdminAsync };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton(_ => new LoginThrottle());
+
+builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
+// One line per request with method, path (no query string), status and duration: no headers nor bodies.
+builder.Services.AddHttpLogging(o =>
+{
+    o.LoggingFields = HttpLoggingFields.RequestMethod | HttpLoggingFields.RequestPath
+        | HttpLoggingFields.ResponseStatusCode | HttpLoggingFields.Duration;
+    o.CombineLogs = true;
+});
 
 builder.Services.AddRateLimiter(o =>
 {
@@ -88,6 +101,7 @@ if (args.Contains(AdminResetCommand.Name))
     return;
 }
 
+app.UseHttpLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors();
@@ -95,7 +109,9 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Liveness: the process answers. Readiness: it can also reach the database.
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapHealthChecks("/health/ready");
 app.MapPublicEndpoints();
 app.MapOrderEndpoints();
 app.MapAuthEndpoints();

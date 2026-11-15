@@ -35,7 +35,7 @@ public class OrderTests(ApiFactory factory)
     /// <summary>Admin client with a directly issued token, so login attempts are not consumed.</summary>
     HttpClient AdminClient()
     {
-        var token = factory.Services.GetRequiredService<TokenService>().Create(new AdminUser { Id = 1, Email = ApiFactory.AdminEmail }).Token;
+        var token = factory.AdminToken();
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return client;

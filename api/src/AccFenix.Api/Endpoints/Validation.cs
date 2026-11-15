@@ -1,3 +1,4 @@
+using AccFenix.Api.Domain;
 using AccFenix.Api.Services;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
@@ -42,9 +43,9 @@ public class UniqueViolationFilter : IEndpointFilter
 
 public static class ValidationExtensions
 {
-    public const int MaxSortOrder = 100_000;
-    /// <summary>Upper bound for a unit price; it fits the numeric(12,2) price columns.</summary>
-    public const decimal MaxPrice = 99_999_999.99m;
+    public const int MaxSortOrder = CatalogLimits.MaxSortOrder;
+    /// <inheritdoc cref="CatalogLimits.MaxPrice"/>
+    public const decimal MaxPrice = CatalogLimits.MaxPrice;
 
     public static RouteHandlerBuilder Validate<T>(this RouteHandlerBuilder builder) => builder.AddEndpointFilter<ValidationFilter<T>>();
 

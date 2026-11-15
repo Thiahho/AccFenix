@@ -120,11 +120,12 @@ public static class OrderEndpoints
     /// <summary>Orders a single visitor may submit per <see cref="CreateWindow"/>, rejected attempts included.</summary>
     public const int CreatePermitLimit = 10;
     public static readonly TimeSpan CreateWindow = TimeSpan.FromMinutes(10);
+    const string LogCategory = "AccFenix.Api.Orders";
 
     public static void MapOrderEndpoints(this IEndpointRouteBuilder app)
     {
         // The only public order endpoint. Orders hold personal data, so there is no public way to read them back.
-        app.MapPost("/api/orders", async (CreateOrderRequest req, AppDbContext db, CancellationToken ct) =>
+        app.MapPost("/api/orders", async (CreateOrderRequest req, AppDbContext db, ILoggerFactory loggers, CancellationToken ct) =>
         {
             var lines = req.Items!;
             var ids = lines.Select(l => l.VariantId).ToList();
@@ -152,7 +153,7 @@ public static class OrderEndpoints
             if (variants.Count != ids.Count) return ItemsProblem("Hay productos que ya no están disponibles");
 
             var thresholdSetting = await db.Settings.Where(s => s.Key == SettingKeys.WholesaleThreshold).Select(s => s.Value).FirstOrDefaultAsync(ct);
-            var threshold = int.TryParse(thresholdSetting, out var t) ? t : 100;
+            var threshold = WholesaleThreshold.Parse(thresholdSetting);
             var isWholesale = OrderPricing.IsWholesale(lines.Sum(l => l.Quantity), threshold);
 
             var items = lines.Select(line =>
@@ -199,6 +200,10 @@ public static class OrderEndpoints
             };
             db.Orders.Add(order);
             await db.SaveChangesAsync(ct);
+            // No personal data in the log: only what identifies the order and its amount.
+            loggers.CreateLogger(LogCategory).LogInformation(
+                "Order created: id {OrderId}, number {OrderNumber}, total {OrderTotal}, wholesale {IsWholesale}",
+                order.Id, order.Number, order.Total, order.IsWholesale);
 
             return Results.Created((string?)null, new OrderCreatedDto(
                 order.Id, order.Number, order.Status, order.CreatedAt, order.IsWholesale, order.Total, order.HasUnpricedItems,

@@ -5,25 +5,32 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeftIcon, ArrowRightIcon, Trash2Icon, UploadIcon } from "lucide-react";
-import { addMedia, deleteMedia, getUploadSignature, updateMedia } from "@/app/admin/actions";
+import { addMedia, deleteMedia, getUploadSignature, updateMedia, type UploadSignature } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { AdminProduct } from "@/lib/admin/types";
 
-const MAX_MB = 100;
-
 type CloudinaryUpload = { secure_url: string; public_id: string; resource_type: string; error?: { message: string } };
+
+/** What the API signs besides the base fields: every signed parameter must be sent exactly as returned. */
+type SignedUpload = UploadSignature & { allowedFormats: string; maxImageBytes: number; maxVideoBytes: number };
+
+const megabytes = (bytes: number) => Math.round(bytes / (1024 * 1024));
 
 /** Sube directo a Cloudinary con una firma emitida por la API (el secreto nunca llega al navegador). */
 async function uploadToCloudinary(file: File): Promise<CloudinaryUpload> {
   const sig = await getUploadSignature();
   if (!sig.ok || !sig.data) throw new Error(sig.ok ? "Sin firma" : sig.error);
-  const { cloudName, apiKey, timestamp, folder, signature } = sig.data;
+  const { cloudName, apiKey, timestamp, folder, allowedFormats, signature, maxImageBytes, maxVideoBytes } = sig.data as SignedUpload;
+  // Cloudinary does not take a size limit as an upload parameter: the API hands out the limits and they are checked here.
+  const maxBytes = file.type.startsWith("video/") ? maxVideoBytes : maxImageBytes;
+  if (file.size > maxBytes) throw new Error(`${file.name} supera ${megabytes(maxBytes)} MB`);
   const body = new FormData();
   body.append("file", file);
   body.append("api_key", apiKey);
   body.append("timestamp", String(timestamp));
   body.append("folder", folder);
+  body.append("allowed_formats", allowedFormats);
   body.append("signature", signature);
   const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, { method: "POST", body });
   const json = (await res.json()) as CloudinaryUpload;
@@ -48,7 +55,6 @@ export function MediaManager({ product }: { product: AdminProduct }) {
     setUploading(list.length);
     for (const file of list) {
       try {
-        if (file.size > MAX_MB * 1024 * 1024) throw new Error(`${file.name} supera ${MAX_MB} MB`);
         const up = await uploadToCloudinary(file);
         const res = await addMedia(product.id, {
           url: up.secure_url,

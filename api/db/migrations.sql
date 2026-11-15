@@ -568,3 +568,29 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20261115191600_AddAdminSecurityStamp') THEN
+    ALTER TABLE "AdminUsers" ADD "SecurityStamp" character varying(64) NOT NULL DEFAULT (md5(random()::text || clock_timestamp()::text));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20261115191600_AddAdminSecurityStamp') THEN
+    ALTER TABLE "AdminUsers" ALTER COLUMN "SecurityStamp" DROP DEFAULT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20261115191600_AddAdminSecurityStamp') THEN
+    INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+    VALUES ('20261115191600_AddAdminSecurityStamp', '8.0.11');
+    END IF;
+END $EF$;
+COMMIT;
+

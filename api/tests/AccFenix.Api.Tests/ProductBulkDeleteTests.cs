@@ -21,7 +21,7 @@ public class ProductBulkDeleteTests(ApiFactory factory)
 
     HttpClient AdminClient()
     {
-        var token = factory.Services.GetRequiredService<TokenService>().Create(new AdminUser { Id = 1, Email = ApiFactory.AdminEmail }).Token;
+        var token = factory.AdminToken();
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return client;

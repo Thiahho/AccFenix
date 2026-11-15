@@ -23,7 +23,7 @@ public class ProductWriteTests(ApiFactory factory)
 {
     static HttpClient AdminClient(WebApplicationFactory<Program> app)
     {
-        var token = app.Services.GetRequiredService<TokenService>().Create(new AdminUser { Id = 1, Email = ApiFactory.AdminEmail }).Token;
+        var token = app.AdminToken();
         var client = app.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return client;

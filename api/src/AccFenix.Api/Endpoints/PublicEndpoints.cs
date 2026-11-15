@@ -87,9 +87,12 @@ public static class PublicEndpoints
                 .Select(s => int.TryParse(s, out var id) ? id : 0)
                 .Where(id => id > 0).Distinct().Take(200).ToList();
 
+            // A variant that is not publicly visible keeps its status (the cart shows it as unavailable)
+            // but never exposes its prices.
             return await db.Variants
                 .Where(v => idList.Contains(v.Id))
-                .Select(v => new VariantStatusDto(v.Id, v.IsActive && v.Product.IsActive && v.Product.Category.IsActive, v.Availability, v.RetailPrice, v.WholesalePrice))
+                .Select(v => new { v.Id, Visible = v.IsActive && v.Product.IsActive && v.Product.Category.IsActive, v.Availability, v.RetailPrice, v.WholesalePrice })
+                .Select(v => new VariantStatusDto(v.Id, v.Visible, v.Availability, v.Visible ? v.RetailPrice : null, v.Visible ? v.WholesalePrice : null))
                 .ToListAsync(ct);
         });
 
@@ -98,7 +101,7 @@ public static class PublicEndpoints
             var settings = await db.Settings.ToDictionaryAsync(s => s.Key, s => s.Value, ct);
             return new PublicSettingsDto(
                 settings.GetValueOrDefault(SettingKeys.WhatsappNumber, ""),
-                int.TryParse(settings.GetValueOrDefault(SettingKeys.WholesaleThreshold), out var t) ? t : 100);
+                WholesaleThreshold.Parse(settings.GetValueOrDefault(SettingKeys.WholesaleThreshold)));
         });
     }
 

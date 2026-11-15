@@ -1,6 +1,5 @@
 using System.Globalization;
 using AccFenix.Api.Domain;
-using AccFenix.Api.Endpoints;
 using Microsoft.EntityFrameworkCore;
 using static System.FormattableString;
 
@@ -111,6 +110,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<AdminUser>(e =>
         {
             e.Property(x => x.Email).HasMaxLength(200);
+            e.Property(x => x.SecurityStamp).HasMaxLength(AdminUser.SecurityStampMaxLength);
             e.HasIndex(x => x.Email).IsUnique();
         });
 
@@ -169,7 +169,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     }
 
     static string OptionalPriceRule(string column) =>
-        Invariant($"\"{column}\" IS NULL OR \"{column}\" BETWEEN 0 AND {ValidationExtensions.MaxPrice}");
+        Invariant($"\"{column}\" IS NULL OR \"{column}\" BETWEEN 0 AND {CatalogLimits.MaxPrice}");
 
     static string EnumValues<TEnum>() where TEnum : struct, Enum =>
         string.Join(", ", Enum.GetValues<TEnum>().Select(v => Convert.ToInt32(v, CultureInfo.InvariantCulture)));
