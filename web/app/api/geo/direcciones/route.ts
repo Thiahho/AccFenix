@@ -1,10 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { searchDirecciones } from "@/lib/geo-server";
+import { geoRateLimit } from "../limit";
 
 const nearSchema = z.object({ lat: z.coerce.number().min(-90).max(90), lng: z.coerce.number().min(-180).max(180) });
 
 export async function GET(req: NextRequest) {
+  const limited = geoRateLimit("direcciones", req.headers);
+  if (limited) return limited;
   const params = req.nextUrl.searchParams;
   const q = (params.get("q") ?? "").trim().slice(0, 80);
   if (q.length < 3) return NextResponse.json({ items: [] });

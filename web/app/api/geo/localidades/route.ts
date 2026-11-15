@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { searchLocalidades } from "@/lib/geo-server";
+import { geoRateLimit } from "../limit";
 
 export async function GET(req: NextRequest) {
+  const limited = geoRateLimit("localidades", req.headers);
+  if (limited) return limited;
   const q = (req.nextUrl.searchParams.get("q") ?? "").trim().slice(0, 80);
   if (q.length < 2) return NextResponse.json({ items: [] });
   try {
