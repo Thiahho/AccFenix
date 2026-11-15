@@ -8,6 +8,16 @@ import { site } from "@/lib/site";
 
 type Props = { params: Promise<{ categoria: string }> };
 
+/*
+ * No slugs are prerendered (the build must not depend on the API), but declaring the params makes the route ISR:
+ * each catalog renders on its first request and is then cached with the fetch revalidation (60 s, "catalog" tag).
+ * Unknown slugs still render on demand and return 404 through notFound().
+ */
+export const dynamicParams = true;
+export async function generateStaticParams(): Promise<{ categoria: string }[]> {
+  return [];
+}
+
 async function load(slug: string) {
   try {
     return await api.categoryProducts(slug);
