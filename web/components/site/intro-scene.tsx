@@ -17,7 +17,7 @@ const OUT = "intro-out";
 /**
  * Client half of the intro: when the inline gate script marked this visit (`intro-play` on <html>), loads three.js
  * on demand and runs the egg scene on the overlay canvas. Any failure (no WebGL, chunk error, budget exceeded) just
- * fades the overlay out, so the site never depends on the animation.
+ * fades the overlay out, so the site never depends on the animation. A tap on the overlay or any key skips it.
  */
 export function IntroScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,8 +28,12 @@ export function IntroScene() {
 
     let cancelled = false;
     let stop: (() => void) | undefined;
+    // The inline script's safety timer may already have removed `intro-play`; late scene callbacks must then do
+    // nothing, or the page would zoom again under an overlay that is already gone.
+    const playing = () => root.classList.contains(PLAY);
     const clear = () => root.classList.remove(PLAY, REVEAL, OUT);
     const skip = () => {
+      if (!playing()) return;
       root.classList.add(OUT);
       window.setTimeout(clear, FADE_MS);
     };
@@ -44,6 +48,26 @@ export function IntroScene() {
       skip();
     }, remaining);
 
+    // While playing, the overlay captures pointer input (see globals.css), so a tap cannot reach links the user cannot
+    // see; that tap, or any key (which would otherwise move focus behind the overlay), ends the intro right away.
+    const overlay = canvasRef.current?.parentElement;
+    const skipNow = (event: Event) => {
+      // The skipping key must not also act on the hidden page (Space/arrows would scroll it, Tab would move focus).
+      event.preventDefault();
+      cancelled = true;
+      window.clearTimeout(budget);
+      removeSkipListeners();
+      stop?.();
+      stop = undefined;
+      skip();
+    };
+    function removeSkipListeners() {
+      overlay?.removeEventListener("pointerdown", skipNow);
+      window.removeEventListener("keydown", skipNow);
+    }
+    overlay?.addEventListener("pointerdown", skipNow);
+    window.addEventListener("keydown", skipNow);
+
     // The shell prints the wordmark on a canvas, so the script font must be loaded before the texture is drawn.
     const fontFamily = getComputedStyle(root).getPropertyValue("--font-yellowtail").trim() || "cursive";
     const fontReady = document.fonts.load(`140px ${fontFamily}`).catch(() => undefined);
@@ -52,12 +76,19 @@ export function IntroScene() {
       .then(([{ playEggIntro }]) => {
         // Dev-only handle to replay the scene from the console; removed from production builds.
         if (process.env.NODE_ENV === "development") Object.assign(window, { __playEggIntro: playEggIntro });
-        if (cancelled || !canvasRef.current) return;
+        if (cancelled || !canvasRef.current || !playing()) return;
         window.clearTimeout(budget);
         stop = playEggIntro(canvasRef.current, { text: site.name, fontFamily }, {
-          onReveal: () => root.classList.add(REVEAL),
-          onFade: () => root.classList.add(OUT),
-          onEnd: clear,
+          onReveal: () => {
+            if (playing()) root.classList.add(REVEAL);
+          },
+          onFade: () => {
+            if (playing()) root.classList.add(OUT);
+          },
+          onEnd: () => {
+            removeSkipListeners();
+            if (playing()) clear();
+          },
         });
       })
       .catch(() => {
@@ -68,6 +99,7 @@ export function IntroScene() {
     return () => {
       cancelled = true;
       window.clearTimeout(budget);
+      removeSkipListeners();
       stop?.();
     };
   }, []);

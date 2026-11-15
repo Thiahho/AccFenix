@@ -5,6 +5,7 @@ import { HowWeWork } from "@/components/home/how-we-work";
 import { OrderCatalog } from "@/components/home/order-catalog";
 import { PriceBoard } from "@/components/home/price-board";
 import { Wholesale } from "@/components/home/wholesale";
+import { NoScriptReveal } from "@/components/motion/reveal";
 import { JsonLd } from "@/components/seo/json-ld";
 import { api, type PublicSettings } from "@/lib/api";
 import { loadCatalogProducts } from "@/lib/catalog";
@@ -39,6 +40,7 @@ export default async function HomePage() {
   return (
     <>
       <JsonLd data={organization(settings.whatsappNumber)} />
+      <NoScriptReveal />
       <Hero phone={settings.whatsappNumber} />
       <PriceBoard products={products} threshold={settings.wholesaleThreshold} />
       <OrderCatalog products={products} phone={settings.whatsappNumber} threshold={settings.wholesaleThreshold} />
