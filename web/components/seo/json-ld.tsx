@@ -1,9 +1,6 @@
-/** Renders schema.org structured data. `<` is escaped so values coming from the API cannot close the script tag. */
+import { serializeJsonLd } from "@/lib/seo/json-ld";
+
+/** Renders schema.org structured data; see `serializeJsonLd` for why API values cannot break out of the tag. */
 export function JsonLd({ data }: { data: Record<string, unknown> }) {
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\u003c") }}
-    />
-  );
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }} />;
 }

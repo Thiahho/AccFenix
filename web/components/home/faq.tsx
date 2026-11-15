@@ -1,5 +1,6 @@
 import { FaqItem } from "@/components/home/faq-item";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
+import { JsonLd } from "@/components/seo/json-ld";
 import { faqs } from "@/lib/home-content";
 
 export function Faq() {
@@ -28,7 +29,7 @@ export function Faq() {
           </StaggerItem>
         ))}
       </Stagger>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <JsonLd data={jsonLd} />
     </section>
   );
 }
