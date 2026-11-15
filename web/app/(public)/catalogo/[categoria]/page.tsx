@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/seo/json-ld";
 import { ProductImage } from "@/components/site/product-image";
 import { api, NotFoundError } from "@/lib/api";
+import { site } from "@/lib/site";
 
 type Props = { params: Promise<{ categoria: string }> };
 
@@ -18,15 +20,28 @@ async function load(slug: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { categoria } = await params;
   const { category } = await load(categoria);
-  return { title: category.name, description: category.description ?? undefined };
+  return {
+    title: category.name,
+    description: category.description ?? undefined,
+    alternates: { canonical: `/catalogo/${category.slug}` },
+  };
 }
 
 export default async function CategoryPage({ params }: Props) {
   const { categoria } = await params;
   const { category, products } = await load(categoria);
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Inicio", item: site.url },
+      { "@type": "ListItem", position: 2, name: category.name, item: `${site.url}/catalogo/${category.slug}` },
+    ],
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
+      <JsonLd data={breadcrumb} />
       <nav aria-label="Ruta" className="text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">Inicio</Link> / <span className="text-foreground">{category.name}</span>
       </nav>

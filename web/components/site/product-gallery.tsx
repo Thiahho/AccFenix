@@ -30,7 +30,7 @@ export function ProductGallery({ media, name, selectedValueIds }: { media: Media
               <button
                 type="button"
                 onClick={() => setActiveId(m.id)}
-                aria-label={`Ver ${m.type === "video" ? "video" : "foto"} ${i + 1}`}
+                aria-label={`Ver ${m.type === "video" ? "video" : "foto"} ${i + 1} de ${name}`}
                 aria-current={m.id === active.id}
                 className={cn(
                   "relative block aspect-square w-full overflow-hidden rounded-md border-2 bg-brand-soft",
@@ -40,6 +40,7 @@ export function ProductGallery({ media, name, selectedValueIds }: { media: Media
                 {m.type === "video" ? (
                   <span className="grid h-full place-items-center text-xs font-medium text-brand">Video</span>
                 ) : (
+                  // Decorative: the button aria-label already names the photo.
                   <Image src={m.url} alt="" fill sizes="96px" className="object-cover" />
                 )}
               </button>

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Montserrat, Yellowtail } from "next/font/google";
+import { baseOpenGraph } from "@/components/seo/open-graph";
 import { Toaster } from "@/components/ui/sonner";
 import { site } from "@/lib/site";
 import "./globals.css";
@@ -13,6 +14,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: { default: `${site.name} — ${site.tagline}`, template: `%s · ${site.name}` },
   description: site.description,
+  // The image comes from app/opengraph-image.tsx; title and description are filled per page by Next.
+  openGraph: baseOpenGraph,
+  twitter: { card: "summary_large_image" },
 };
 
 // "resizes-content": on Android the on-screen keyboard shrinks the layout (and dvh), so suggestion lists and the

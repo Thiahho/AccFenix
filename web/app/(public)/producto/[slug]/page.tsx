@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/seo/json-ld";
+import { baseOpenGraph } from "@/components/seo/open-graph";
 import { VariantPicker } from "@/components/site/variant-picker";
-import { api, NotFoundError } from "@/lib/api";
+import { api, NotFoundError, type ProductDetail } from "@/lib/api";
+import { site } from "@/lib/site";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -21,7 +24,47 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: product.name,
     description: product.description ?? `${product.name} — ${product.category.name}`,
-    openGraph: cover ? { images: [cover] } : undefined,
+    alternates: { canonical: `/producto/${product.slug}` },
+    // Setting openGraph replaces the inherited one, so only do it when there is a cover to show;
+    // otherwise the page keeps the site-wide generated image.
+    openGraph: cover ? { ...baseOpenGraph, images: [cover] } : undefined,
+  };
+}
+
+/** schema.org Product. Offers only list variants with a published retail price (ARS); the rest are quoted on request. */
+function productSchema(product: ProductDetail) {
+  const url = `${site.url}/producto/${product.slug}`;
+  const images = product.media.filter((m) => m.type === "image").map((m) => m.url);
+  const priced = product.variants.filter((v) => v.retailPrice !== null);
+  const prices = priced.map((v) => v.retailPrice as number);
+  const availability = priced.some((v) => v.availability === "disponible")
+    ? "https://schema.org/InStock"
+    : "https://schema.org/MadeToOrder";
+
+  const offers =
+    priced.length === 0
+      ? undefined
+      : priced.length === 1
+        ? { "@type": "Offer", url, priceCurrency: "ARS", price: prices[0], availability }
+        : {
+            "@type": "AggregateOffer",
+            url,
+            priceCurrency: "ARS",
+            lowPrice: Math.min(...prices),
+            highPrice: Math.max(...prices),
+            offerCount: priced.length,
+            availability,
+          };
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    url,
+    category: product.category.name,
+    ...(product.description && { description: product.description }),
+    ...(images.length > 0 && { image: images }),
+    ...(offers && { offers }),
   };
 }
 
@@ -35,6 +78,7 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
+      <JsonLd data={productSchema(product)} />
       <VariantPicker product={product} wholesaleThreshold={wholesaleThreshold} />
     </div>
   );

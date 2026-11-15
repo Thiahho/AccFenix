@@ -1,0 +1,21 @@
+# Eggy
+
+> Eggy es una distribuidora de huevos en Argentina. Vende huevos frescos por maple, medio cajón y cajón, para hogares y comercios, con precios minoristas y mayoristas. Los pedidos se arman en el sitio y se envían por WhatsApp; la entrega se hace con camión propio.
+
+Los precios están en pesos argentinos (ARS). El precio mayorista se aplica a partir de una cantidad mínima configurada por la distribuidora; algunos productos se cotizan a pedido.
+
+## Sitio
+
+- [Inicio](/): lista de precios vigente, catálogo para armar el pedido, cómo trabajamos, información mayorista y preguntas frecuentes.
+- [Mapa del sitio](/sitemap.xml): todas las páginas de categorías y productos publicadas.
+
+## Catálogo
+
+- Categorías: `/catalogo/{categoria}` lista los productos de cada categoría.
+- Productos: `/producto/{producto}` muestra fotos, presentaciones disponibles y precios minorista y mayorista.
+
+## Cómo hacer un pedido
+
+- Elegí los productos y cantidades desde el catálogo de la página de inicio o desde cada producto.
+- Revisá el pedido y envialo por WhatsApp; la distribuidora confirma disponibilidad, precio final y entrega.
+- La entrega se coordina con camión propio.
