@@ -27,3 +27,21 @@ Thumbs.db
 # npm is the package manager (see "packageManager" in web/package.json)
 pnpm-lock.yaml
 yarn.lock
+
+# Local docs, images and agent tooling
+/docs/
+/img/
+.claude/
+.atl/
+
+# SQL dumps and scratch scripts (the idempotent migrations script stays tracked)
+*.sql
+!api/db/migrations.sql
+
+# Junk
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+desktop.ini

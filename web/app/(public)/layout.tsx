@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { WhatsappFab } from "@/components/home/whatsapp-fab";
 import { MotionProvider } from "@/components/motion/motion-provider";
 import { Wordmark } from "@/components/site/wordmark";
@@ -39,6 +40,16 @@ export default async function PublicLayout({ children }: { children: React.React
               <p className="font-semibold tracking-[0.2em] text-cream uppercase">{site.tagline}</p>
             </div>
             <p className="max-w-sm text-pretty">Pedidos por WhatsApp o desde la web. Entregamos con camión propio.</p>
+          </div>
+          <div className="mx-auto flex max-w-6xl justify-end px-4 pb-6">
+            <Link
+              href="/admin/login"
+              prefetch={false}
+              rel="nofollow"
+              className="text-xs text-cream/40 transition-colors hover:text-cream/80"
+            >
+              Acceso administración
+            </Link>
           </div>
         </footer>
 

@@ -37,6 +37,8 @@ From the admin orders, open any order's location in Google Maps, and build a del
 
 ## Progress
 - Exploration done; user chose manual route order.
+- Commits: T1 050d47b, T2 2950341, T3 355ce97. Parent spot check: `npx vitest run lib/maps-url.test.ts` 20/20.
+- Review assessment (base 1eeb4d2, committed-only): risk medium, 465 changed lines, `review_due: true` (`slice_budget_reached`). Native review preflight blocked at `intended_untracked_selection_required`: the submission JSON shape is undocumented in the returned envelope and a guessed payload was refused (`invalid_request`). Review status: unavailable, pending user decision.
 
 ## Next step
 Manual check at 360px and desktop with real orders.
