@@ -23,3 +23,7 @@ next-env.d.ts
 Thumbs.db
 .idea/
 .vscode/
+
+# npm is the package manager (see "packageManager" in web/package.json)
+pnpm-lock.yaml
+yarn.lock
