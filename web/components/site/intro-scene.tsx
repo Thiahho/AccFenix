@@ -43,23 +43,30 @@ export function IntroScene() {
       skip();
       return;
     }
-    const budget = window.setTimeout(() => {
-      cancelled = true;
-      skip();
-    }, remaining);
-
-    // While playing, the overlay captures pointer input (see globals.css), so a tap cannot reach links the user cannot
-    // see; that tap, or any key (which would otherwise move focus behind the overlay), ends the intro right away.
-    const overlay = canvasRef.current?.parentElement;
-    const skipNow = (event: Event) => {
-      // The skipping key must not also act on the hidden page (Space/arrows would scroll it, Tab would move focus).
-      event.preventDefault();
+    // Every way out of the intro (budget exceeded, load error, user skip) goes through `finish`, so the window-level
+    // key listener never outlives the overlay and swallows the visitor's first keypress elsewhere on the site.
+    const finish = () => {
       cancelled = true;
       window.clearTimeout(budget);
       removeSkipListeners();
       stop?.();
       stop = undefined;
       skip();
+    };
+    const budget = window.setTimeout(finish, remaining);
+
+    // While playing, the overlay captures pointer input (see globals.css), so a tap cannot reach links the user cannot
+    // see; that tap, or any key (which would otherwise move focus behind the overlay), ends the intro right away.
+    const overlay = canvasRef.current?.parentElement;
+    const skipNow = (event: Event) => {
+      // Defensive: if the overlay is already gone, never touch the event, just detach.
+      if (!playing()) {
+        removeSkipListeners();
+        return;
+      }
+      // The skipping key must not also act on the hidden page (Space/arrows would scroll it, Tab would move focus).
+      event.preventDefault();
+      finish();
     };
     function removeSkipListeners() {
       overlay?.removeEventListener("pointerdown", skipNow);
@@ -92,8 +99,7 @@ export function IntroScene() {
         });
       })
       .catch(() => {
-        window.clearTimeout(budget);
-        if (!cancelled) skip();
+        if (!cancelled) finish();
       });
 
     return () => {
