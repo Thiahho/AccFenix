@@ -26,6 +26,7 @@ export function MobileMenu({ categories }: Props) {
   const [openedAt, setOpenedAt] = useState<string | null>(null);
   const open = openedAt === pathname;
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const navRef = useRef<HTMLElement>(null);
   const hydrated = useHydrated();
   const items = useCart((s) => s.items);
   // Same count as the header cart badge (products, not units) so both never disagree.
@@ -36,10 +37,26 @@ export function MobileMenu({ categories }: Props) {
   useEffect(() => {
     if (!open) return;
     const button = buttonRef.current;
+    // Focus cycle while open: the toggle (it closes the menu) plus every link in the panel.
+    const focusables = () => [button, ...(navRef.current?.querySelectorAll<HTMLElement>("a[href]") ?? [])].filter((el) => el != null);
+    focusables()[1]?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setOpenedAt(null);
         button?.focus();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = focusables();
+      const first = items[0];
+      const last = items[items.length - 1];
+      const inside = items.includes(document.activeElement as HTMLElement);
+      if (e.shiftKey && (document.activeElement === first || !inside)) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !inside)) {
+        e.preventDefault();
+        first?.focus();
       }
     };
     document.addEventListener("keydown", onKey);
@@ -76,6 +93,7 @@ export function MobileMenu({ categories }: Props) {
         <>
           <button type="button" tabIndex={-1} aria-hidden onClick={close} className="pointer-events-auto absolute inset-x-0 top-(--menu-top) h-dvh cursor-default bg-black/30 motion-safe:animate-in motion-safe:fade-in" />
           <nav
+            ref={navRef}
             id="menu-movil"
             aria-label="Menú"
             className="pointer-events-auto absolute inset-x-3 top-(--menu-top) max-h-[calc(100dvh-var(--menu-top)-0.75rem)] overflow-y-auto rounded-2xl border bg-background px-3 pt-2 pb-4 shadow-xl motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-200"

@@ -28,8 +28,8 @@ Close the backlog findings of the 2026-11-15 system audit that need no product d
 
 ## Tasks
 - [x] T1 Slice A. Route: delegated writer (many non-trivial C# files).
-- [ ] T2 Slice B. Route: delegated writer (several non-trivial TS files), sequential after T1.
-- [ ] T3 Parent spot checks, work-unit commits.
+- [x] T2 Slice B. Route: delegated writer (several non-trivial TS files), sequential after T1.
+- [x] T3 Parent spot checks, work-unit commits.
 
 ## Delivery
 Forecast ~700 authored lines across both slices: above the ~400 heuristic, so work stays split in work-unit commits per slice; PR slicing is the user's decision.
@@ -38,5 +38,9 @@ Forecast ~700 authored lines across both slices: above the ~400 heuristic, so wo
 - Slice A: dotnet build 0 warnings/0 errors; dotnet test 247/247 (writer and parent rerun). Migration 20261115191600_AddAdminSecurityStamp appended to api/db/migrations.sql. Existing JWTs become invalid after deploy (stamp claim required).
 - S7 deviation: Cloudinary has no signed max_file_size for direct uploads; size is checked in the browser, formats are signed.
 
+- Slice A commit abd2975 (an earlier attempt accidentally included the user deletion of appsettings.Development.example.json; redone locally before any push).
+- Slice B: eslint clean, tsc clean, vitest 244/244 (writer and parent rerun). Geo 429 bodies keep each route shape because lib/geo.ts reads .items; localidades also limited; no limit when no proxy IP header (local dev). next-themes removed; .dark tokens kept (shadcn dark: variants).
+- Not verified in a browser: loading skeletons, mobile menu focus trap. next build not run for slice B (user dev server owns web/.next).
+
 ## Progress
-T1 done. T2 launched.
+All tasks done.
