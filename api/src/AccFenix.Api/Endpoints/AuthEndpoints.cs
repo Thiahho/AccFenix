@@ -28,11 +28,13 @@ public static class AuthEndpoints
 
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/auth/login", async (LoginRequest req, AppDbContext db, TokenService tokens, LoginThrottle throttle, CancellationToken ct) =>
+        app.MapPost("/api/auth/login", async (LoginRequest req, HttpContext http, IConfiguration config, AppDbContext db, TokenService tokens, LoginThrottle throttle, CancellationToken ct) =>
         {
             var email = req.Email.Trim().ToLowerInvariant();
+            // The same visitor identity the per-visitor rate limit partitions by (see Program.cs).
+            var client = ClientIp.PartitionKey(http, config["TrustedWeb:Key"] ?? "");
             // Same answer as the per-visitor rate limit; applies to unknown emails too, so it reveals nothing.
-            if (throttle.IsLocked(email))
+            if (throttle.IsLocked(email, client))
             {
                 return Results.Problem("Demasiados intentos. Probá de nuevo más tarde.", statusCode: StatusCodes.Status429TooManyRequests);
             }
@@ -42,10 +44,10 @@ public static class AuthEndpoints
             var verified = Hasher.VerifyHashedPassword(user ?? NoUser, user?.PasswordHash ?? NoUserHash, req.Password);
             if (user is null || verified == PasswordVerificationResult.Failed)
             {
-                throttle.RecordFailure(email);
+                throttle.RecordFailure(email, client);
                 return Results.Problem("Email o contraseña incorrectos", statusCode: StatusCodes.Status401Unauthorized);
             }
-            throttle.RecordSuccess(email);
+            throttle.RecordSuccess(email, client);
             return Results.Ok(tokens.Create(user));
         })
         .Validate<LoginRequest>()

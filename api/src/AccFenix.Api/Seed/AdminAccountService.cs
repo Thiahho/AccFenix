@@ -33,6 +33,10 @@ public class AdminAccountService(AppDbContext db)
     }
 
     /// <summary>Replaces the admin's password, creating the admin when it does not exist.</summary>
+    /// <remarks>
+    /// Login lockouts (<see cref="Services.LoginThrottle"/>) live in the memory of the running API, while the
+    /// <c>reset-admin</c> command runs as a separate process, so it cannot clear them: restart the API to do so.
+    /// </remarks>
     public async Task<AdminResetResult> CreateOrResetAsync(string email, string password, CancellationToken ct = default)
     {
         email = NormalizeEmail(email);

@@ -60,9 +60,15 @@ public class LoginRateLimitTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
     static int _nextIp;
 
-    /// <summary>Each attempt comes from a new address, as in a distributed attack: the per-visitor limit never applies.</summary>
-    Task<HttpResponseMessage> LoginFromNewIp(string email, string password) =>
-        Login(password, $"192.0.2.{Interlocked.Increment(ref _nextIp)}", email: email);
+    /// <summary>A fresh address per call (198.18.0.0/15, reserved for benchmarking), so the per-visitor limit never applies.</summary>
+    static string NewIp()
+    {
+        var n = Interlocked.Increment(ref _nextIp);
+        return $"198.18.{n / 256}.{n % 256}";
+    }
+
+    /// <summary>Each attempt comes from a new address, as in a distributed attack.</summary>
+    Task<HttpResponseMessage> LoginFromNewIp(string email, string password) => Login(password, NewIp(), email: email);
 
     async Task<string> NewAdmin(string password)
     {
@@ -73,20 +79,38 @@ public class LoginRateLimitTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Account_is_locked_after_repeated_failures_from_any_address()
+    public async Task Repeated_failures_lock_that_address_for_that_account()
     {
         const string password = "lockout-password-1";
         var email = await NewAdmin(password);
+        var attacker = NewIp();
 
         for (var i = 0; i < LoginThrottle.MaxFailures; i++)
         {
-            (await LoginFromNewIp(email, "incorrecta")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+            (await Login("incorrecta", attacker, email: email)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
 
-        // Even the right password is refused while the account is locked.
-        (await LoginFromNewIp(email, password)).StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
-        // Other accounts are not affected.
-        (await LoginFromNewIp(ApiFactory.AdminEmail, ApiFactory.AdminPassword)).StatusCode.Should().Be(HttpStatusCode.OK);
+        // Even the right password is refused from that address while the pair is locked.
+        (await Login(password, attacker, email: email)).StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        // Other accounts are not affected, not even from the same address.
+        (await Login(ApiFactory.AdminPassword, attacker)).StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task An_attacker_locking_the_account_from_one_address_does_not_lock_out_the_owner()
+    {
+        const string password = "lockout-password-owner";
+        var email = await NewAdmin(password);
+        var attacker = NewIp();
+
+        for (var i = 0; i < LoginThrottle.MaxFailures; i++)
+        {
+            (await Login("incorrecta", attacker, email: email)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+        (await Login("incorrecta", attacker, email: email)).StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+
+        // The real admin, from their own address, still gets in with the right password.
+        (await Login(password, NewIp(), email: email)).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
@@ -94,14 +118,15 @@ public class LoginRateLimitTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         const string password = "lockout-password-2";
         var email = await NewAdmin(password);
+        var ip = NewIp();
 
         for (var round = 0; round < 2; round++)
         {
             for (var i = 0; i < LoginThrottle.MaxFailures - 1; i++)
             {
-                (await LoginFromNewIp(email, "incorrecta")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+                (await Login("incorrecta", ip, email: email)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             }
-            (await LoginFromNewIp(email, password)).StatusCode.Should().Be(HttpStatusCode.OK);
+            (await Login(password, ip, email: email)).StatusCode.Should().Be(HttpStatusCode.OK);
         }
     }
 
@@ -109,13 +134,29 @@ public class LoginRateLimitTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Unknown_emails_are_locked_like_real_ones()
     {
         var email = $"nadie-{Guid.NewGuid():N}@test.local";
+        var ip = NewIp();
 
         for (var i = 0; i < LoginThrottle.MaxFailures; i++)
+        {
+            (await Login("incorrecta", ip, email: email)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+
+        (await Login("incorrecta", ip, email: email)).StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
+
+    [Fact]
+    public async Task Distributed_failures_lock_the_account_for_everyone_above_the_email_threshold()
+    {
+        const string password = "lockout-password-3";
+        var email = await NewAdmin(password);
+
+        for (var i = 0; i < LoginThrottle.MaxEmailFailures; i++)
         {
             (await LoginFromNewIp(email, "incorrecta")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
 
-        (await LoginFromNewIp(email, "incorrecta")).StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        // Even the right password from an address that never failed is refused.
+        (await LoginFromNewIp(email, password)).StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
     }
 
     [Theory]
