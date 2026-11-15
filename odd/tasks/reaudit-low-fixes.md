@@ -21,9 +21,13 @@ Close the low-severity issues found by the 2026-11-15 re-audit.
 - A geo 429 shows "no results" like the existing 502: UI decision, unchanged.
 
 ## Tasks
-- [ ] T1 Web lows. Route: delegated writer.
-- [ ] T2 API lows. Route: delegated writer, sequential.
-- [ ] T3 Spot checks and work-unit commits.
+- [x] T1 Web lows. Route: delegated writer.
+- [x] T2 API lows. Route: delegated writer, sequential.
+- [x] T3 Spot checks and work-unit commits.
+
+## Verification evidence
+- Web (6f50396): eslint, tsc clean; vitest 246/246. Mobile menu resize and the CSP flag have no tests and were not browser-checked.
+- API: dotnet test 259/259 (writer and parent rerun). Cloudinary SDK 1.27.1 has no cancellable DestroyAsync; bounded with WaitAsync plus Api.Timeout 10 s.
 
 ## Progress
-Created. T1 launched.
+All tasks done.

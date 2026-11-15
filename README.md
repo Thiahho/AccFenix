@@ -103,5 +103,6 @@ Script SQL idempotente con todas las migraciones (para aplicar a mano en producc
 - **Web**: Vercel. Configurar `API_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_BRAND_NAME` y `API_TRUSTED_KEY` (el mismo valor que `TrustedWeb__Key` en la API). Las páginas de catálogo y producto se generan en el primer pedido y se cachean (revalidación de 60 s; los cambios desde el panel las invalidan).
 - **API + Postgres**: Railway, Render o Fly.io. Ejecutar `dotnet AccFenix.Api.dll seed` una vez después del primer deploy (aplica las migraciones).
   - La imagen se construye con `api/Dockerfile`. En Render: servicio de tipo Docker con **Root Directory** `api`; el contenedor escucha en el `PORT` que inyecta la plataforma (8080 si no está definido).
+  - Desplegar **una sola instancia** de la API: el bloqueo de login y los límites de frecuencia (rate limits) se guardan en memoria, así que con varias instancias cada una llevaría su propia cuenta (haría falta un almacén compartido, p. ej. Redis). Reiniciar la API borra los bloqueos vigentes.
 - La sesión admin es una cookie httpOnly en el dominio del sitio; el navegador nunca ve el JWT.
 - El número de WhatsApp y el umbral mayorista se configuran desde el panel (Configuración); las fotos y videos, desde Productos.

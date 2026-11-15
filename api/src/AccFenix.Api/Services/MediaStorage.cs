@@ -50,22 +50,38 @@ public static class MediaStorageExtensions
     /// <summary>
     /// Removes the files of media rows that are already deleted from the database. Best effort: a storage
     /// failure is logged and leaves at most an orphan file; it never fails the request that already committed.
+    /// Deletes run a few at a time and each one is given at most <paramref name="timeout"/> (10 s by default), so a
+    /// slow or unreachable Cloudinary cannot hold the response for long.
     /// </summary>
-    public static async Task DeleteBestEffortAsync(this IMediaStorage storage, IEnumerable<Media> media, ILogger logger)
+    public static async Task DeleteBestEffortAsync(
+        this IMediaStorage storage, IEnumerable<Media> media, ILogger logger, TimeSpan? timeout = null)
     {
-        foreach (var item in media.Where(m => m.CloudinaryPublicId is not null))
+        var perCall = timeout ?? DefaultDeleteTimeout;
+        var items = media.Where(m => m.CloudinaryPublicId is not null).ToList();
+
+        // Not tied to the request: the rows are gone, so the files should go even if the client left.
+        await Parallel.ForEachAsync(items, new ParallelOptions { MaxDegreeOfParallelism = MaxParallelDeletes }, async (item, _) =>
         {
+            using var cts = new CancellationTokenSource(perCall);
             try
             {
-                // Not tied to the request: the rows are gone, so the files should go even if the client left.
-                await storage.DeleteAsync(item.CloudinaryPublicId!, item.Type, CancellationToken.None);
+                // WaitAsync bounds the wait even when the storage ignores the token.
+                await storage.DeleteAsync(item.CloudinaryPublicId!, item.Type, cts.Token).WaitAsync(cts.Token);
+            }
+            catch (OperationCanceledException) when (cts.IsCancellationRequested)
+            {
+                logger.LogWarning("Borrar {PublicId} de Cloudinary tardó más de {Timeout}; queda un archivo huérfano",
+                    item.CloudinaryPublicId, perCall);
             }
             catch (Exception e)
             {
                 logger.LogWarning(e, "No se pudo borrar {PublicId} de Cloudinary; queda un archivo huérfano", item.CloudinaryPublicId);
             }
-        }
+        });
     }
+
+    public static readonly TimeSpan DefaultDeleteTimeout = TimeSpan.FromSeconds(10);
+    const int MaxParallelDeletes = 4;
 }
 
 public static class MediaUrl
@@ -99,7 +115,13 @@ public class CloudinaryMediaStorage(IOptions<CloudinaryOptions> options, ILogger
 
     public bool IsConfigured => _o.IsConfigured;
 
-    Cloudinary Client() => new(new Account(_o.CloudName, _o.ApiKey, _o.ApiSecret));
+    Cloudinary Client()
+    {
+        var client = new Cloudinary(new Account(_o.CloudName, _o.ApiKey, _o.ApiSecret));
+        // DestroyAsync takes no CancellationToken, so the HTTP call itself is bounded by the SDK timeout (ms).
+        client.Api.Timeout = (int)MediaStorageExtensions.DefaultDeleteTimeout.TotalMilliseconds;
+        return client;
+    }
 
     public UploadSignature SignUpload()
     {
@@ -118,10 +140,11 @@ public class CloudinaryMediaStorage(IOptions<CloudinaryOptions> options, ILogger
     public async Task DeleteAsync(string publicId, MediaType type, CancellationToken ct)
     {
         if (!IsConfigured) return;
+        // The SDK has no token overload for DestroyAsync; WaitAsync stops waiting when the caller gives up.
         var result = await Client().DestroyAsync(new DeletionParams(publicId)
         {
             ResourceType = type == MediaType.Video ? ResourceType.Video : ResourceType.Image,
-        });
+        }).WaitAsync(ct);
         if (result.Error is not null)
         {
             // No bloquea el borrado en la base: a lo sumo queda un archivo huérfano en Cloudinary.

@@ -136,7 +136,7 @@ public class SecurityTests(ApiFactory factory) : IClassFixture<ApiFactory>
     /// The folder that holds AccFenix.sln. Searched upwards from the test binaries; when they are built outside
     /// the repository (a custom OutDir), it falls back to the location of this source file.
     /// </summary>
-    static string ApiRoot([CallerFilePath] string sourceFile = "")
+    internal static string ApiRoot([CallerFilePath] string sourceFile = "")
     {
         static string? FindUp(string? start)
         {
