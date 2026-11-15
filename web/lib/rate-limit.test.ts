@@ -50,4 +50,28 @@ describe("createRateLimiter", () => {
     limiter.check("e");
     expect(limiter.size()).toBe(1);
   });
+
+  it("evicts the oldest 10% of keys in one batch when full", () => {
+    const { limiter } = setup(1, 60_000, 20);
+    for (let i = 0; i < 20; i++) limiter.check(`k${i}`);
+    expect(limiter.size()).toBe(20);
+    // A new key at the cap evicts k0 and k1 (10% of 20) at once, leaving room for the next one without evicting again.
+    limiter.check("new1");
+    expect(limiter.size()).toBe(19);
+    limiter.check("new2");
+    expect(limiter.size()).toBe(20);
+    // Evicted keys start over; surviving ones are still limited.
+    expect(limiter.check("k0").ok).toBe(true);
+    expect(limiter.check("k5").ok).toBe(false);
+  });
+
+  it("does not evict when the incoming key is already tracked", () => {
+    const { limiter } = setup(5, 60_000, 3);
+    limiter.check("a");
+    limiter.check("b");
+    limiter.check("c");
+    limiter.check("a");
+    expect(limiter.size()).toBe(3);
+    expect(limiter.check("b").ok).toBe(true);
+  });
 });

@@ -8,8 +8,11 @@ import type { ActionResult } from "@/lib/admin/types";
 import { isOrderStatus } from "@/lib/orders/status";
 import type { OrderStatus } from "@/lib/orders/types";
 
+/** Order ids are database identities: positive integers only. */
+const isPositiveId = (id: number) => Number.isInteger(id) && id > 0;
+
 export async function updateOrderStatus(id: number, status: OrderStatus): Promise<ActionResult> {
-  if (!Number.isInteger(id) || !isOrderStatus(status)) return { ok: false, error: "Estado desconocido" };
+  if (!isPositiveId(id) || !isOrderStatus(status)) return { ok: false, error: "Estado desconocido" };
   try {
     await adminFetch(`/api/admin/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
     revalidatePath("/admin/pedidos", "layout");
@@ -28,7 +31,7 @@ export type OrderLocationResult = { ok: true } | { ok: false; error: string; fie
 
 /** Changes the delivery location of an own-delivery order; without coordinates the map point is removed. */
 export async function updateOrderLocation(id: number, input: OrderLocationInput): Promise<OrderLocationResult> {
-  if (!Number.isInteger(id)) return { ok: false, error: "El pedido ya no existe", fieldErrors: {} };
+  if (!isPositiveId(id)) return { ok: false, error: "El pedido ya no existe", fieldErrors: {} };
   const body = {
     locality: input.locality.trim(),
     address: input.address.trim(),

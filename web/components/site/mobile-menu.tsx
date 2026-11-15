@@ -18,7 +18,7 @@ const stagger = (i: number) => ({ "--i": i }) as CSSProperties;
 const rowClass =
   "flex min-h-12 items-center gap-3 rounded-lg px-3 text-base transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";
 
-/** Botón burger + panel desplegable para mobile. Se cierra al elegir un enlace, cambiar de ruta, con Escape o tocando fuera. */
+/** Botón burger + panel desplegable para mobile. Se cierra al elegir un enlace, cambiar de ruta, con Escape, tocando fuera o al pasar a desktop. */
 export function MobileMenu({ categories }: Props) {
   const pathname = usePathname();
   const active = useActiveSection(pathname);
@@ -60,10 +60,18 @@ export function MobileMenu({ categories }: Props) {
       }
     };
     document.addEventListener("keydown", onKey);
+    // The wrapper is `md:hidden`: if the viewport grows past it while open, close so the focus trap and the scroll
+    // lock do not outlive the hidden panel. The cleanup below restores scroll; focus is left where it is.
+    const desktop = window.matchMedia("(min-width: 768px)");
+    const onDesktop = (e: MediaQueryListEvent) => {
+      if (e.matches) setOpenedAt(null);
+    };
+    desktop.addEventListener("change", onDesktop);
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
+      desktop.removeEventListener("change", onDesktop);
       document.body.style.overflow = previous;
     };
   }, [open]);

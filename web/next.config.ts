@@ -12,6 +12,23 @@ function apiOrigin(): string | null {
 }
 
 /*
+ * `upgrade-insecure-requests` rewrites every http:// subresource and fetch to https://. That is only safe when the API
+ * is served over https (or NEXT_PUBLIC_API_URL is unset, meaning same-origin); with an http API (e.g. a production
+ * build run locally against http://localhost:5080) the upgraded calls would fail. HSTS is unaffected by this check.
+ */
+function apiIsHttpsOrSameOrigin(): boolean {
+  const raw = process.env.NEXT_PUBLIC_API_URL;
+  if (!raw) return true;
+  try {
+    return new URL(raw).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+const upgradeInsecure = !isDev && apiIsHttpsOrSameOrigin();
+
+/*
  * Static Content-Security-Policy. It keeps every page statically cacheable, so scripts allow 'unsafe-inline' (Next's
  * inline bootstrap and the intro gate script); a nonce-based policy would block injected inline scripts too but forces
  * dynamic rendering on every request. What this policy does enforce: scripts, styles and fonts only from this origin,
@@ -31,7 +48,7 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  ...(isDev ? [] : ["upgrade-insecure-requests"]),
+  ...(upgradeInsecure ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
 // Security headers for every route.

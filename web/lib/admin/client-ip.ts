@@ -1,4 +1,10 @@
-/** IP del visitante según las cabeceras que agrega el proxy del hosting (Vercel, nginx). */
+/**
+ * IP del visitante según las cabeceras que agrega el proxy del hosting (Vercel, nginx).
+ *
+ * These headers are trusted because the deployment (Vercel) overwrites `x-real-ip` and `x-forwarded-for` with the
+ * real client address. On any other host the reverse proxy must strip client-supplied values of both headers,
+ * otherwise a client can spoof its IP.
+ */
 export function clientIp(headers: Headers): string | null {
   const ip = headers.get("x-real-ip")?.trim() || headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   return ip || null;

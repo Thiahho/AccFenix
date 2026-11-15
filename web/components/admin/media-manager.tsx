@@ -5,15 +5,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeftIcon, ArrowRightIcon, Trash2Icon, UploadIcon } from "lucide-react";
-import { addMedia, deleteMedia, getUploadSignature, updateMedia, type UploadSignature } from "@/app/admin/actions";
+import { addMedia, deleteMedia, getUploadSignature, updateMedia } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { AdminProduct } from "@/lib/admin/types";
 
 type CloudinaryUpload = { secure_url: string; public_id: string; resource_type: string; error?: { message: string } };
-
-/** What the API signs besides the base fields: every signed parameter must be sent exactly as returned. */
-type SignedUpload = UploadSignature & { allowedFormats: string; maxImageBytes: number; maxVideoBytes: number };
 
 const megabytes = (bytes: number) => Math.round(bytes / (1024 * 1024));
 
@@ -21,7 +18,7 @@ const megabytes = (bytes: number) => Math.round(bytes / (1024 * 1024));
 async function uploadToCloudinary(file: File): Promise<CloudinaryUpload> {
   const sig = await getUploadSignature();
   if (!sig.ok || !sig.data) throw new Error(sig.ok ? "Sin firma" : sig.error);
-  const { cloudName, apiKey, timestamp, folder, allowedFormats, signature, maxImageBytes, maxVideoBytes } = sig.data as SignedUpload;
+  const { cloudName, apiKey, timestamp, folder, allowedFormats, signature, maxImageBytes, maxVideoBytes } = sig.data;
   // Cloudinary does not take a size limit as an upload parameter: the API hands out the limits and they are checked here.
   const maxBytes = file.type.startsWith("video/") ? maxVideoBytes : maxImageBytes;
   if (file.size > maxBytes) throw new Error(`${file.name} supera ${megabytes(maxBytes)} MB`);

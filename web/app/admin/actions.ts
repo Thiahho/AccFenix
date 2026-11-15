@@ -134,7 +134,17 @@ export async function bulkAvailability(productId: number, valueIds: number[], av
 }
 
 // ---- Media ----
-export type UploadSignature = { cloudName: string; apiKey: string; timestamp: number; folder: string; signature: string };
+/** Mirrors the API `UploadSignature` record: every signed parameter must be sent to Cloudinary exactly as returned. */
+export type UploadSignature = {
+  cloudName: string;
+  apiKey: string;
+  timestamp: number;
+  folder: string;
+  allowedFormats: string;
+  signature: string;
+  maxImageBytes: number;
+  maxVideoBytes: number;
+};
 
 export async function getUploadSignature() {
   return run(() => adminFetch<UploadSignature>("/api/admin/media/signature", json("POST")));
