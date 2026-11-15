@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { site } from "@/lib/site";
 
 /**
  * Hard limit, measured from navigation start, for the 3D scene to be ready. Past it (slow device or network) the
@@ -43,13 +44,17 @@ export function IntroScene() {
       skip();
     }, remaining);
 
-    import("@/lib/intro/egg-scene")
-      .then(({ playEggIntro }) => {
+    // The shell prints the wordmark on a canvas, so the script font must be loaded before the texture is drawn.
+    const fontFamily = getComputedStyle(root).getPropertyValue("--font-yellowtail").trim() || "cursive";
+    const fontReady = document.fonts.load(`140px ${fontFamily}`).catch(() => undefined);
+
+    Promise.all([import("@/lib/intro/egg-scene"), fontReady])
+      .then(([{ playEggIntro }]) => {
         // Dev-only handle to replay the scene from the console; removed from production builds.
         if (process.env.NODE_ENV === "development") Object.assign(window, { __playEggIntro: playEggIntro });
         if (cancelled || !canvasRef.current) return;
         window.clearTimeout(budget);
-        stop = playEggIntro(canvasRef.current, {
+        stop = playEggIntro(canvasRef.current, { text: site.name, fontFamily }, {
           onReveal: () => root.classList.add(REVEAL),
           onFade: () => root.classList.add(OUT),
           onEnd: clear,

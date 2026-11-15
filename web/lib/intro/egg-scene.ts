@@ -19,6 +19,9 @@ import {
   spring,
 } from "@/lib/intro/timeline";
 
+/** Brand mark printed on the shell, like the logo: script font in brand red. */
+export type IntroWordmark = { text: string; fontFamily: string };
+
 export type IntroHooks = {
   /** The page under the overlay should start settling. */
   onReveal: () => void;
@@ -69,7 +72,8 @@ function shellHalf(lower: boolean) {
       surfaceNormal(u, v, n);
       positions.push(p.x, p.y, p.z);
       normals.push(n.x, n.y, n.z);
-      uvs.push(u, v);
+      // u grows towards the viewer's left, so the texture's x runs mirrored to keep printed text readable.
+      uvs.push(1 - u, v);
     }
   }
   const row = V_SEGMENTS + 1;
@@ -89,8 +93,11 @@ function shellHalf(lower: boolean) {
   return geometry;
 }
 
-/** Eggshell albedo: warm cream with fine speckles and a slightly deeper tone towards the base. */
-function shellTexture() {
+/**
+ * Eggshell albedo: warm cream with fine speckles, a slightly deeper tone towards the base and the wordmark printed
+ * on the front, just under the crack so it stays on screen after the split.
+ */
+function shellTexture(wordmark: IntroWordmark) {
   const canvas = document.createElement("canvas");
   canvas.width = 1024;
   canvas.height = 512;
@@ -109,6 +116,19 @@ function shellTexture() {
     ctx.beginPath();
     ctx.arc(random() * 1024, random() * 512, 0.4 + random() * 1.6, 0, Math.PI * 2);
     ctx.fill();
+  }
+  // The front of the egg is u = 0, i.e. the texture seam: print the mark centred on both edges so it wraps whole.
+  ctx.font = `140px ${wordmark.fontFamily}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  // Deeper than the brand red (#B3121B) on purpose: ACES tone mapping and the key light wash it out on screen.
+  ctx.fillStyle = "#8f0a12";
+  ctx.strokeStyle = "rgba(90, 0, 0, 0.35)";
+  ctx.lineWidth = 1.5;
+  // Nudged off the seam to centre the script optically (its "y" tail makes the advance-width centre sit too far right).
+  for (const x of [-22, 1002]) {
+    ctx.fillText(wordmark.text, x, 345);
+    ctx.strokeText(wordmark.text, x, 345);
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -172,7 +192,7 @@ function shards(material: THREE.Material, parent: THREE.Object3D) {
 }
 
 /** Starts the intro on `canvas`. Throws when WebGL is unavailable. Returns a function that stops and disposes it. */
-export function playEggIntro(canvas: HTMLCanvasElement, hooks: IntroHooks) {
+export function playEggIntro(canvas: HTMLCanvasElement, wordmark: IntroWordmark, hooks: IntroHooks) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000, 0);
@@ -203,13 +223,13 @@ export function playEggIntro(canvas: HTMLCanvasElement, hooks: IntroHooks) {
   pivot.add(egg);
   scene.add(pivot);
 
-  const shellMap = shellTexture();
+  const shellMap = shellTexture(wordmark);
   const shell = new THREE.MeshPhysicalMaterial({
     map: shellMap,
     roughness: 0.58,
     clearcoat: 0.18,
     clearcoatRoughness: 0.45,
-    sheen: 0.4,
+    sheen: 0.15,
     sheenColor: new THREE.Color("#fff4e2"),
     side: THREE.DoubleSide,
   });
