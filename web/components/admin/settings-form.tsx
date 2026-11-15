@@ -34,7 +34,7 @@ export function SettingsForm({ settings }: { settings: AdminSettings }) {
         <div className="space-y-1.5">
           <Label htmlFor="threshold">Umbral mayorista (unidades)</Label>
           <Input id="threshold" type="number" min={1} className="w-40" value={wholesaleThreshold} onChange={(e) => setWholesaleThreshold(Number(e.target.value) || 0)} required aria-describedby="threshold-help" />
-          <p id="threshold-help" className="text-xs text-muted-foreground">Desde esta cantidad total de unidades, el pedido se marca como mayorista en el mensaje.</p>
+          <p id="threshold-help" className="text-xs text-muted-foreground">Desde esta cantidad de unidades con precio, el pedido es mayorista. Los productos a consultar no suman.</p>
         </div>
       </div>
       <Button type="submit" disabled={pending}>{pending ? "Guardando…" : "Guardar"}</Button>

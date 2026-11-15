@@ -162,7 +162,7 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
           ) : (
             settings.wholesaleThreshold > 0 && (
               <span className="text-muted-foreground">
-                Desde {settings.wholesaleThreshold} unidades el pedido es mayorista.
+                Desde {settings.wholesaleThreshold} unidades con precio el pedido es mayorista. Los productos a consultar no suman.
               </span>
             )
           )}

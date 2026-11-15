@@ -21,7 +21,7 @@ export function Wholesale({ phone, threshold }: { phone: string; threshold: numb
             {threshold > 0 && (
               <>
                 {" "}
-                Los pedidos desde <CountUp value={threshold} className="font-bold text-yolk-light tabular-nums" /> unidades se cobran a precio mayorista.
+                Los pedidos desde <CountUp value={threshold} className="font-bold text-yolk-light tabular-nums" /> unidades con precio se cobran a precio mayorista.
               </>
             )} Contanos qué necesitás y armamos tu entrega.
           </p>

@@ -22,7 +22,7 @@ export function PriceBoard({ products, threshold }: Props) {
           </h2>
           <p className="mt-3 max-w-xl text-cream/80 text-pretty">
             Precio minorista por presentación. Tocá un precio para sumarlo a tu pedido.
-            {threshold > 0 && <> Desde {threshold} unidades en el mismo pedido se aplica el precio mayorista.</>}
+            {threshold > 0 && <> Desde {threshold} unidades con precio en el mismo pedido se aplica el precio mayorista.</>}
           </p>
         </Reveal>
 
