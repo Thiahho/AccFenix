@@ -73,6 +73,9 @@ Computed with the WCAG 2.x relative-luminance formula. Reference shades are unch
 - [x] T3: Apply it to checkout, result, not-found, header and footer surfaces. Route: delegated direct.
 - [x] T4: Remove remaining egg visuals where a static replacement is possible and report the rest. Route: delegated direct.
 
+- [ ] T5: Fix the price board review warnings (duplicate labels keep every variant reachable, labels differing inside parentheses stay distinct, 320px layout) with tests for the extracted pure logic. Route: delegated direct.
+- [ ] T6: Remove the 3D egg intro and the crack sound, with dependencies used only by them. Route: delegated direct.
+
 ## Acceptance criteria
 
 - No legacy color tokens remain in `web/`.
@@ -96,7 +99,7 @@ Test-first exception: visual styling has no meaningful deterministic RED; existi
 
 ## Next step
 
-Product decisions: replace or remove the 3D egg intro and the crack sound, and confirm the footer delivery wording.
+Run T5 and T6. Still open: confirm the footer delivery wording and whether to delete the unused egg images.
 
 ## Review status
 

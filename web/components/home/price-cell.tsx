@@ -48,7 +48,7 @@ export function PriceCell({ item, imageUrl, productName, label, price, caption }
   const [active, setActive] = useState(false);
   const [clicks, setClicks] = useState(0);
   const reduce = usePrefersReducedMotion();
-  const state = active ? "hover" : "rest";
+  const state = active && item ? "hover" : "rest";
   const quoted = price === "Consultar";
 
   const name = `${item ? "Agregar al pedido: " : ""}${productName}, ${label}, ${price}`;
@@ -69,7 +69,7 @@ export function PriceCell({ item, imageUrl, productName, label, price, caption }
       onPointerLeave={(e) => e.pointerType === "mouse" && setActive(false)}
       onFocus={(e) => e.currentTarget.matches(":focus-visible") && setActive(true)}
       onBlur={() => setActive(false)}
-      className={`flex min-h-11 cursor-pointer touch-manipulation items-center justify-center gap-1 rounded-lg px-1 text-center transition-colors select-none hover:bg-espresso hover:text-ivory focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${caption ? "border border-latte px-3" : "w-full"}`}
+      className={`flex min-h-11 cursor-pointer touch-manipulation items-center justify-center gap-1 rounded-lg px-1 text-center transition-colors select-none enabled:hover:bg-espresso enabled:hover:text-ivory focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${caption ? "border border-latte px-3" : "w-full"}`}
     >
       {caption && <span className="text-xs font-medium">{caption}</span>}
       <m.span variants={tag} initial={false} animate={state} className="inline-block">

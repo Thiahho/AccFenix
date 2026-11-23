@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -8,19 +9,21 @@ type Props = {
 
 /** Original iced-coffee illustration drawn with the theme tokens. It is not the ColdCup logo. */
 export function IcedCup({ className, label }: Props) {
+  // Several cups can share a page; React ids may hold characters that break a url(#id) reference.
+  const clipId = `iced-cup-body-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const a11y = label ? { role: "img", "aria-label": label } : { "aria-hidden": true };
 
   return (
     <svg viewBox="0 0 200 290" className={cn("block h-auto w-full", className)} {...a11y}>
       <defs>
-        <clipPath id="iced-cup-body">
+        <clipPath id={clipId}>
           <path d="M38 78h124l-15 186a16 16 0 0 1-16 15H69a16 16 0 0 1-16-15Z" />
         </clipPath>
       </defs>
 
       <path d="M122 6l-10 66" stroke="var(--caramel-deep)" strokeWidth={10} strokeLinecap="round" />
 
-      <g clipPath="url(#iced-cup-body)">
+      <g clipPath={`url(#${clipId})`}>
         <rect x="30" y="78" width="140" height="205" fill="var(--ivory)" />
         <path d="M30 112c24-12 44 10 70 2s46-14 70-2v80H30Z" fill="var(--caramel)" />
         <path d="M30 150c26 12 46-10 72-2s44 12 68 0v140H30Z" fill="var(--espresso)" />

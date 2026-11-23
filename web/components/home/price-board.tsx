@@ -1,18 +1,15 @@
 import Link from "next/link";
 import { ArrowDownIcon, CupSodaIcon, GlassWaterIcon, MilkIcon, ReceiptTextIcon, SparklesIcon, type LucideIcon } from "lucide-react";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
+import { buildCategoryBoard, groupByCategory, type BoardCell, type CategoryGroup } from "@/components/home/price-board-model";
 import { PriceCell } from "@/components/home/price-cell";
 import { CoffeeStains, MenuCard, MenuPill, ScriptAccent } from "@/components/site/menu-card";
 import type { ProductDetail } from "@/lib/api";
-import { priceRowCartItem, priceRows } from "@/lib/catalog";
+import { priceRowCartItem } from "@/lib/catalog";
 import { accentPhrases } from "@/lib/home-content";
 import { formatArs } from "@/lib/pricing";
 
 type Props = { products: ProductDetail[] };
-type Group = { slug: string; name: string; products: ProductDetail[] };
-
-/** More sizes than this no longer fit as columns on a phone, so each price carries its own caption. */
-const MAX_COLUMNS = 3;
 
 const categoryIcons: Record<string, LucideIcon> = {
   especiales: SparklesIcon,
@@ -20,19 +17,12 @@ const categoryIcons: Record<string, LucideIcon> = {
   refrescantes: GlassWaterIcon,
 };
 
-function groupByCategory(products: ProductDetail[]): Group[] {
-  const groups = new Map<string, Group>();
-  for (const product of products) {
-    const { slug, name } = product.category;
-    const group = groups.get(slug) ?? { slug, name, products: [] };
-    group.products.push(product);
-    groups.set(slug, group);
-  }
-  return [...groups.values()];
-}
-
-/** "Chico (500 cc)" → "Chico", for the narrow column heading. */
-const shortLabel = (label: string) => label.replace(/\s*\(.*\)\s*$/, "");
+/** Three price columns leave no room for the name in a narrow card, so there the name sits above its prices. */
+const gridByColumns: Record<number, string> = {
+  1: "grid-cols-[minmax(0,1fr)_4.5rem]",
+  2: "grid-cols-[minmax(0,1fr)_repeat(2,4.5rem)]",
+  3: "grid-cols-3 @sm:grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)]",
+};
 
 const priceText = (price: number | null) => (price !== null ? formatArs(price) : "Consultar");
 
@@ -83,63 +73,63 @@ export function PriceBoard({ products }: Props) {
   );
 }
 
-function CategoryCard({ group, index }: { group: Group; index: number }) {
-  const lines = group.products.map((product) => ({ product, rows: priceRows(product) }));
-  const columns = [...new Set(lines.flatMap((l) => l.rows.map((r) => r.label)))];
-  const asColumns = columns.length <= MAX_COLUMNS;
-  const template = { gridTemplateColumns: `minmax(0, 1fr) repeat(${columns.length}, 4.5rem)` };
+function CategoryCard({ group, index }: { group: CategoryGroup<ProductDetail>; index: number }) {
+  const { asColumns, headings, lines } = buildCategoryBoard(group.products);
+  const grid = gridByColumns[headings.length];
+  const stacks = headings.length === 3;
 
   return (
     <Stagger stagger={0.06}>
       <StaggerItem y={14}>
         <MenuCard title={group.name} icon={categoryIcons[group.slug] ?? CupSodaIcon} tone={index % 4 === 1 || index % 4 === 2 ? "caramel" : "espresso"}>
-          {asColumns && (
-            <div aria-hidden style={template} className="grid gap-x-1 pb-1 text-center text-xs font-semibold text-muted-foreground">
-              <span />
-              {columns.map((c) => (
-                <span key={c}>{shortLabel(c)}</span>
+          <div className="@container">
+            {asColumns && (
+              <div aria-hidden className={`grid gap-x-1 pb-1 text-center text-xs font-semibold text-muted-foreground ${grid}`}>
+                <span className={stacks ? "hidden @sm:block" : undefined} />
+                {headings.map((h) => (
+                  <span key={h.key}>{h.text}</span>
+                ))}
+              </div>
+            )}
+            <ul className="divide-y divide-dashed divide-caramel/60">
+              {lines.map(({ product, cells, columnCells }, n) => (
+                <li key={product.id} className={asColumns ? `grid items-center gap-x-1 py-1 ${grid}` : "py-2"}>
+                  <p className={`min-w-0 py-1 text-sm leading-snug font-medium sm:text-[15px] ${asColumns && stacks ? "col-span-3 @sm:col-span-1" : ""}`}>
+                    <span aria-hidden className="mr-1 text-muted-foreground tabular-nums">
+                      {n + 1}-
+                    </span>
+                    {product.name}
+                  </p>
+                  {asColumns ? (
+                    columnCells.map((cell, c) =>
+                      cell ? <Cell key={cell.row.variantId} product={product} cell={cell} /> : <span key={headings[c].key} />,
+                    )
+                  ) : (
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {cells.map((cell) => (
+                        <Cell key={cell.row.variantId} product={product} cell={cell} caption={cell.caption} />
+                      ))}
+                    </div>
+                  )}
+                </li>
               ))}
-            </div>
-          )}
-          <ul className="divide-y divide-dashed divide-caramel/60">
-            {lines.map(({ product, rows }, n) => (
-              <li key={product.id} style={asColumns ? template : undefined} className={asColumns ? "grid items-center gap-x-1 py-1" : "py-2"}>
-                <p className="min-w-0 py-1 text-sm leading-snug font-medium sm:text-[15px]">
-                  <span aria-hidden className="mr-1 text-muted-foreground tabular-nums">
-                    {n + 1}-
-                  </span>
-                  {product.name}
-                </p>
-                {asColumns ? (
-                  columns.map((column) => {
-                    const row = rows.find((r) => r.label === column);
-                    return row ? <Cell key={column} product={product} row={row} /> : <span key={column} />;
-                  })
-                ) : (
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {rows.map((row) => (
-                      <Cell key={row.variantId} product={product} row={row} caption={shortLabel(row.label)} />
-                    ))}
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
+            </ul>
+          </div>
         </MenuCard>
       </StaggerItem>
     </Stagger>
   );
 }
 
-function Cell({ product, row, caption }: { product: ProductDetail; row: ReturnType<typeof priceRows>[number]; caption?: string }) {
+function Cell({ product, cell, caption }: { product: ProductDetail; cell: BoardCell; caption?: string }) {
   const cover = product.media.find((m) => m.type === "image")?.url ?? null;
   return (
     <PriceCell
-      item={priceRowCartItem(product, row.variantId)}
+      item={priceRowCartItem(product, cell.row.variantId)}
       imageUrl={cover}
       productName={product.name}
-      label={row.label}
-      price={priceText(row.retailPrice)}
+      label={cell.label}
+      price={priceText(cell.row.retailPrice)}
       caption={caption}
     />
   );
