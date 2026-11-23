@@ -19,9 +19,9 @@ const categoryIcons: Record<string, LucideIcon> = {
 
 /** Three price columns leave no room for the name in a narrow card, so there the name sits above its prices. */
 const gridByColumns: Record<number, string> = {
-  1: "grid-cols-[minmax(0,1fr)_4.5rem]",
-  2: "grid-cols-[minmax(0,1fr)_repeat(2,4.5rem)]",
-  3: "grid-cols-3 @sm:grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)]",
+  1: "grid-cols-[minmax(0,1fr)_5.25rem]",
+  2: "grid-cols-[minmax(0,1fr)_repeat(2,5.25rem)]",
+  3: "grid-cols-3 @sm:grid-cols-[minmax(0,1fr)_repeat(3,5.25rem)]",
 };
 
 const priceText = (price: number | null) => (price !== null ? formatArs(price) : "Consultar");

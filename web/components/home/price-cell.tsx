@@ -74,7 +74,7 @@ export function PriceCell({ item, imageUrl, productName, label, price, caption }
         <m.span
           key={clicks}
           animate={clicks > 0 && !reduce ? shake : undefined}
-          className={`block font-heading font-extrabold tabular-nums ${quoted ? "text-[11px]" : "text-sm sm:text-[15px]"}`}
+          className={`block font-heading font-extrabold whitespace-nowrap tabular-nums ${quoted ? "text-[11px]" : "text-sm sm:text-[15px]"}`}
         >
           {price}
         </m.span>
