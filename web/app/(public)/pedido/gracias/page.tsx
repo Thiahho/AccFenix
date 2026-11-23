@@ -34,7 +34,7 @@ export default async function ThanksPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <p className="eyebrow text-yolk">Pedido {valid ? `#${number}` : ""}</p>
+      <p className="eyebrow text-caramel-deep">Pedido {valid ? `#${number}` : ""}</p>
       <h1 className="title-display mt-3 text-4xl sm:text-5xl">¡Gracias!</h1>
 
       {!valid && (

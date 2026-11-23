@@ -49,101 +49,111 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  /* Eggy brand palette, usable as bg-*, text-*, border-* utilities. */
+  /* ColdCup coffee palette, usable as bg-*, text-*, border-* utilities. */
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-soft: var(--brand-soft);
+  --color-espresso: var(--espresso);
+  --color-roast: var(--roast);
+  --color-caramel: var(--caramel);
+  --color-caramel-deep: var(--caramel-deep);
+  --color-latte: var(--latte);
+  --color-oat: var(--oat);
   --color-cream: var(--cream);
-  --color-cream-deep: var(--cream-deep);
-  --color-charcoal: var(--charcoal);
-  --color-yolk: var(--yolk);
-  --color-yolk-light: var(--yolk-light);
+  --color-ivory: var(--ivory);
+  --color-status-ok: var(--status-ok);
+  --color-status-ok-strong: var(--status-ok-strong);
+  --color-status-warn: var(--status-warn);
 }
 
 /*
- * Eggy: egg red (#B3121B), eggshell cream, warm charcoal and yolk accents.
+ * ColdCup: espresso, caramel, latte, cream and ivory, after the printed menu.
  * Changing only these raw colors re-themes the whole site, admin included.
+ * Caramel is 3.42:1 on ivory: decoration and large shapes only. Use caramel-deep for text and filled pills.
  */
 :root {
-  --egg-red: oklch(0.5 0.19 25);
-  --cream: oklch(0.975 0.012 80);
-  --cream-deep: oklch(0.93 0.026 78);
-  --paper: oklch(0.99 0.006 85);
-  --charcoal: oklch(0.25 0.012 50);
-  /* Burnt orange: readable on cream (eyebrows, small accents). */
-  --yolk: oklch(0.52 0.13 50);
-  /* Amber: for accents on charcoal. */
-  --yolk-light: oklch(0.83 0.14 78);
+  --espresso: oklch(0.327 0.051 47); /* #4A2C1D */
+  --roast: oklch(0.245 0.034 46); /* #2E1B12 */
+  --caramel: oklch(0.62 0.07 59.2); /* #A67C5B */
+  --caramel-deep: oklch(0.486 0.067 55.4); /* #7D5539 */
+  --latte: oklch(0.826 0.047 73.5); /* #D9C2A5 */
+  --oat: oklch(0.9 0.033 79.3); /* #EADCC6 */
+  --cream: oklch(0.94 0.022 80.7); /* #F3EADB */
+  --ivory: oklch(0.971 0.015 86.4); /* #FAF5EA */
+  /* Availability marks on espresso surfaces (order toast). */
+  --status-ok: oklch(0.852 0.085 157.7); /* #9FE0B9 */
+  --status-ok-strong: oklch(0.515 0.114 154.8); /* #1F7A49 */
+  --status-warn: oklch(0.863 0.106 85.1); /* #F2CD7E */
 
-  --brand: var(--egg-red);
-  --brand-foreground: var(--paper);
-  --brand-soft: oklch(0.95 0.028 35);
+  --brand: var(--espresso);
+  --brand-foreground: var(--ivory);
+  --brand-soft: var(--oat);
 
-  --background: var(--cream);
-  --foreground: var(--charcoal);
-  --card: var(--paper);
-  --card-foreground: var(--charcoal);
-  --popover: var(--paper);
-  --popover-foreground: var(--charcoal);
+  --background: var(--ivory);
+  --foreground: var(--espresso);
+  --card: var(--cream);
+  --card-foreground: var(--espresso);
+  --popover: var(--ivory);
+  --popover-foreground: var(--espresso);
   --primary: var(--brand);
   --primary-foreground: var(--brand-foreground);
-  --secondary: var(--cream-deep);
-  --secondary-foreground: var(--charcoal);
-  --muted: var(--cream-deep);
-  --muted-foreground: oklch(0.46 0.022 50);
-  --accent: var(--cream-deep);
-  --accent-foreground: var(--charcoal);
-  --destructive: oklch(0.55 0.21 28);
-  --border: oklch(0.87 0.025 70);
-  --input: oklch(0.8 0.03 65);
-  --ring: var(--egg-red);
-  --chart-1: var(--egg-red);
-  --chart-2: oklch(0.7 0.15 65);
-  --chart-3: oklch(0.52 0.13 50);
-  --chart-4: oklch(0.4 0.03 50);
-  --chart-5: oklch(0.83 0.14 78);
+  --secondary: var(--oat);
+  --secondary-foreground: var(--espresso);
+  --muted: var(--oat);
+  --muted-foreground: oklch(0.453 0.046 52.5); /* #6B4F3E */
+  --accent: var(--oat);
+  --accent-foreground: var(--espresso);
+  --destructive: oklch(0.473 0.161 29.8); /* #A3281C */
+  --border: var(--latte);
+  --input: var(--latte);
+  --ring: var(--caramel-deep);
+  --chart-1: var(--espresso);
+  --chart-2: var(--caramel-deep);
+  --chart-3: var(--caramel);
+  --chart-4: var(--latte);
+  --chart-5: var(--roast);
   --radius: 0.75rem;
-  --sidebar: var(--paper);
-  --sidebar-foreground: var(--charcoal);
-  --sidebar-primary: var(--egg-red);
-  --sidebar-primary-foreground: var(--paper);
-  --sidebar-accent: var(--cream-deep);
-  --sidebar-accent-foreground: var(--charcoal);
-  --sidebar-border: oklch(0.87 0.025 70);
-  --sidebar-ring: var(--egg-red);
+  --sidebar: var(--cream);
+  --sidebar-foreground: var(--espresso);
+  --sidebar-primary: var(--espresso);
+  --sidebar-primary-foreground: var(--ivory);
+  --sidebar-accent: var(--oat);
+  --sidebar-accent-foreground: var(--espresso);
+  --sidebar-border: var(--latte);
+  --sidebar-ring: var(--caramel-deep);
 }
 
 .dark {
-  /* Custom properties resolve where declared, so every alias of the red is restated here. */
-  --egg-red: oklch(0.6 0.2 25);
-  --brand: oklch(0.6 0.2 25);
-  --brand-foreground: oklch(0.99 0.006 85);
-  --brand-soft: oklch(0.32 0.06 28);
-  --primary: oklch(0.6 0.2 25);
-  --primary-foreground: oklch(0.99 0.006 85);
-  --ring: oklch(0.6 0.2 25);
-  --sidebar-primary: oklch(0.6 0.2 25);
-  --sidebar-ring: oklch(0.6 0.2 25);
+  /* Custom properties resolve where declared, so every alias of the brand color is restated here. */
+  --brand: var(--latte);
+  --brand-foreground: var(--roast);
+  --brand-soft: oklch(0.297 0.039 49.3);
+  --primary: var(--latte);
+  --primary-foreground: var(--roast);
+  --ring: var(--latte);
+  --sidebar-primary: var(--latte);
+  --sidebar-primary-foreground: var(--roast);
+  --sidebar-ring: var(--latte);
 
-  --background: oklch(0.2 0.01 50);
-  --foreground: oklch(0.95 0.015 80);
-  --card: oklch(0.25 0.012 50);
-  --card-foreground: oklch(0.95 0.015 80);
-  --popover: oklch(0.25 0.012 50);
-  --popover-foreground: oklch(0.95 0.015 80);
-  --secondary: oklch(0.3 0.015 50);
-  --secondary-foreground: oklch(0.95 0.015 80);
-  --muted: oklch(0.3 0.015 50);
-  --muted-foreground: oklch(0.75 0.025 70);
-  --accent: oklch(0.3 0.015 50);
-  --accent-foreground: oklch(0.95 0.015 80);
-  --destructive: oklch(0.7 0.19 25);
+  --background: oklch(0.213 0.025 40.5);
+  --foreground: var(--cream);
+  --card: var(--roast);
+  --card-foreground: var(--cream);
+  --popover: var(--roast);
+  --popover-foreground: var(--cream);
+  --secondary: oklch(0.297 0.039 49.3);
+  --secondary-foreground: var(--cream);
+  --muted: oklch(0.297 0.039 49.3);
+  --muted-foreground: oklch(0.779 0.044 71.8);
+  --accent: oklch(0.297 0.039 49.3);
+  --accent-foreground: var(--cream);
+  --destructive: oklch(0.739 0.127 29.9);
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 18%);
-  --sidebar: oklch(0.25 0.012 50);
-  --sidebar-foreground: oklch(0.95 0.015 80);
-  --sidebar-accent: oklch(0.3 0.015 50);
-  --sidebar-accent-foreground: oklch(0.95 0.015 80);
+  --sidebar: var(--roast);
+  --sidebar-foreground: var(--cream);
+  --sidebar-accent: oklch(0.297 0.039 49.3);
+  --sidebar-accent-foreground: var(--cream);
   --sidebar-border: oklch(1 0 0 / 12%);
 }
 
@@ -163,21 +173,21 @@
 @utility eyebrow {
   @apply text-xs font-semibold tracking-[0.3em] uppercase;
 }
-/* Bold uppercase display titles, after the "HUEVOS | N°1" price story. */
+/* Heavy uppercase display titles, after the printed menu. */
 @utility title-display {
   @apply font-heading leading-[0.98] font-extrabold tracking-tight text-balance uppercase;
 }
-/* Script wordmark ("Eggy"). */
+/* Script wordmark and accent phrases. */
 @utility wordmark {
   @apply font-script leading-none font-normal tracking-normal normal-case;
 }
-/* Dark egg-tray texture for charcoal sections. */
-@utility bg-egg-tray {
-  background-color: var(--charcoal);
+/* Dark roast surface with a faint coffee-bean grain. */
+@utility bg-roast-grain {
+  background-color: var(--espresso);
   background-image:
-    radial-gradient(ellipse 34% 40% at 50% 50%, rgb(255 255 255 / 0.07) 0 70%, transparent 72%),
-    radial-gradient(ellipse 34% 40% at 0% 0%, rgb(255 255 255 / 0.05) 0 70%, transparent 72%);
-  background-size: 84px 96px;
+    radial-gradient(ellipse 22% 30% at 50% 50%, rgb(255 255 255 / 0.05) 0 70%, transparent 72%),
+    radial-gradient(ellipse 22% 30% at 0% 0%, rgb(255 255 255 / 0.035) 0 70%, transparent 72%);
+  background-size: 72px 84px;
 }
 
 /* Home: smooth scroll to anchors (respects reduced motion) and branded selection. */
@@ -237,8 +247,8 @@ html {
 
 /*
  * Public header (components/site/site-header.tsx).
- * No bar background: the wordmark, the section links and the actions float in charcoal / red capsules that read
- * on cream, red and dark sections alike, and the header is always visible. Compacting lifts the bar a little and
+ * No bar background: the wordmark, the section links and the actions float in espresso capsules that read
+ * on light and dark sections alike, and the header is always visible. Compacting lifts the bar a little and
  * deepens the capsule shadow. The actions capsule holds the mobile menu panel, so it must not get a transform or
  * a backdrop-filter (either would become the panel's containing block). Motion sits behind prefers-reduced-motion.
  */
@@ -255,14 +265,14 @@ html {
 .header-capsule {
   box-shadow:
     0 0 0 1px color-mix(in oklch, var(--cream) 16%, transparent),
-    0 6px 18px -8px color-mix(in oklch, var(--charcoal) 55%, transparent);
+    0 6px 18px -8px color-mix(in oklch, var(--espresso) 55%, transparent);
 }
 .site-header[data-compact] .header-capsule {
   box-shadow:
     0 0 0 1px color-mix(in oklch, var(--cream) 16%, transparent),
-    0 10px 26px -10px color-mix(in oklch, var(--charcoal) 70%, transparent);
+    0 10px 26px -10px color-mix(in oklch, var(--espresso) 70%, transparent);
 }
-/* Cart and burger buttons inside the charcoal capsule. */
+/* Cart and burger buttons inside the espresso capsule. */
 .header-action {
   color: var(--cream);
 }
@@ -273,10 +283,10 @@ html {
 }
 .header-action:focus-visible {
   border-color: transparent;
-  --tw-ring-color: var(--yolk-light);
+  --tw-ring-color: var(--latte);
 }
 
-/* Desktop links: amber underline that grows from the center, and the red pill that follows the active section. */
+/* Desktop links: latte underline that grows from the center, and the caramel pill that follows the active section. */
 .nav-link::after {
   content: "";
   position: absolute;
@@ -284,7 +294,7 @@ html {
   bottom: 0.2rem;
   height: 2px;
   border-radius: 999px;
-  background: var(--yolk-light);
+  background: var(--latte);
   transform: scaleX(0);
 }
 .nav-link[aria-current="true"]::after {
@@ -358,8 +368,8 @@ html {
     transform: none;
   }
 }
-/* A raw egg rocking on the counter. */
-@keyframes egg-wobble {
+/* A cup rocking on the counter. */
+@keyframes cup-wobble {
   0%,
   100% {
     transform: rotate(0);
@@ -414,7 +424,7 @@ html {
   }
   .group:hover .wordmark-wobble,
   .group:focus-visible .wordmark-wobble {
-    animation: egg-wobble 0.8s ease-in-out;
+    animation: cup-wobble 0.8s ease-in-out;
   }
 }
 
@@ -469,7 +479,7 @@ html {
 
 /*
  * First-visit intro (components/site/intro-splash.tsx). Hidden unless the inline script adds `intro-play` to <html>.
- * The brand-red backdrop is CSS; the 3D egg renders on a transparent canvas above it. `intro-reveal` lets <main>
+ * The espresso backdrop is CSS; the 3D scene renders on a transparent canvas above it. `intro-reveal` lets <main>
  * settle with a zoom-out under the fading overlay; `backwards` fill leaves no transform behind, so fixed
  * descendants are not re-anchored. `intro-out` fades the overlay. While playing, the overlay captures pointer input
  * (a tap skips the intro instead of hitting a link the user cannot see); once fading, it lets input through.
@@ -483,7 +493,7 @@ html {
   z-index: 100;
   display: block;
   pointer-events: auto;
-  background: radial-gradient(90% 70% at 50% 45%, oklch(0.58 0.2 28) 0%, var(--egg-red) 55%, oklch(0.3 0.11 25) 100%);
+  background: radial-gradient(90% 70% at 50% 45%, var(--caramel-deep) 0%, var(--espresso) 55%, var(--roast) 100%);
   transition:
     opacity 0.36s ease-in,
     visibility 0.36s;

@@ -12,7 +12,7 @@ export default function RootNotFound() {
       <Link href="/" className="text-lg font-bold text-brand">
         {site.name}
       </Link>
-      <p className="eyebrow mt-10 text-yolk">404</p>
+      <p className="eyebrow mt-10 text-caramel-deep">404</p>
       <h1 className="title-display mt-3 text-4xl sm:text-5xl">No encontramos esta página</h1>
       <p className="mt-3 text-muted-foreground">Revisá la dirección o volvé al inicio para ver el catálogo.</p>
       <Button asChild className="mt-8">

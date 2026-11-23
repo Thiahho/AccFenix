@@ -16,7 +16,7 @@ export function HeroEgg({ children }: { children: React.ReactNode }) {
 
   return (
     <m.div className="relative mx-auto w-full max-w-[19rem] sm:max-w-xs" style={reduce ? undefined : { y: parallax }}>
-      <div aria-hidden className="absolute -inset-6 rounded-full bg-yolk-light/20 blur-3xl" />
+      <div aria-hidden className="absolute -inset-6 rounded-full bg-latte/20 blur-3xl" />
       <m.div
         className="relative"
         initial={{ y: 0 }}

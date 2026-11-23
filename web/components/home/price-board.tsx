@@ -13,10 +13,10 @@ export function PriceBoard({ products }: Props) {
   const priced = products.filter((p) => p.variants.length > 0);
 
   return (
-    <section id="precios" aria-labelledby="precios-titulo" className="anchor-section bg-egg-tray text-cream">
+    <section id="precios" aria-labelledby="precios-titulo" className="anchor-section bg-roast-grain text-cream">
       <div className="mx-auto max-w-3xl px-4 py-14 md:py-20">
         <Reveal>
-          <p className="eyebrow text-yolk-light">Lista de precios</p>
+          <p className="eyebrow text-latte">Lista de precios</p>
           <h2 id="precios-titulo" className="title-display mt-3 text-4xl sm:text-5xl">
             Precios de hoy
           </h2>
@@ -41,7 +41,7 @@ export function PriceBoard({ products }: Props) {
           <Reveal y={12} className="mt-12">
             <Link
               href="#catalogo"
-              className="inline-flex h-12 items-center gap-2 rounded-full bg-cream px-7 text-[15px] font-bold tracking-wide text-charcoal uppercase transition-colors hover:bg-white focus-visible:ring-3 focus-visible:ring-yolk-light focus-visible:outline-none"
+              className="inline-flex h-12 items-center gap-2 rounded-full bg-cream px-7 text-[15px] font-bold tracking-wide text-espresso uppercase transition-colors hover:bg-white focus-visible:ring-3 focus-visible:ring-latte focus-visible:outline-none"
             >
               Hacé tu pedido <ArrowDownIcon aria-hidden className="size-4" />
             </Link>

@@ -125,7 +125,7 @@ export function ProductCard({ product, phone }: Props) {
           <m.div whileTap={variant ? { scale: 0.97 } : undefined} className="flex flex-col">
             <Button
               type="button"
-              className={cn("h-auto min-h-11 whitespace-normal py-2 text-center leading-tight", inCart > 0 && "bg-charcoal hover:bg-charcoal/90")}
+              className={cn("h-auto min-h-11 whitespace-normal py-2 text-center leading-tight", inCart > 0 && "bg-caramel-deep hover:bg-caramel-deep/90")}
               disabled={!variant}
               onClick={handleAdd}
             >

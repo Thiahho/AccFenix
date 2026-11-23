@@ -18,7 +18,7 @@ export function Hero({ phone }: { phone: string }) {
         {/* Above the fold: the headline is static markup (it is the LCP candidate); the items around it enter with a CSS
             keyframe (.hero-in in globals.css), so they play on first paint and end fully visible even without JS. */}
         <div className="flex flex-col gap-6">
-          <p className="hero-in eyebrow text-yolk-light [--hero-i:0] [--hero-y:10px]">Cafés fríos</p>
+          <p className="hero-in eyebrow text-latte [--hero-i:0] [--hero-y:10px]">Cafés fríos</p>
           <h1 id="hero-titulo" className="flex flex-col gap-1">
             <span className="title-display text-5xl sm:text-6xl lg:text-7xl">Somos</span>
             <span className="-mt-1 flex">
@@ -34,7 +34,7 @@ export function Hero({ phone }: { phone: string }) {
           <div className="hero-in flex flex-col gap-3 [--hero-i:2] sm:flex-row sm:items-center">
             <Link
               href="#precios"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-7 text-[15px] font-bold tracking-wide text-brand-foreground uppercase shadow-[0_10px_30px_rgb(0_0_0/0.3)] transition-[background-color,translate] hover:-translate-y-0.5 hover:bg-brand/90 focus-visible:ring-3 focus-visible:ring-yolk-light focus-visible:outline-none motion-reduce:hover:translate-y-0"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-7 text-[15px] font-bold tracking-wide text-brand-foreground uppercase shadow-[0_10px_30px_rgb(0_0_0/0.3)] transition-[background-color,translate] hover:-translate-y-0.5 hover:bg-brand/90 focus-visible:ring-3 focus-visible:ring-latte focus-visible:outline-none motion-reduce:hover:translate-y-0"
             >
               Ver precios <ArrowDownIcon aria-hidden className="size-4" />
             </Link>
@@ -43,14 +43,14 @@ export function Hero({ phone }: { phone: string }) {
                 href={whatsappUrl(phone, "¡Hola! Quiero hacer un pedido de café frío.")}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full border-2 border-cream/70 px-6 text-[15px] font-semibold transition-colors hover:border-cream hover:bg-cream hover:text-charcoal focus-visible:ring-3 focus-visible:ring-yolk-light focus-visible:outline-none"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full border-2 border-cream/70 px-6 text-[15px] font-semibold transition-colors hover:border-cream hover:bg-cream hover:text-espresso focus-visible:ring-3 focus-visible:ring-latte focus-visible:outline-none"
               >
                 <MessageCircleIcon aria-hidden className="size-4" /> Pedir por WhatsApp
               </a>
             )}
           </div>
           <p className="hero-in flex items-center gap-2 text-sm text-cream/75 [--hero-i:3] [--hero-y:8px]">
-            <TruckIcon aria-hidden className="size-5 text-yolk-light" /> Envíos en Moreno o retiro en el local
+            <TruckIcon aria-hidden className="size-5 text-latte" /> Envíos en Moreno o retiro en el local
           </p>
         </div>
 

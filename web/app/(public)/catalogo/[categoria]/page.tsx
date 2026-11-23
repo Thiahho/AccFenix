@@ -55,7 +55,7 @@ export default async function CategoryPage({ params }: Props) {
       <nav aria-label="Ruta" className="text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">Inicio</Link> / <span className="text-foreground">{category.name}</span>
       </nav>
-      <p className="eyebrow mt-6 text-yolk">Catálogo</p>
+      <p className="eyebrow mt-6 text-caramel-deep">Catálogo</p>
       <h1 className="title-display mt-3 text-4xl sm:text-5xl">{category.name}</h1>
       {category.description && <p className="mt-2 max-w-2xl text-muted-foreground">{category.description}</p>}
 
@@ -76,7 +76,7 @@ export default async function CategoryPage({ params }: Props) {
                   className="w-32 shrink-0 transition-opacity group-hover:opacity-90 sm:w-full"
                 />
                 <div className="min-w-0">
-                  <h2 className="font-medium transition-colors group-hover:text-yolk sm:mt-3">{p.name}</h2>
+                  <h2 className="font-medium transition-colors group-hover:text-caramel-deep sm:mt-3">{p.name}</h2>
                   {p.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.description}</p>}
                 </div>
               </Link>

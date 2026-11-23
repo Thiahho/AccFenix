@@ -72,14 +72,14 @@ export function PriceRow({ item, imageUrl, productName, label, price }: Props) {
       onPointerLeave={(e) => e.pointerType === "mouse" && setActive(false)}
       onFocus={(e) => e.currentTarget.matches(":focus-visible") && setActive(true)}
       onBlur={() => setActive(false)}
-      className="relative -mx-3 w-[calc(100%+1.5rem)] cursor-pointer touch-manipulation rounded-xl px-3 py-2 text-left select-none disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-3 focus-visible:ring-yolk-light focus-visible:outline-none"
+      className="relative -mx-3 w-[calc(100%+1.5rem)] cursor-pointer touch-manipulation rounded-xl px-3 py-2 text-left select-none disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-3 focus-visible:ring-latte focus-visible:outline-none"
     >
       <m.span
         aria-hidden
         variants={glow}
         initial={false}
         animate={state}
-        className="pointer-events-none absolute inset-0 rounded-xl bg-[radial-gradient(120%_140%_at_85%_50%,color-mix(in_oklch,var(--yolk-light)_22%,transparent),transparent_70%)]"
+        className="pointer-events-none absolute inset-0 rounded-xl bg-[radial-gradient(120%_140%_at_85%_50%,color-mix(in_oklch,var(--latte)_22%,transparent),transparent_70%)]"
       />
       <m.span
         variants={rowContent}
@@ -95,7 +95,7 @@ export function PriceRow({ item, imageUrl, productName, label, price }: Props) {
               initial={false}
               animate={state}
               style={{ originX: 1 }}
-              className={`block h-0.5 w-full transition-colors duration-300 ${active ? "bg-yolk-light" : "bg-cream/70"}`}
+              className={`block h-0.5 w-full transition-colors duration-300 ${active ? "bg-latte" : "bg-cream/70"}`}
             />
           </GrowX>
         </span>
@@ -107,7 +107,7 @@ export function PriceRow({ item, imageUrl, productName, label, price }: Props) {
                 animate={cracks > 0 && !reduce ? shake : undefined}
                 className={`relative block bg-brand px-3 py-1.5 font-heading text-xl font-extrabold text-brand-foreground tabular-nums transition-shadow duration-300 sm:text-3xl ${
                   active
-                    ? "shadow-[0_8px_22px_rgb(0_0_0/0.4),0_0_26px_color-mix(in_oklch,var(--yolk-light)_45%,transparent)]"
+                    ? "shadow-[0_8px_22px_rgb(0_0_0/0.4),0_0_26px_color-mix(in_oklch,var(--latte)_45%,transparent)]"
                     : "shadow-[0_6px_18px_rgb(0_0_0/0.35)]"
                 }`}
               >
@@ -129,7 +129,7 @@ function CrackLine({ mirrored, reduce }: { mirrored: boolean; reduce: boolean })
       aria-hidden
       viewBox="0 0 100 40"
       preserveAspectRatio="none"
-      className={`pointer-events-none absolute inset-0 size-full overflow-visible text-charcoal ${mirrored ? "-scale-x-100" : ""}`}
+      className={`pointer-events-none absolute inset-0 size-full overflow-visible text-latte ${mirrored ? "-scale-x-100" : ""}`}
     >
       <m.path
         d="M54 -2 L47 8 L56 15 L45 23 L54 30 L48 42 M47 8 L38 11 M45 23 L36 26"

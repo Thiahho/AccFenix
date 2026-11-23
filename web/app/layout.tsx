@@ -8,7 +8,7 @@ import "./globals.css";
 
 // Montserrat is a variable font: one file covers body text and the 700–900 display titles.
 const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"] });
-// Yellowtail is only used by the "Eggy" wordmark.
+// Yellowtail is used by the wordmark and script accent phrases.
 const yellowtail = Yellowtail({ variable: "--font-yellowtail", subsets: ["latin"], weight: "400" });
 
 export const metadata: Metadata = {
@@ -27,7 +27,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
-  themeColor: "#B3121B",
+  themeColor: "#4A2C1D",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

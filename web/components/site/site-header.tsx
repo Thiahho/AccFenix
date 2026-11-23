@@ -19,7 +19,7 @@ const desktopSections = sectionLinks.slice(1);
 const stagger = (i: number) => ({ "--i": i }) as CSSProperties;
 
 const linkClass =
-  "nav-link relative z-10 rounded-full px-3 py-1.5 font-medium text-cream/80 transition-colors hover:text-cream focus-visible:ring-2 focus-visible:ring-yolk-light focus-visible:outline-none [&[aria-current]]:text-brand-foreground";
+  "nav-link relative z-10 rounded-full px-3 py-1.5 font-medium text-cream/80 transition-colors hover:text-cream focus-visible:ring-2 focus-visible:ring-latte focus-visible:outline-none [&[aria-current]]:text-brand-foreground";
 
 /**
  * Public sticky header with no bar background: the wordmark, the section links and the actions float in their
@@ -72,7 +72,7 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
           href="/"
           aria-label={`${site.name} — inicio`}
           style={stagger(0)}
-          className="header-item header-capsule group pointer-events-auto flex h-11 items-center rounded-full bg-brand px-4 focus-visible:ring-3 focus-visible:ring-yolk-light focus-visible:outline-none"
+          className="header-item header-capsule group pointer-events-auto flex h-11 items-center rounded-full bg-brand px-4 focus-visible:ring-3 focus-visible:ring-latte focus-visible:outline-none"
         >
           <Wordmark tone="light" className="wordmark-wobble inline-block text-3xl leading-none" />
         </Link>
@@ -81,9 +81,9 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
           <div
             ref={navRef}
             style={stagger(1)}
-            className="header-item header-capsule pointer-events-auto relative flex items-center rounded-full bg-charcoal/80 p-1 text-sm backdrop-blur-md"
+            className="header-item header-capsule pointer-events-auto relative flex items-center rounded-full bg-espresso/80 p-1 text-sm backdrop-blur-md"
           >
-            <span ref={indicatorRef} aria-hidden data-visible="false" className="nav-indicator absolute top-1/2 left-0 h-8 rounded-full bg-brand" />
+            <span ref={indicatorRef} aria-hidden data-visible="false" className="nav-indicator absolute top-1/2 left-0 h-8 rounded-full bg-caramel-deep" />
             {desktopSections.map((s) => (
               <Link key={s.id} href={s.href} data-section={s.id} aria-current={active === s.id ? "true" : undefined} className={linkClass}>
                 {s.label}
@@ -93,7 +93,7 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
             {categories.map((c) => {
               const href = `/catalogo/${c.slug}`;
               return (
-                <Link key={c.id} href={href} aria-current={pathname === href ? "page" : undefined} className={cn(linkClass, "[&[aria-current]]:text-yolk-light")}>
+                <Link key={c.id} href={href} aria-current={pathname === href ? "page" : undefined} className={cn(linkClass, "[&[aria-current]]:text-latte")}>
                   {c.name}
                 </Link>
               );
@@ -103,7 +103,7 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
 
         <div
           style={stagger(2)}
-          className="header-item header-capsule pointer-events-auto ml-auto flex items-center gap-1 rounded-full bg-charcoal/85 p-1 md:ml-0"
+          className="header-item header-capsule pointer-events-auto ml-auto flex items-center gap-1 rounded-full bg-espresso/85 p-1 md:ml-0"
         >
           <CartButton />
           <MobileMenu categories={categories} />

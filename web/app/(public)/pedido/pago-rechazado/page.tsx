@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Pago no completado", robots: { index
 export default function PaymentRejectedPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <p className="eyebrow text-yolk">Pago</p>
+      <p className="eyebrow text-caramel-deep">Pago</p>
       <h1 className="title-display mt-3 text-4xl sm:text-5xl">El pago no se completó</h1>
       <div className="mx-auto mt-10 max-w-xl rounded-xl border bg-brand-soft/50 p-6 text-center sm:p-8">
         <p className="text-pretty text-muted-foreground">

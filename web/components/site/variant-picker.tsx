@@ -56,7 +56,7 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
       <ProductGallery media={product.media} name={product.name} selectedValueIds={selectedValueIds} />
 
       <div>
-        <p className="eyebrow text-yolk">
+        <p className="eyebrow text-caramel-deep">
           <Link href={`/catalogo/${product.category.slug}`} className="hover:text-foreground">{product.category.name}</Link>
         </p>
         <h1 className="title-display mt-3 text-4xl sm:text-5xl">{product.name}</h1>

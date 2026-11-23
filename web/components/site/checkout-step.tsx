@@ -62,7 +62,7 @@ export function CheckoutStep({ index, title, status, summary, focusOnOpen, onOpe
             aria-hidden
             className={cn(
               "grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold tabular-nums transition-colors duration-300",
-              status === "done" ? "bg-brand text-brand-foreground" : active ? "bg-charcoal text-cream" : "border bg-background text-muted-foreground",
+              status === "done" ? "bg-brand text-brand-foreground" : active ? "bg-espresso text-cream" : "border bg-background text-muted-foreground",
             )}
           >
             {status === "done" ? <CheckIcon className="size-4" /> : index + 1}

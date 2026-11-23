@@ -111,7 +111,7 @@ export function Journey({ steps, goal }: { steps: Step[]; goal: Step }) {
           ref={truckRef}
           aria-hidden
           data-visible="false"
-          className="journey-truck pointer-events-none absolute top-0 left-0 z-20 grid size-9 place-items-center rounded-full bg-yolk-light text-charcoal shadow-md"
+          className="journey-truck pointer-events-none absolute top-0 left-0 z-20 grid size-9 place-items-center rounded-full bg-latte text-espresso shadow-md"
         >
           <TruckIcon className="size-5" />
         </span>
@@ -136,7 +136,7 @@ export function Journey({ steps, goal }: { steps: Step[]; goal: Step }) {
                   )}
                 >
                   <Icon className="size-6" />
-                  <span className="absolute -top-1 -right-1 grid size-5 place-items-center rounded-full bg-yolk-light text-[11px] font-bold text-charcoal tabular-nums">
+                  <span className="absolute -top-1 -right-1 grid size-5 place-items-center rounded-full bg-latte text-[11px] font-bold text-espresso tabular-nums">
                     {i + 1}
                   </span>
                 </m.span>
@@ -158,23 +158,23 @@ export function Journey({ steps, goal }: { steps: Step[]; goal: Step }) {
           <div className="flex h-24 items-center justify-center md:h-24 md:w-full">
             <span data-checkpoint aria-hidden className="relative z-10 block">
               <m.span
-                className="absolute -inset-5 rounded-full bg-yolk-light blur-xl"
+                className="absolute -inset-5 rounded-full bg-latte blur-xl"
                 initial={false}
                 animate={done ? { opacity: [0, 0.85, 0.4], scale: [0.6, 1.25, 1.05] } : { opacity: 0, scale: 0.6 }}
                 transition={{ duration: 1.1, ease: "easeOut" }}
               />
               <m.svg
                 viewBox="0 0 80 100"
-                className="relative block h-24 w-auto drop-shadow-[0_6px_10px_oklch(0.25_0.012_50/0.35)] md:h-28"
+                className="relative block h-24 w-auto drop-shadow-[0_6px_10px_oklch(0.245_0.034_46/0.35)] md:h-28"
                 style={{ originY: 0.9 }}
                 initial={false}
                 animate={done ? { rotate: [0, -9, 7, -4, 2, 0] } : { rotate: 0 }}
                 transition={{ duration: 0.9, ease: "easeInOut" }}
               >
                 <path d="M40 3C61 3 77 38 77 62C77 84 61 97 40 97C19 97 3 84 3 62C3 38 19 3 40 3Z" fill="var(--cream)" />
-                <path d="M62 70C60 84 50 90 40 90" stroke="var(--cream-deep)" strokeWidth={6} strokeLinecap="round" />
+                <path d="M62 70C60 84 50 90 40 90" stroke="var(--oat)" strokeWidth={6} strokeLinecap="round" />
                 <ellipse cx="28" cy="34" rx="7" ry="11" transform="rotate(-20 28 34)" fill="white" fillOpacity={0.7} />
-                <text x="40" y="70" textAnchor="middle" className="wordmark" fontSize="22" fill="var(--egg-red)">
+                <text x="40" y="70" textAnchor="middle" className="wordmark" fontSize="22" fill="var(--espresso)">
                   Eggy
                 </text>
               </m.svg>

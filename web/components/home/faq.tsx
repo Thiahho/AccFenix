@@ -17,7 +17,7 @@ export function Faq() {
   return (
     <section id="preguntas" className="anchor-section mx-auto max-w-3xl px-4 py-12 md:py-16" aria-labelledby="faq-titulo">
       <Reveal>
-        <span className="eyebrow text-yolk">Preguntas</span>
+        <span className="eyebrow text-caramel-deep">Preguntas</span>
         <h2 id="faq-titulo" className="title-display mt-3 text-4xl sm:text-5xl">
           Preguntas frecuentes
         </h2>
