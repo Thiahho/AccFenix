@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { toast, Toaster } from "sonner";
-import { ArrowRightIcon, CheckIcon, XIcon } from "lucide-react";
+import { ArrowRightIcon, CheckIcon, CupSodaIcon, XIcon } from "lucide-react";
 import { availabilityLabel, type Availability } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/stores/cart";
@@ -62,7 +62,7 @@ function OrderToast({ id, item }: { id: string | number; item: AddedItem }) {
               {item.imageUrl ? (
                 <Image src={item.imageUrl} alt="" fill sizes="68px" className="object-cover" />
               ) : (
-                <EggMark />
+                <CupSodaIcon aria-hidden className="size-8 text-espresso" />
               )}
             </div>
             <span className="absolute -right-1.5 -bottom-1.5 grid size-6.5 place-items-center rounded-full border-[3px] border-espresso bg-status-ok-strong text-white">
@@ -125,7 +125,3 @@ function OrderToast({ id, item }: { id: string | number; item: AddedItem }) {
   );
 }
 
-/** Drawn egg, for products that have no photo yet. */
-function EggMark() {
-  return <span aria-hidden className="block h-11 w-8.5 rounded-[50%_50%_50%_50%/60%_60%_40%_40%] bg-[radial-gradient(circle_at_35%_30%,#fffaf0,#efdcbc_70%,#d9bf95)] shadow-[0_4px_10px_rgb(0_0_0/0.18)]" />;
-}

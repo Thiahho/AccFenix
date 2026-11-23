@@ -3,10 +3,7 @@
 /** Placeholder para datos que todavía no entregó el cliente (dirección, horario, alias, costo y mínimo de envío). */
 export const PENDING = "*****";
 
-export const heroImage = {
-  src: "/eggy-hero.png",
-  alt: "Vaso de café frío con hielo",
-};
+export const heroCupLabel = "Vaso de café frío con hielo";
 
 /** Handwritten phrases taken from the printed ColdCup menu. */
 export const accentPhrases = {

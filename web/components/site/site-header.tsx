@@ -81,7 +81,7 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
           <div
             ref={navRef}
             style={stagger(1)}
-            className="header-item header-capsule pointer-events-auto relative flex items-center rounded-full bg-espresso/80 p-1 text-sm backdrop-blur-md"
+            className="header-item header-capsule pointer-events-auto relative flex items-center rounded-full bg-espresso/95 p-1 text-sm backdrop-blur-md"
           >
             <span ref={indicatorRef} aria-hidden data-visible="false" className="nav-indicator absolute top-1/2 left-0 h-8 rounded-full bg-caramel-deep" />
             {desktopSections.map((s) => (
@@ -103,7 +103,7 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
 
         <div
           style={stagger(2)}
-          className="header-item header-capsule pointer-events-auto ml-auto flex items-center gap-1 rounded-full bg-espresso/85 p-1 md:ml-0"
+          className="header-item header-capsule pointer-events-auto ml-auto flex items-center gap-1 rounded-full bg-espresso/95 p-1 md:ml-0"
         >
           <CartButton />
           <MobileMenu categories={categories} />

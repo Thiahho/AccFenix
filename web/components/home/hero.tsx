@@ -1,10 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowDownIcon, CupSodaIcon, MessageCircleIcon, TruckIcon } from "lucide-react";
-import { HeroEgg } from "@/components/home/hero-egg";
+import { HeroCup } from "@/components/home/hero-cup";
+import { IcedCup } from "@/components/home/iced-cup";
 import { CoffeeStains, MenuPill, ScriptAccent } from "@/components/site/menu-card";
 import { Wordmark } from "@/components/site/wordmark";
-import { accentPhrases, heroImage } from "@/lib/home-content";
+import { accentPhrases, heroCupLabel } from "@/lib/home-content";
 import { whatsappUrl } from "@/lib/whatsapp";
 
 /** ColdCup cover: menu-paper background with coffee-stain corners, the cup and the two main actions. */
@@ -59,11 +59,9 @@ export function Hero({ phone }: { phone: string }) {
           <ScriptAccent className="hero-in -rotate-2 text-3xl [--hero-i:4] sm:text-4xl">{accentPhrases.hero}</ScriptAccent>
         </div>
 
-        <HeroEgg>
-          <div className="relative aspect-[293/379] overflow-hidden rounded-[2rem] border border-caramel/70">
-            <Image src={heroImage.src} alt={heroImage.alt} fill priority sizes="(min-width: 640px) 320px, 80vw" className="object-cover" />
-          </div>
-        </HeroEgg>
+        <HeroCup>
+          <IcedCup label={heroCupLabel} className="mx-auto max-w-56 sm:max-w-64" />
+        </HeroCup>
       </div>
     </section>
   );

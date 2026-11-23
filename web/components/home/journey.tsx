@@ -4,6 +4,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import * as m from "motion/react-m";
 import { useMotionValueEvent, useScroll, useSpring } from "motion/react";
 import { ClipboardListIcon, MessageCircleIcon, TruckIcon } from "lucide-react";
+import { IcedCup } from "@/components/home/iced-cup";
 import { usePrefersReducedMotion } from "@/components/motion/use-reduced-motion";
 import { buildTrail, reachedStops, type Point, type Trail } from "@/lib/journey";
 import type { Step } from "@/lib/home-content";
@@ -21,8 +22,8 @@ const pop = { duration: 0.45, ease: [0.22, 1, 0.36, 1] } as const;
 
 /**
  * "Cómo trabajamos" as a route: a trail draws itself while the section scrolls, lighting each checkpoint (Pedís,
- * Confirmamos, Entregamos) as it passes, with a small truck riding the tip, and ends at the egg. The steps stay a
- * plain ordered list in the DOM; the trail, truck and egg art are decorative. Reduced motion: everything drawn and lit.
+ * Confirmamos, Entregamos) as it passes, with a small truck riding the tip, and ends at the cup. The steps stay a
+ * plain ordered list in the DOM; the trail, truck and cup art are decorative. Reduced motion: everything drawn and lit.
  */
 export function Journey({ steps, goal }: { steps: Step[]; goal: Step }) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -163,21 +164,15 @@ export function Journey({ steps, goal }: { steps: Step[]; goal: Step }) {
                 animate={done ? { opacity: [0, 0.85, 0.4], scale: [0.6, 1.25, 1.05] } : { opacity: 0, scale: 0.6 }}
                 transition={{ duration: 1.1, ease: "easeOut" }}
               />
-              <m.svg
-                viewBox="0 0 80 100"
-                className="relative block h-24 w-auto drop-shadow-[0_6px_10px_oklch(0.245_0.034_46/0.35)] md:h-28"
+              <m.span
+                className="relative grid size-24 place-items-center rounded-full bg-cream p-3 md:size-28"
                 style={{ originY: 0.9 }}
                 initial={false}
                 animate={done ? { rotate: [0, -9, 7, -4, 2, 0] } : { rotate: 0 }}
                 transition={{ duration: 0.9, ease: "easeInOut" }}
               >
-                <path d="M40 3C61 3 77 38 77 62C77 84 61 97 40 97C19 97 3 84 3 62C3 38 19 3 40 3Z" fill="var(--cream)" />
-                <path d="M62 70C60 84 50 90 40 90" stroke="var(--oat)" strokeWidth={6} strokeLinecap="round" />
-                <ellipse cx="28" cy="34" rx="7" ry="11" transform="rotate(-20 28 34)" fill="white" fillOpacity={0.7} />
-                <text x="40" y="70" textAnchor="middle" className="wordmark" fontSize="22" fill="var(--espresso)">
-                  Eggy
-                </text>
-              </m.svg>
+                <IcedCup className="h-full w-auto" />
+              </m.span>
             </span>
           </div>
           <m.div
