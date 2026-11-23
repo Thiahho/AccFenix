@@ -50,6 +50,7 @@ From `web/`: `npm run lint`, `npm test`, `npm run build`, plus repeated full bro
 - T3: the official codemod moved `middleware.ts` to `proxy.ts`; the matcher and logic are unchanged. All 66 cases keep their security headers and the admin flow is identical. Differences are framework behavior: `/catalogo/no-existe` now returns 404 instead of 200, `/admin` with a cookie now returns a server 307 to `/admin/productos`, and RSC requests without `_rsc` are redirected to add it.
 - T4: a rebuilt Playwright harness alternated runs between production builds of 15.5.29 (`793f887`) and 16.4.6 (`dc2b94f`) with a mock API. #418 appeared in 20/80 control runs and 0/62 completed candidate runs. In the two batches without a server failure it was 13/48 versus 0/48. Delivery and pickup payloads, admin login, and security headers on `/`, `/pedido`, and `/admin/login` match. Lint has 0 errors and 1 warning, 157 tests pass, and the build passes.
 - T4 open items: the candidate `next start` process stopped once at run 14 of the second batch, failing 18 runs. Its output was not captured, so the cause is unknown; a 32-run rerun with server logging had no crash. Node 20 (CI) was not run locally; the checks used Node 24.15.0. Real fonts, the real API, and real Mercado Pago were not exercised.
+- Native review: the range from `793f887` to `d9eabd5` assessed as medium risk and due (`slice_budget_reached`). The user declined review for this candidate.
 
 ## Next step
 
