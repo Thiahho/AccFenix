@@ -1,13 +1,13 @@
-const block = "rounded-md bg-muted motion-safe:animate-pulse";
+const block = "bg-muted motion-safe:animate-pulse";
 
 /** Mirrors the product page: gallery on the left, name, description and option groups on the right. */
 export default function Loading() {
   return (
-    <div aria-busy="true" className="mx-auto max-w-6xl px-4 py-10">
+    <div aria-busy="true" className="px-4 py-8 sm:px-6 lg:px-8">
       <span className="sr-only" role="status">Cargando…</span>
       <div aria-hidden className="grid gap-8 md:grid-cols-2 md:gap-12">
         <div>
-          <div className={`${block} aspect-square w-full rounded-lg`} />
+          <div className={`${block} aspect-square w-full`} />
           <div className="mt-3 grid grid-cols-5 gap-2">
             {Array.from({ length: 4 }, (_, i) => (
               <div key={i} className={`${block} aspect-square`} />

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { IcedCup } from "@/components/home/iced-cup";
 import { ProductImage } from "@/components/site/product-image";
+import { Starburst } from "@/components/site/starburst";
 import type { Media } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -14,12 +16,20 @@ export function ProductGallery({ media, name, selectedValueIds }: { media: Media
   const [activeId, setActiveId] = useState<number | null>(null);
   const active = items.find((m) => m.id === activeId) ?? items[0];
 
-  if (!active) return <ProductImage src={null} alt={name} />;
+  if (!active) {
+    return (
+      <div className="relative grid aspect-square place-items-center overflow-hidden bg-latte">
+        <Starburst spikes={18} fill="var(--ivory)" className="absolute inset-[4%]" />
+        <IcedCup className="relative w-[34%]" />
+        <span className="sr-only">Sin foto</span>
+      </div>
+    );
+  }
 
   return (
     <div>
       {active.type === "video" ? (
-        <video src={active.url} controls playsInline className="aspect-square w-full rounded-lg bg-black object-contain" />
+        <video src={active.url} controls playsInline className="aspect-square w-full bg-black object-contain" />
       ) : (
         <ProductImage src={active.url} alt={name} priority sizes="(min-width: 768px) 50vw, 100vw" />
       )}
@@ -33,7 +43,7 @@ export function ProductGallery({ media, name, selectedValueIds }: { media: Media
                 aria-label={`Ver ${m.type === "video" ? "video" : "foto"} ${i + 1} de ${name}`}
                 aria-current={m.id === active.id}
                 className={cn(
-                  "relative block aspect-square w-full overflow-hidden rounded-md border-2 bg-brand-soft",
+                  "relative block aspect-square w-full overflow-hidden border-2 bg-brand-soft",
                   m.id === active.id ? "border-brand" : "border-transparent hover:border-brand/40",
                 )}
               >

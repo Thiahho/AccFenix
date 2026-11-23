@@ -52,8 +52,8 @@ export function CheckoutStep({ index, title, status, summary, focusOnOpen, onOpe
         aria-disabled={locked || undefined}
         aria-labelledby={headingId}
         className={cn(
-          "rounded-xl border transition-[background-color,border-color,opacity] duration-300",
-          active ? "border-espresso bg-background" : "border-dashed border-caramel/60 bg-muted/30",
+          "border-2 border-espresso transition-[background-color,opacity] duration-200",
+          active ? "bg-background" : "bg-oat",
           locked && "opacity-55",
         )}
       >
@@ -61,13 +61,13 @@ export function CheckoutStep({ index, title, status, summary, focusOnOpen, onOpe
           <span
             aria-hidden
             className={cn(
-              "grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold tabular-nums transition-colors duration-300",
-              status === "done" ? "bg-brand text-brand-foreground" : active ? "bg-espresso text-cream" : "border bg-background text-muted-foreground",
+              "grid size-7 shrink-0 place-items-center text-xs font-extrabold tabular-nums transition-colors duration-200",
+              status === "done" ? "bg-brand text-brand-foreground" : active ? "bg-espresso text-cream" : "border-2 bg-background text-espresso",
             )}
           >
             {status === "done" ? <CheckIcon className="size-4" /> : index + 1}
           </span>
-          <h3 id={headingId} className={cn("font-semibold", !active && "text-sm")}>
+          <h3 id={headingId} className={cn("font-bold", !active && "text-sm")}>
             {title}
           </h3>
           {locked && <LockIcon aria-hidden className="ml-auto size-3.5 text-muted-foreground" />}
@@ -76,7 +76,7 @@ export function CheckoutStep({ index, title, status, summary, focusOnOpen, onOpe
               type="button"
               onClick={onOpen}
               aria-label={`Editar: ${title}${summary ? ` (${summary})` : ""}`}
-              className="ml-auto inline-flex min-h-9 max-w-[55%] min-w-0 items-center gap-1.5 rounded-full bg-background px-3 text-sm text-foreground ring-1 ring-border transition-colors hover:ring-brand focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              className="ml-auto inline-flex min-h-11 max-w-[55%] min-w-0 items-center gap-1.5 border-2 border-espresso bg-background px-3 text-sm text-foreground transition-colors hover:bg-latte"
             >
               <span className="truncate">{summary || "Completar"}</span>
               <PencilIcon aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
@@ -120,9 +120,9 @@ export function CheckoutProgress({ current, total }: { current: number; total: n
       </p>
       <div aria-hidden className="grid gap-1" style={{ gridTemplateColumns: `repeat(${total}, minmax(0, 1fr))` }}>
         {Array.from({ length: total }, (_, i) => (
-          <span key={i} className="h-1 overflow-hidden rounded-full bg-muted">
+          <span key={i} className="h-1.5 overflow-hidden bg-latte">
             <m.span
-              className="block h-full origin-left rounded-full bg-brand"
+              className="block h-full origin-left bg-espresso"
               initial={false}
               animate={{ scaleX: i <= current ? 1 : 0 }}
               transition={{ duration: 0.3, ease: "easeOut" }}

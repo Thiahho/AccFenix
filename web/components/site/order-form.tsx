@@ -169,7 +169,7 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
         </Field>
 
         {failure && (
-          <div role="alert" className="space-y-3 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+          <div role="alert" className="space-y-3 border-2 border-destructive bg-destructive/10 p-3 text-sm text-destructive">
             <p>{failure.error}</p>
 
           </div>
@@ -186,8 +186,8 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
   };
 
   return (
-    <aside className="h-fit space-y-4 rounded-2xl border border-caramel/70 bg-card/60 p-4 sm:p-6 lg:sticky lg:top-24">
-      <h2 className="text-lg font-semibold">Tus datos</h2>
+    <aside className="h-fit space-y-4 border-[3px] border-espresso bg-cream p-4 sm:p-6 lg:sticky lg:top-24">
+      <h2 className="poster-display text-4xl">Tus datos</h2>
       <CheckoutProgress current={active} total={orderSteps.length} />
       <form onSubmit={onFormSubmit} noValidate>
         <ol className="space-y-2">
@@ -216,7 +216,7 @@ function OrderRecap({ items }: { items: CartItem[] }) {
   const units = totalUnits(items);
   const totals = cartTotals(items);
   return (
-    <div className="rounded-lg bg-brand-soft/50 p-3 text-sm">
+    <div className="border-2 border-espresso bg-ivory p-3 text-sm">
       <ul className="space-y-2">
         {items.map((i) => (
           // Name over the stepper on phones (two lines at most), side by side from `sm` up.
@@ -235,7 +235,7 @@ function OrderRecap({ items }: { items: CartItem[] }) {
           </li>
         ))}
       </ul>
-      <p className="mt-2 flex justify-between gap-3 border-t border-dashed border-caramel/60 pt-2 font-semibold">
+      <p className="mt-2 flex justify-between gap-3 border-t-2 border-espresso pt-2 font-bold">
         <span>{unitsLabel(units)}</span>
         <span className="tabular-nums">
           {totals.pricedLines === 0 ? "A cotizar" : `${totals.partial ? "Parcial " : ""}${formatArs(totals.total)}`}

@@ -15,15 +15,15 @@ export default function OpengraphImage() {
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
+          alignItems: "flex-start",
+          justifyContent: "flex-end",
           background: "#4A2C1D",
           color: "#FAF5EA",
           padding: 80,
-          textAlign: "center",
+          borderBottom: "24px solid #D9C2A5",
         }}
       >
-        <div style={{ fontSize: 160, fontWeight: 700, letterSpacing: -4 }}>{site.name}</div>
+        <div style={{ fontSize: 190, fontWeight: 700, letterSpacing: -6, textTransform: "uppercase" }}>{site.name}</div>
         <div style={{ marginTop: 24, fontSize: 56, opacity: 0.9 }}>{site.tagline}</div>
       </div>
     ),

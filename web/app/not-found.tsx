@@ -1,26 +1,26 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CupSodaIcon } from "lucide-react";
-import { MenuPill } from "@/components/site/menu-card";
+import { PosterHead } from "@/components/site/poster-head";
 import { posterClass } from "@/components/site/poster-fonts";
-import { Button } from "@/components/ui/button";
-import { site } from "@/lib/site";
+import { Wordmark } from "@/components/site/wordmark";
 
 export const metadata: Metadata = { title: "Página no encontrada", robots: { index: false } };
 
 // Rendered for URLs that match no route group, so it cannot rely on the public layout (header, footer).
 export default function RootNotFound() {
   return (
-    <main className={`${posterClass} mx-auto flex min-h-dvh max-w-xl flex-col items-center justify-center px-4 py-24 text-center`}>
-      <Link href="/" className="text-lg font-bold text-brand">
-        {site.name}
+    <main className={`${posterClass} flex min-h-dvh flex-col`}>
+      <Link href="/" className="poster-focus-inset flex h-16 items-center border-b-[3px] border-espresso px-4 sm:px-6 lg:px-8">
+        <Wordmark className="text-3xl" />
       </Link>
-      <MenuPill icon={CupSodaIcon} tone="caramel" className="mt-10">404</MenuPill>
-      <h1 className="title-display mt-4 text-4xl sm:text-5xl">No encontramos esta página</h1>
-      <p className="mt-3 text-muted-foreground">Revisá la dirección o volvé al inicio para ver el catálogo.</p>
-      <Button asChild className="mt-8 rounded-full px-5">
-        <Link href="/">Volver al inicio</Link>
-      </Button>
+      <PosterHead label="404" title="No encontramos esta página">
+        Revisá la dirección o volvé al inicio para ver el catálogo.
+      </PosterHead>
+      <div className="px-4 py-8 sm:px-6 lg:px-8">
+        <Link href="/" className="poster-cta w-full bg-espresso text-ivory hover:bg-roast sm:w-fit">
+          Volver al inicio
+        </Link>
+      </div>
     </main>
   );
 }

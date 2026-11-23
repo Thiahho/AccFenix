@@ -1,14 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Montserrat, Yellowtail } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import { baseOpenGraph } from "@/components/seo/open-graph";
 import { Toaster } from "@/components/ui/sonner";
 import { site } from "@/lib/site";
 import "./globals.css";
 
-// Montserrat is a variable font: one file covers body text and the 700–900 display titles.
+// Admin typeface. The public design loads its own fonts in components/site/poster-fonts.ts.
 const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"] });
-// Yellowtail is used by the wordmark and script accent phrases.
-const yellowtail = Yellowtail({ variable: "--font-yellowtail", subsets: ["latin"], weight: "400" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -31,7 +29,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es-AR" className={`${montserrat.variable} ${yellowtail.variable}`}>
+    <html lang="es-AR" className={montserrat.variable}>
       <body className="antialiased">
         {children}
         <Toaster position="top-center" />

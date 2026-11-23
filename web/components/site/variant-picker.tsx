@@ -52,28 +52,30 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
   }
 
   return (
-    <div className="grid gap-8 md:grid-cols-2 md:gap-12">
-      <ProductGallery media={product.media} name={product.name} selectedValueIds={selectedValueIds} />
+    <div className="grid border-b-[3px] border-espresso md:grid-cols-2">
+      <div className="border-b-[3px] border-espresso md:border-r-[3px] md:border-b-0">
+        <ProductGallery media={product.media} name={product.name} selectedValueIds={selectedValueIds} />
+      </div>
 
-      <div>
-        <p className="eyebrow text-caramel-deep">
-          <Link href={`/catalogo/${product.category.slug}`} className="hover:text-foreground">{product.category.name}</Link>
+      <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+        <p className="poster-label text-caramel-deep">
+          <Link href={`/catalogo/${product.category.slug}`} className="inline-flex min-h-11 items-center underline-offset-4 hover:text-foreground hover:underline">{product.category.name}</Link>
         </p>
-        <h1 className="title-display mt-3 text-4xl sm:text-5xl">{product.name}</h1>
+        <h1 className="poster-display mt-1 text-5xl leading-[1.2] text-balance sm:text-6xl sm:leading-[1.2] xl:text-7xl xl:leading-[1.2]">{product.name}</h1>
         {product.description && <p className="mt-3 text-muted-foreground">{product.description}</p>}
 
         <div className="mt-8 space-y-6">
           {attributes.map((attr) => (
             <fieldset key={attr.id}>
-              <legend className="mb-2 text-sm font-medium">
+              <legend className="poster-label mb-2">
                 {attr.name}
                 {selection[attr.id] !== undefined && (
-                  <span className="ml-2 font-normal text-muted-foreground">
+                  <span className="ml-2 font-semibold tracking-normal text-muted-foreground normal-case">
                     {attr.values.find((v) => v.id === selection[attr.id])?.label}
                   </span>
                 )}
               </legend>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-2">
                 {attr.values.map((value) => {
                   const selected = selection[attr.id] === value.id;
                   const enabled = isValueEnabled(variants, selection, attr.id, value.id);
@@ -85,14 +87,13 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
                       disabled={!enabled}
                       onClick={() => setSelection((s) => select(attributes, variants, s, attr.id, value.id))}
                       className={cn(
-                        "inline-flex h-11 min-w-12 items-center justify-center gap-2 rounded-md border px-3 text-sm tabular-nums transition-colors",
-                        "focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-                        selected ? "border-brand bg-brand text-brand-foreground" : "hover:border-brand/60 hover:bg-brand-soft",
-                        !enabled && "cursor-not-allowed opacity-40 line-through hover:border-border hover:bg-transparent",
+                        "inline-flex min-h-12 min-w-12 items-center justify-center gap-2 border-2 border-espresso px-3 text-sm font-bold tabular-nums transition-colors",
+                        selected ? "bg-espresso text-ivory" : "hover:bg-oat",
+                        !enabled && "cursor-not-allowed opacity-40 line-through hover:bg-transparent",
                       )}
                     >
                       {value.colorHex && (
-                        <span aria-hidden className="size-4 rounded-full border border-black/10" style={{ backgroundColor: value.colorHex }} />
+                        <span aria-hidden className="size-4 border border-black/20" style={{ backgroundColor: value.colorHex }} />
                       )}
                       {value.label}
                     </button>
@@ -103,7 +104,7 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
           ))}
         </div>
 
-        <div className="mt-8 rounded-2xl border border-caramel/70 bg-card p-4">
+        <div className="mt-8 border-[3px] border-espresso bg-cream p-4">
           <div className="flex min-h-6 items-center justify-between gap-3 text-sm">
             {variant ? (
               <>
@@ -118,10 +119,10 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
           </div>
 
           {variant && (
-            <div className="mt-3 border-t pt-3">
+            <div className="mt-3 border-t-2 pt-3">
               <p className="flex items-baseline justify-between gap-3">
                 <span className="text-sm text-muted-foreground">Precio por unidad</span>
-                <span className="text-2xl font-semibold tabular-nums">
+                <span className="poster-price text-4xl">
                   {variant.retailPrice !== null ? formatArs(variant.retailPrice) : "Consultar"}
                 </span>
               </p>

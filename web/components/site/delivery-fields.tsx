@@ -31,7 +31,7 @@ export function DeliveryFields({ form, errors: e }: Props) {
                 <Label
                   key={o.value}
                   htmlFor={`entrega-${o.value}`}
-                  className="flex cursor-pointer items-center gap-2 rounded-md border p-3 font-normal has-data-[state=checked]:border-brand has-data-[state=checked]:bg-brand-soft"
+                  className="flex min-h-14 cursor-pointer items-center gap-2 border-2 border-espresso p-3 font-semibold leading-tight has-data-[state=checked]:bg-latte"
                 >
                   <RadioGroupItem id={`entrega-${o.value}`} value={o.value} />
                   {o.label}

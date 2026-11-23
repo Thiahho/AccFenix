@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CupSodaIcon, MessageCircleIcon } from "lucide-react";
+import { MessageCircleIcon } from "lucide-react";
 import { ClearCartOnPaid, PaymentPoller } from "@/components/site/checkout-follow-up";
-import { MenuPill } from "@/components/site/menu-card";
+import { PosterHead } from "@/components/site/poster-head";
 import { Button } from "@/components/ui/button";
 import { api, baseUrl } from "@/lib/api";
 import type { OrderPayment } from "@/lib/orders/types";
@@ -21,7 +21,7 @@ async function paymentOf(number: number): Promise<OrderPayment | null> {
 }
 
 function Panel({ children }: { children: React.ReactNode }) {
-  return <div className="mx-auto mt-10 max-w-xl rounded-2xl border border-caramel/70 bg-card p-6 text-center sm:p-8">{children}</div>;
+  return <div className="mx-4 my-8 max-w-2xl border-[3px] border-espresso bg-cream p-6 sm:mx-6 sm:p-8 lg:mx-8">{children}</div>;
 }
 
 export default async function ThanksPage({ searchParams }: { searchParams: Promise<{ pedido?: string }> }) {
@@ -34,9 +34,8 @@ export default async function ThanksPage({ searchParams }: { searchParams: Promi
   ]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <MenuPill icon={CupSodaIcon}>Pedido {valid ? `#${number}` : ""}</MenuPill>
-      <h1 className="title-display mt-4 text-4xl sm:text-5xl">¡Gracias!</h1>
+    <div>
+      <PosterHead label={`Pedido ${valid ? `#${number}` : ""}`} title="¡Gracias!" />
 
       {!valid && (
         <Panel>
@@ -48,8 +47,8 @@ export default async function ThanksPage({ searchParams }: { searchParams: Promi
       {valid && payment?.paymentStatus === "approved" && (
         <Panel>
           <ClearCartOnPaid />
-          <h2 className="text-xl font-semibold">Pago acreditado</h2>
-          <p className="mx-auto mt-2 max-w-md text-pretty text-muted-foreground">
+          <h2 className="poster-display text-4xl">Pago acreditado</h2>
+          <p className="mt-2 max-w-md text-pretty text-muted-foreground">
             Ya le llegó el pedido al local. Mandanos el comprobante por WhatsApp para coordinar el horario.
           </p>
           {settings.whatsappNumber ? (
@@ -67,8 +66,8 @@ export default async function ThanksPage({ searchParams }: { searchParams: Promi
       {valid && payment?.paymentStatus !== "approved" && payment && (
         <Panel>
           <PaymentPoller />
-          <h2 className="text-xl font-semibold">Estamos confirmando tu pago</h2>
-          <p className="mx-auto mt-2 max-w-md text-pretty text-muted-foreground">
+          <h2 className="poster-display text-4xl">Estamos confirmando tu pago</h2>
+          <p className="mt-2 max-w-md text-pretty text-muted-foreground">
             Mercado Pago todavía no nos confirmó el pago. Esta página se actualiza sola. Cuando se acredite, vas a ver el botón para enviar el comprobante.
           </p>
         </Panel>
@@ -76,8 +75,8 @@ export default async function ThanksPage({ searchParams }: { searchParams: Promi
 
       {valid && !payment && (
         <Panel>
-          <h2 className="text-xl font-semibold">No pudimos verificar el pago</h2>
-          <p className="mx-auto mt-2 max-w-md text-pretty text-muted-foreground">
+          <h2 className="poster-display text-4xl">No pudimos verificar el pago</h2>
+          <p className="mt-2 max-w-md text-pretty text-muted-foreground">
             Probá de nuevo en unos minutos. Si ya pagaste, escribinos por WhatsApp con el número de pedido.
           </p>
         </Panel>

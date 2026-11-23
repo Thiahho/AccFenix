@@ -84,7 +84,7 @@ export default async function ProductPage({ params }: Props) {
   const product = await load(slug);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
+    <div>
       <JsonLd data={productSchema(product)} />
       <VariantPicker product={product} />
     </div>

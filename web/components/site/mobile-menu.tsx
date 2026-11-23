@@ -78,7 +78,7 @@ export function MobileMenu({ categories }: Props) {
         ref={buttonRef}
         type="button"
         variant="ghost"
-        className="poster-focus-inset h-full w-14 rounded-none border-l-[3px] border-l-espresso hover:bg-oat aria-expanded:bg-oat"
+        className="poster-focus-inset h-full w-14 rounded-none border-y-0 border-r-0 border-l-[3px] border-l-espresso hover:bg-oat aria-expanded:bg-oat"
         size="icon"
         aria-label={open ? "Cerrar menú" : "Abrir menú"}
         aria-expanded={open}
