@@ -27,7 +27,7 @@ Design audit approved by the user on 2026-11-23 (points 1 and 2 plus secondary i
 ## Tasks
 
 - [x] T1: Remove the customer type step from checkout. Route: delegated direct (2+ non-trivial files).
-- [ ] T2: Make the price board the single home ordering path and keep product cards on category pages. Route: delegated direct.
+- [x] T2: Make the price board the single home ordering path and keep product cards on category pages. Route: delegated direct.
 - [ ] T3: Add price and action to catalog cards and address the repeated description. Route: delegated direct.
 - [ ] T4: Fix active navigation, `1 unidades`, and the phone cart row. Route: delegated direct.
 
@@ -47,7 +47,8 @@ Test-first applies to pure logic (step sequence, payload, pluralization, active 
 
 ## Progress
 - T1 done in 2b862c6. The API requires `customerType`, so the web always sends `personal`; legacy `cliente` values are stripped. The checkout form was never persisted (only the cart is). Tests changed: order, request, response, steps. lint, 146 tests and build pass; browser checks run at the end.
+- T2 done in 901fd56. Removed `OrderCatalog` and `ProductCard` (no other users, no dedicated tests). Nav and board CTA no longer use `#catalogo`; the anchor is kept on the board for old links. WhatsApp stays in the hero, floating button and product page. Test added to nav.
 
 ## Next step
 
-Start T2.
+Start T3.
