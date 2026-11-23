@@ -133,10 +133,11 @@ public class PublicEndpointsTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Public_settings_expose_default_threshold()
+    public async Task Public_settings_expose_the_default_whatsapp_number()
     {
         var json = await _client.GetFromJsonAsync<JsonElement>("/api/settings/public");
 
-        json.GetProperty("wholesaleThreshold").GetInt32().Should().Be(100);
+        json.GetProperty("whatsappNumber").GetString().Should().Be("5491122692061");
+        json.TryGetProperty("wholesaleThreshold", out _).Should().BeFalse();
     }
 }

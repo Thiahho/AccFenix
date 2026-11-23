@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace AccFenix.Api.Tests;
 
 /// <summary>
-/// Retail and wholesale prices per variant. Every test works on its own throwaway product and removes it,
+/// Retail prices per variant. Every test works on its own throwaway product and removes it,
 /// so the seeded catalog other tests rely on stays untouched.
 /// </summary>
 [Collection(ApiCollection.Name)]
@@ -79,7 +79,7 @@ public class VariantPriceTests(ApiFactory factory)
     [InlineData("PUT", "/api/admin/products/1/variants/prices")]
     public async Task Price_endpoints_require_a_token(string method, string url)
     {
-        var body = JsonContent.Create(new { retailPrice = 10, prices = new[] { new { variantId = 1, retailPrice = 10, wholesalePrice = 5 } } });
+        var body = JsonContent.Create(new { retailPrice = 10, prices = new[] { new { variantId = 1, retailPrice = 10 } } });
 
         var res = await _public.SendAsync(new HttpRequestMessage(new HttpMethod(method), url) { Content = body });
 
@@ -99,7 +99,7 @@ public class VariantPriceTests(ApiFactory factory)
         foreach (var variant in adminVariants.Concat(publicVariants))
         {
             Price(variant, "retailPrice").Should().BeNull();
-            Price(variant, "wholesalePrice").Should().BeNull();
+            variant.TryGetProperty("wholesalePrice", out _).Should().BeFalse();
         }
     }
 
@@ -109,28 +109,24 @@ public class VariantPriceTests(ApiFactory factory)
         await using var product = await CreateProduct();
         var variantId = (await product.VariantIds())[0];
 
-        var patch = await product.Admin.PatchAsJsonAsync($"/api/admin/variants/{variantId}", new { retailPrice = 1500.50m, wholesalePrice = 1200m });
+        var patch = await product.Admin.PatchAsJsonAsync($"/api/admin/variants/{variantId}", new { retailPrice = 1500.50m });
         patch.StatusCode.Should().Be(HttpStatusCode.OK, await patch.Content.ReadAsStringAsync());
         var patched = await patch.Content.ReadFromJsonAsync<JsonElement>();
         Price(patched, "retailPrice").Should().Be(1500.50m);
-        Price(patched, "wholesalePrice").Should().Be(1200m);
 
         var stored = (await product.AdminVariants()).Single(v => v.GetProperty("id").GetInt32() == variantId);
         Price(stored, "retailPrice").Should().Be(1500.50m);
-        Price(stored, "wholesalePrice").Should().Be(1200m);
 
         // Omitted price fields leave the stored prices unchanged.
         (await product.Admin.PatchAsJsonAsync($"/api/admin/variants/{variantId}", new { availability = "aPedido" })).EnsureSuccessStatusCode();
         stored = (await product.AdminVariants()).Single(v => v.GetProperty("id").GetInt32() == variantId);
         stored.GetProperty("availability").GetString().Should().Be("aPedido");
         Price(stored, "retailPrice").Should().Be(1500.50m);
-        Price(stored, "wholesalePrice").Should().Be(1200m);
 
-        // An explicit null clears only that price.
+        // An explicit null clears the price.
         (await product.Admin.PatchAsJsonAsync($"/api/admin/variants/{variantId}", new { retailPrice = (decimal?)null })).EnsureSuccessStatusCode();
         stored = (await product.AdminVariants()).Single(v => v.GetProperty("id").GetInt32() == variantId);
         Price(stored, "retailPrice").Should().BeNull();
-        Price(stored, "wholesalePrice").Should().Be(1200m);
     }
 
     [Fact]
@@ -140,16 +136,14 @@ public class VariantPriceTests(ApiFactory factory)
         var ids = await product.VariantIds();
 
         var res = await product.SetPrices(
-            new { variantId = ids[0], retailPrice = (decimal?)99999999.99m, wholesalePrice = (decimal?)0m },
-            new { variantId = ids[1], retailPrice = (decimal?)250m, wholesalePrice = (decimal?)null });
+            new { variantId = ids[0], retailPrice = (decimal?)99999999.99m },
+            new { variantId = ids[1], retailPrice = (decimal?)250m });
 
         res.StatusCode.Should().Be(HttpStatusCode.OK, await res.Content.ReadAsStringAsync());
         (await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("updated").GetInt32().Should().Be(2);
         var variants = (await product.AdminVariants()).ToDictionary(v => v.GetProperty("id").GetInt32());
         Price(variants[ids[0]], "retailPrice").Should().Be(99999999.99m);
-        Price(variants[ids[0]], "wholesalePrice").Should().Be(0m);
         Price(variants[ids[1]], "retailPrice").Should().Be(250m);
-        Price(variants[ids[1]], "wholesalePrice").Should().BeNull();
     }
 
     [Fact]
@@ -161,14 +155,13 @@ public class VariantPriceTests(ApiFactory factory)
         var foreignId = (await other.VariantIds())[0];
 
         var res = await product.SetPrices(
-            new { variantId = ownId, retailPrice = 10m, wholesalePrice = 5m },
-            new { variantId = foreignId, retailPrice = 10m, wholesalePrice = 5m });
+            new { variantId = ownId, retailPrice = 10m },
+            new { variantId = foreignId, retailPrice = 10m });
 
         res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         foreach (var variant in (await product.AdminVariants()).Concat(await other.AdminVariants()))
         {
             Price(variant, "retailPrice").Should().BeNull();
-            Price(variant, "wholesalePrice").Should().BeNull();
         }
     }
 
@@ -180,11 +173,11 @@ public class VariantPriceTests(ApiFactory factory)
 
         (await product.SetPrices()).StatusCode.Should().Be(HttpStatusCode.BadRequest, "an empty list is not a price update");
         (await product.SetPrices(
-            new { variantId = id, retailPrice = 10m, wholesalePrice = 5m },
-            new { variantId = id, retailPrice = 20m, wholesalePrice = 5m })).StatusCode.Should().Be(HttpStatusCode.BadRequest, "a variant may appear only once");
-        (await product.SetPrices(new { variantId = 0, retailPrice = 10m, wholesalePrice = 5m })).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            new { variantId = id, retailPrice = 10m },
+            new { variantId = id, retailPrice = 20m })).StatusCode.Should().Be(HttpStatusCode.BadRequest, "a variant may appear only once");
+        (await product.SetPrices(new { variantId = 0, retailPrice = 10m })).StatusCode.Should().Be(HttpStatusCode.BadRequest);
         (await product.Admin.PutAsJsonAsync("/api/admin/products/999999/variants/prices",
-            new { prices = new[] { new { variantId = id, retailPrice = 10m, wholesalePrice = 5m } } })).StatusCode.Should().Be(HttpStatusCode.NotFound);
+            new { prices = new[] { new { variantId = id, retailPrice = 10m } } })).StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Theory]
@@ -198,15 +191,11 @@ public class VariantPriceTests(ApiFactory factory)
         static StringContent Json(string body) => new(body, System.Text.Encoding.UTF8, "application/json");
 
         (await product.Admin.PatchAsync($"/api/admin/variants/{id}", Json($$"""{"retailPrice":{{price}}}"""))).StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await product.Admin.PatchAsync($"/api/admin/variants/{id}", Json($$"""{"wholesalePrice":{{price}}}"""))).StatusCode.Should().Be(HttpStatusCode.BadRequest);
         (await product.Admin.PutAsync($"/api/admin/products/{product.ProductId}/variants/prices",
-            Json($$"""{"prices":[{"variantId":{{id}},"retailPrice":{{price}},"wholesalePrice":1}]}"""))).StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await product.Admin.PutAsync($"/api/admin/products/{product.ProductId}/variants/prices",
-            Json($$"""{"prices":[{"variantId":{{id}},"retailPrice":1,"wholesalePrice":{{price}}}]}"""))).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            Json($$"""{"prices":[{"variantId":{{id}},"retailPrice":{{price}}}]}"""))).StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var stored = (await product.AdminVariants()).Single(v => v.GetProperty("id").GetInt32() == id);
         Price(stored, "retailPrice").Should().BeNull();
-        Price(stored, "wholesalePrice").Should().BeNull();
     }
 
     [Fact]
@@ -214,7 +203,7 @@ public class VariantPriceTests(ApiFactory factory)
     {
         await using var product = await CreateProduct();
         var ids = await product.VariantIds();
-        (await product.SetPrices(new { variantId = ids[0], retailPrice = 320.5m, wholesalePrice = 280m })).EnsureSuccessStatusCode();
+        (await product.SetPrices(new { variantId = ids[0], retailPrice = 320.5m })).EnsureSuccessStatusCode();
 
         var detail = await _public.GetFromJsonAsync<JsonElement>($"/api/products/{product.Slug}");
         var status = await _public.GetFromJsonAsync<JsonElement>($"/api/variants?ids={ids[0]},{ids[1]}");
@@ -223,9 +212,9 @@ public class VariantPriceTests(ApiFactory factory)
         {
             var byId = variants.EnumerateArray().ToDictionary(v => v.GetProperty("id").GetInt32());
             Price(byId[ids[0]], "retailPrice").Should().Be(320.5m);
-            Price(byId[ids[0]], "wholesalePrice").Should().Be(280m);
+            byId[ids[0]].TryGetProperty("wholesalePrice", out _).Should().BeFalse();
             Price(byId[ids[1]], "retailPrice").Should().BeNull();
-            Price(byId[ids[1]], "wholesalePrice").Should().BeNull();
+            byId[ids[1]].TryGetProperty("wholesalePrice", out _).Should().BeFalse();
         }
     }
 
@@ -235,8 +224,8 @@ public class VariantPriceTests(ApiFactory factory)
         await using var product = await CreateProduct();
         var ids = await product.VariantIds();
         (await product.SetPrices(
-            new { variantId = ids[0], retailPrice = 100m, wholesalePrice = 80m },
-            new { variantId = ids[1], retailPrice = 200m, wholesalePrice = 160m })).EnsureSuccessStatusCode();
+            new { variantId = ids[0], retailPrice = 100m },
+            new { variantId = ids[1], retailPrice = 200m })).EnsureSuccessStatusCode();
 
         // Dropping a value deactivates its variant; restoring it reactivates the same row.
         (await product.SetAllowedValues(product.FirstValueId)).EnsureSuccessStatusCode();
@@ -248,8 +237,6 @@ public class VariantPriceTests(ApiFactory factory)
         variants.Should().HaveCount(2);
         variants.Values.Should().OnlyContain(v => v.GetProperty("isActive").GetBoolean());
         Price(variants[ids[0]], "retailPrice").Should().Be(100m);
-        Price(variants[ids[0]], "wholesalePrice").Should().Be(80m);
         Price(variants[ids[1]], "retailPrice").Should().Be(200m);
-        Price(variants[ids[1]], "wholesalePrice").Should().Be(160m);
     }
 }

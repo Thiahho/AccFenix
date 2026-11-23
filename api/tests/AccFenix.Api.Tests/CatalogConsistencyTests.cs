@@ -149,7 +149,7 @@ public class CatalogConsistencyTests(ApiFactory factory)
         try
         {
             var variantId = (await Product(admin, productId)).GetProperty("variants")[0].GetProperty("id").GetInt32();
-            (await admin.PatchAsJsonAsync($"/api/admin/variants/{variantId}", new { retailPrice = 1500m, wholesalePrice = 1200m }))
+            (await admin.PatchAsJsonAsync($"/api/admin/variants/{variantId}", new { retailPrice = 1500m }))
                 .StatusCode.Should().Be(HttpStatusCode.OK);
 
             var visible = (await _public.GetFromJsonAsync<JsonElement>($"/api/variants?ids={variantId}"))[0];
@@ -163,7 +163,7 @@ public class CatalogConsistencyTests(ApiFactory factory)
             var hidden = (await _public.GetFromJsonAsync<JsonElement>($"/api/variants?ids={variantId}"))[0];
             hidden.GetProperty("isActive").GetBoolean().Should().BeFalse();
             hidden.GetProperty("retailPrice").ValueKind.Should().Be(JsonValueKind.Null);
-            hidden.GetProperty("wholesalePrice").ValueKind.Should().Be(JsonValueKind.Null);
+            hidden.TryGetProperty("wholesalePrice", out _).Should().BeFalse();
         }
         finally
         {

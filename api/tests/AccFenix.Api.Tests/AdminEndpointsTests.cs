@@ -142,17 +142,17 @@ public class AdminEndpointsTests(ApiFactory factory)
     {
         var client = await AdminClient();
 
-        (await client.PutAsJsonAsync("/api/admin/settings", new { whatsappNumber = "abc", wholesaleThreshold = 0 }))
+        (await client.PutAsJsonAsync("/api/admin/settings", new { whatsappNumber = "abc" }))
             .StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        (await client.PutAsJsonAsync("/api/admin/settings", new { whatsappNumber = "+54 9 11 2233-4455", wholesaleThreshold = 50 }))
+        (await client.PutAsJsonAsync("/api/admin/settings", new { whatsappNumber = "+54 9 11 2233-4455" }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
         var pub = await factory.CreateClient().GetFromJsonAsync<JsonElement>("/api/settings/public");
         pub.GetProperty("whatsappNumber").GetString().Should().Be("5491122334455");
-        pub.GetProperty("wholesaleThreshold").GetInt32().Should().Be(50);
+        pub.TryGetProperty("wholesaleThreshold", out _).Should().BeFalse();
 
         // Restaurar el valor por defecto para no afectar otros tests
-        (await client.PutAsJsonAsync("/api/admin/settings", new { whatsappNumber = "5491122692061", wholesaleThreshold = 100 })).EnsureSuccessStatusCode();
+        (await client.PutAsJsonAsync("/api/admin/settings", new { whatsappNumber = "5491122692061" })).EnsureSuccessStatusCode();
     }
 
     [Fact]

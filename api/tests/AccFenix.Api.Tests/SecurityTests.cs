@@ -253,7 +253,7 @@ public class SecurityTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [InlineData("POST", "/api/admin/products/1/media", """{"url":"https://evil.example/x.jpg","publicId":"x","type":"image"}""")]
     [InlineData("POST", "/api/admin/products/1/media", """{"url":"https://res.cloudinary.com/demo/image/upload/v1/accfenix/a.jpg","publicId":"accfenix/otro","type":"image"}""")]
     [InlineData("PATCH", "/api/admin/media/1", """{"sortOrder":99999999}""")]
-    [InlineData("PUT", "/api/admin/settings", """{"whatsappNumber":"11 2233-4455; DROP","wholesaleThreshold":100}""")]
+    [InlineData("PUT", "/api/admin/settings", """{"whatsappNumber":"11 2233-4455; DROP"}""")]
     public async Task Admin_rejects_invalid_input(string method, string url, string body)
     {
         var res = await AdminClient().SendAsync(new HttpRequestMessage(new HttpMethod(method), url) { Content = Json(body) });
