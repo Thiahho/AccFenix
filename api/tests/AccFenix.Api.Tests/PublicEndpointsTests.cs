@@ -15,17 +15,18 @@ public class PublicEndpointsTests(ApiFactory factory)
     readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
-    public async Task Categories_lists_the_seeded_egg_catalog()
+    public async Task Categories_lists_the_seeded_menu()
     {
         var json = await _client.GetFromJsonAsync<JsonElement>("/api/categories");
 
         json.EnumerateArray().Select(c => c.GetProperty("slug").GetString())
-            .Should().Equal("huevos");
+            .Should().Equal("cafes-clasicos", "especiales", "refrescantes", "extras");
     }
 
     [Theory]
-    [InlineData("huevos-n-1", 3)]   // Cajón, Medio cajón, Maple
-    [InlineData("huevos-n-2", 3)]
+    [InlineData("latte-frio", 2)]   // Chico, Grande
+    [InlineData("limonada-menta-y-jengibre", 2)]
+    [InlineData("extra-leche-de-almendras", 2)]
     public async Task Product_detail_exposes_one_variant_per_combination(string slug, int expected)
     {
         var json = await _client.GetFromJsonAsync<JsonElement>($"/api/products/{slug}");
@@ -45,25 +46,46 @@ public class PublicEndpointsTests(ApiFactory factory)
 
         byCategory.Should().BeEquivalentTo(new Dictionary<string, int>
         {
-            ["huevos"] = 6, // 2 productos × 3 presentaciones
+            ["cafes-clasicos"] = 10, // 5 products × 2 sizes
+            ["especiales"] = 8,      // 4 products × 2 sizes
+            ["refrescantes"] = 2,    // 1 product × 2 sizes
+            ["extras"] = 4,          // 2 products × 2 sizes
         });
     }
 
     [Theory]
-    [InlineData("huevos-n-1", "Cajón", 60000)]
-    [InlineData("huevos-n-1", "Medio cajón", 35000)]
-    [InlineData("huevos-n-1", "Maple", 6500)]
-    [InlineData("huevos-n-2", "Cajón", 55000)]
-    [InlineData("huevos-n-2", "Medio cajón", 27000)]
-    [InlineData("huevos-n-2", "Maple", 5500)]
-    public async Task Seeded_egg_variants_carry_retail_prices(string productSlug, string presentation, decimal retail)
+    [InlineData("latte-frio", "Chico (500 cc)", 4500)]
+    [InlineData("latte-frio", "Grande (700 cc)", 6000)]
+    [InlineData("latte-frio-vainilla", "Chico (500 cc)", 5000)]
+    [InlineData("latte-frio-vainilla", "Grande (700 cc)", 6500)]
+    [InlineData("latte-frio-caramel", "Chico (500 cc)", 5500)]
+    [InlineData("latte-frio-caramel", "Grande (700 cc)", 7000)]
+    [InlineData("latte-frio-mocca", "Chico (500 cc)", 5000)]
+    [InlineData("latte-frio-mocca", "Grande (700 cc)", 6500)]
+    [InlineData("iced-americano", "Chico (500 cc)", 4000)]
+    [InlineData("iced-americano", "Grande (700 cc)", 5500)]
+    [InlineData("latte-frio-oreo", "Chico (500 cc)", 7500)]
+    [InlineData("latte-frio-oreo", "Grande (700 cc)", 8200)]
+    [InlineData("latte-frio-tiramisu", "Chico (500 cc)", 7900)]
+    [InlineData("latte-frio-tiramisu", "Grande (700 cc)", 8500)]
+    [InlineData("latte-frio-banana-cream", "Chico (500 cc)", 7500)]
+    [InlineData("latte-frio-banana-cream", "Grande (700 cc)", 8200)]
+    [InlineData("latte-frio-cookies-and-cream", "Chico (500 cc)", 7500)]
+    [InlineData("latte-frio-cookies-and-cream", "Grande (700 cc)", 8500)]
+    [InlineData("limonada-menta-y-jengibre", "Chico (500 cc)", 5500)]
+    [InlineData("limonada-menta-y-jengibre", "Grande (700 cc)", 6500)]
+    [InlineData("extra-leche-de-almendras", "Chico (500 cc)", 1000)]
+    [InlineData("extra-leche-de-almendras", "Grande (700 cc)", 1000)]
+    [InlineData("extra-leche-deslactosada", "Chico (500 cc)", 500)]
+    [InlineData("extra-leche-deslactosada", "Grande (700 cc)", 500)]
+    public async Task Seeded_menu_variants_carry_retail_prices(string productSlug, string size, decimal retail)
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var variant = await db.Variants
             .Where(v => v.IsActive && v.Product.Slug == productSlug)
-            .SingleAsync(v => v.Values.Any(x => x.AttributeValue.Label == presentation));
+            .SingleAsync(v => v.Values.Any(x => x.AttributeValue.Label == size));
 
         variant.RetailPrice.Should().Be(retail);
     }
@@ -82,7 +104,7 @@ public class PublicEndpointsTests(ApiFactory factory)
 
     [Theory]
     [InlineData("/api/categories")]
-    [InlineData("/api/categories/huevos/products")]
+    [InlineData("/api/categories/cafes-clasicos/products")]
     public async Task Catalog_listings_do_not_mention_prices(string url)
     {
         var body = await _client.GetStringAsync(url);
@@ -101,7 +123,7 @@ public class PublicEndpointsTests(ApiFactory factory)
     [Fact]
     public async Task Variants_status_returns_availability_for_requested_ids()
     {
-        var product = await _client.GetFromJsonAsync<JsonElement>("/api/products/huevos-n-1");
+        var product = await _client.GetFromJsonAsync<JsonElement>("/api/products/latte-frio");
         var ids = product.GetProperty("variants").EnumerateArray().Take(2).Select(v => v.GetProperty("id").GetInt32()).ToList();
 
         var json = await _client.GetFromJsonAsync<JsonElement>($"/api/variants?ids={string.Join(',', ids)},999999");
