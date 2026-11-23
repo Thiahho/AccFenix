@@ -11,7 +11,7 @@ type Props = { params: Promise<{ slug: string }> };
 /*
  * No slugs are prerendered (the build must not depend on the API), but declaring the params makes the route ISR:
  * each product renders on its first request and is then cached with the fetch revalidation (60 s, "catalog" tag).
- * Admin catalog writes call revalidateTag("catalog"); the no-store live variant check runs only in the order view
+ * Admin catalog writes call updateTag("catalog"); the no-store live variant check runs only in the order view
  * (client side), so nothing here forces dynamic rendering.
  */
 export const dynamicParams = true;

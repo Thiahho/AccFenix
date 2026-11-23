@@ -28,7 +28,7 @@ The user chose to upgrade Next on 2026-11-23. 15.5.29 is the newest 15.x release
 ## Tasks
 
 - [x] T1: Verify the fix is present and capture a behavior baseline. Route: delegated direct (evidence prepares the write).
-- [ ] T2: Upgrade Next, React, and required tooling. Route: delegated direct.
+- [x] T2: Upgrade Next, React, and required tooling. Route: delegated direct.
 - [ ] T3: Apply required code migrations and confirm behavior parity. Route: delegated direct.
 - [ ] T4: Re-run the hydration A/B evidence and full purchase flow. Route: delegated direct.
 
@@ -46,7 +46,8 @@ From `web/`: `npm run lint`, `npm test`, `npm run build`, plus repeated full bro
 
 - T1 gate passed. `next@16.4.6` vendors `react-dom` `19.3.0-canary-278794d7-20261002`; its production client `replaySuspendedUnitOfWork` (host component case) restores `nextHydratableInstance` from `fiber.stateNode`, the same logic as `react-dom` 19.3.1 and the A/B patch.
 - T1 baseline on the 15.5.29 production build with the mock API: 66 header and redirect cases (anonymous, cookie, RSC) and the admin flow. Anonymous `/admin*` redirects 307 to `/admin/login`; login sets an httpOnly, Secure, Lax cookie; an expired token lands on `/admin/login?expirada=1`; the first public request after an admin write shows the new value. There are no API rewrites, so `/api/*` is 404 from Next.
+- T2: `next` and `eslint-config-next` are pinned at 16.4.6; `react` stays 19.1.0 because the peer range allows it and the App Router bundles the vendored React (its version string is in the built chunks). ESLint uses the native flat exports, `revalidateTag("catalog")` became `updateTag("catalog")` to keep read-your-writes, and Next rewrote `tsconfig.json` (`jsx: react-jsx`). Lint, tests, typecheck, and build pass.
 
 ## Next step
 
-Start T2.
+Start T3: migrate `middleware.ts` to `proxy.ts` and confirm parity.

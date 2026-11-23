@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import type { Availability } from "@/lib/api";
 import { adminFetch, AdminApiError, clearSession, login } from "@/lib/admin/session";
@@ -10,7 +10,7 @@ import type { ActionResult, VariantPrices } from "@/lib/admin/types";
 async function run<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
   try {
     const data = await fn();
-    revalidateTag("catalog");
+    updateTag("catalog");
     revalidatePath("/admin", "layout");
     return { ok: true, data };
   } catch (e) {
