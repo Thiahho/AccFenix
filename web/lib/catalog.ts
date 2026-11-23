@@ -1,4 +1,4 @@
-import { api, type Availability, type ProductDetail } from "@/lib/api";
+import { api, type Availability, type ProductDetail, type Variant } from "@/lib/api";
 import type { CartItem } from "@/stores/cart";
 
 /**
@@ -81,4 +81,26 @@ export function priceRowCartItem(
     availability: variant.availability,
     retailPrice: variant.retailPrice,
   };
+}
+
+const normalizedText = (text: string | null) => text?.trim().toLocaleLowerCase("es") ?? "";
+
+/** Clears descriptions that add nothing to a listing: the same text on several products, or the category's own text. */
+export function uniqueDescriptions<P extends { description: string | null }>(products: P[], categoryDescription: string | null): P[] {
+  const uses = new Map<string, number>();
+  for (const { description } of products) {
+    const key = normalizedText(description);
+    uses.set(key, (uses.get(key) ?? 0) + 1);
+  }
+  const category = normalizedText(categoryDescription);
+  return products.map((p) => {
+    const key = normalizedText(p.description);
+    return key && (key === category || (uses.get(key) ?? 0) > 1) ? { ...p, description: null } : p;
+  });
+}
+
+/** Variants of each product by slug, for listings whose API response has no prices. A failed product is simply absent. */
+export async function loadVariantsBySlug(slugs: string[]): Promise<Map<string, Variant[]>> {
+  const results = await Promise.allSettled(slugs.map((slug) => api.product(slug)));
+  return new Map(results.flatMap((r) => (r.status === "fulfilled" ? [[r.value.slug, r.value.variants] as const] : [])));
 }

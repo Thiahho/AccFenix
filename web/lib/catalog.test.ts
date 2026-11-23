@@ -1,6 +1,24 @@
 import { describe, expect, it } from "vitest";
 import type { ProductAttribute, Variant } from "@/lib/api";
-import { priceRowCartItem, priceRows, splitProductName } from "@/lib/catalog";
+import { priceRowCartItem, priceRows, splitProductName, uniqueDescriptions } from "@/lib/catalog";
+
+describe("uniqueDescriptions", () => {
+  const product = (id: number, description: string | null) => ({ id, description });
+
+  it("keeps descriptions that say something specific", () => {
+    const products = [product(1, "Con vainilla."), product(2, "Con caramelo.")];
+    expect(uniqueDescriptions(products, null)).toEqual(products);
+  });
+
+  it("hides a description repeated across products, ignoring case and spaces", () => {
+    const result = uniqueDescriptions([product(1, "Café frío."), product(2, " café FRÍO. "), product(3, "Con caramelo.")], null);
+    expect(result.map((p) => p.description)).toEqual([null, null, "Con caramelo."]);
+  });
+
+  it("hides a description that only repeats the category", () => {
+    expect(uniqueDescriptions([product(1, "Cafés fríos")], "cafés fríos")[0].description).toBeNull();
+  });
+});
 
 describe("splitProductName", () => {
   it("splits the grade off for the board heading", () => {

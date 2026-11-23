@@ -1,5 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { cartTotals, formatArs, lineSubtotal, parsePriceInput, priceToInput, unitPrice } from "@/lib/pricing";
+import { cartTotals, formatArs, lineSubtotal, parsePriceInput, priceFromText, priceToInput, unitPrice } from "@/lib/pricing";
+
+describe("priceFromText", () => {
+  it("shows the plain price when every size costs the same", () => {
+    expect(priceFromText([1000, 1000])).toBe(formatArs(1000));
+    expect(priceFromText([4500])).toBe(formatArs(4500));
+  });
+
+  it("shows the lowest price as a starting price when sizes differ", () => {
+    expect(priceFromText([6000, 4500])).toBe(`Desde ${formatArs(4500)}`);
+  });
+
+  it("counts an unpriced size as a difference", () => {
+    expect(priceFromText([null, 4500])).toBe(`Desde ${formatArs(4500)}`);
+  });
+
+  it("asks to consult when nothing is priced", () => {
+    expect(priceFromText([null, null])).toBe("Consultar");
+    expect(priceFromText([])).toBe("Consultar");
+  });
+});
 
 describe("unitPrice and lineSubtotal", () => {
   it("uses the retail price, or null when the line has none", () => {

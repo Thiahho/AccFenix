@@ -66,3 +66,12 @@ export function parsePriceInput(raw: string): PriceInput {
 export function priceToInput(price: number | null | undefined) {
   return price == null ? "" : arsNumber.format(price);
 }
+
+/** Price of a product with several sizes: the plain price, "Desde" the lowest when they differ, or "Consultar". */
+export function priceFromText(prices: (number | null)[]): string {
+  const priced = prices.filter((p): p is number => p !== null);
+  if (priced.length === 0) return "Consultar";
+  const lowest = Math.min(...priced);
+  const same = priced.length === prices.length && priced.every((p) => p === lowest);
+  return same ? formatArs(lowest) : `Desde ${formatArs(lowest)}`;
+}
