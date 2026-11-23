@@ -879,21 +879,6 @@ public class OrderTests(ApiFactory factory)
         (await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}")).GetProperty("address").GetString().Should().Be("Av. Siempre Viva 742");
     }
 
-    [Fact]
-    public async Task Location_update_enforces_the_creation_length_limits()
-    {
-        await using var product = await CreateProduct();
-        var id = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
-
-        var tooLong = await PatchLocation(product.Admin, id, new { locality = new string('a', OrderLimits.Locality + 1), address = new string('b', OrderLimits.Address + 1) });
-        tooLong.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var errors = (await tooLong.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors");
-        errors.EnumerateObject().Select(e => e.Name).Should().Contain(new[] { "Locality", "Address" });
-
-        var atLimit = await PatchLocation(product.Admin, id, new { locality = new string('a', OrderLimits.Locality), address = new string('b', OrderLimits.Address) });
-        atLimit.StatusCode.Should().Be(HttpStatusCode.OK, await atLimit.Content.ReadAsStringAsync());
-    }
-
     // ---- Privacy and security ----
 
     [Theory]

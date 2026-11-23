@@ -66,7 +66,6 @@ public class PublicEndpointsTests(ApiFactory factory)
             .SingleAsync(v => v.Values.Any(x => x.AttributeValue.Label == presentation));
 
         variant.RetailPrice.Should().Be(retail);
-        variant.WholesalePrice.Should().BeNull();
     }
 
     [Fact]

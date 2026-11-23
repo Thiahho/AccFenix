@@ -47,24 +47,21 @@ public class DatabaseConstraintTests(ApiFactory factory)
 
     async Task ExpectAccepted(Func<AppDbContext, Task> write) => (await Attempt(write)).Should().BeNull();
 
-    static Order BuenosAiresOrder() => new()
+    static Order DeliveryOrder() => new()
     {
         CreatedAt = DateTime.UtcNow,
         CustomerName = "Test",
-        Phone = "1100000000",
-        Zone = DeliveryZone.BuenosAires,
-        Locality = "CABA",
+        Fulfillment = Fulfillment.Delivery,
+        TimeSlot = "Hoy 18 a 18:30",
         Address = "Calle 123",
     };
 
-    static Order OtherProvinceOrder() => new()
+    static Order PickupOrder() => new()
     {
         CreatedAt = DateTime.UtcNow,
         CustomerName = "Test",
-        Phone = "1100000000",
-        Zone = DeliveryZone.OtherProvince,
-        Province = "Córdoba",
-        Carrier = "Andreani",
+        Fulfillment = Fulfillment.Pickup,
+        TimeSlot = "Hoy 18 a 18:30",
     };
 
     static OrderItem Item(int quantity = 1, decimal? unitPrice = 10m, decimal? subtotal = 10m) => new()
@@ -83,11 +80,10 @@ public class DatabaseConstraintTests(ApiFactory factory)
         return db.SaveChangesAsync();
     };
 
-    static Func<AppDbContext, Task> SetVariantPrices(decimal? retail, decimal? wholesale) => async db =>
+    static Func<AppDbContext, Task> SetVariantPrice(decimal? retail) => async db =>
     {
         var variant = await db.Variants.OrderBy(v => v.Id).FirstAsync();
         variant.RetailPrice = retail;
-        variant.WholesalePrice = wholesale;
         await db.SaveChangesAsync();
     };
 
@@ -100,55 +96,53 @@ public class DatabaseConstraintTests(ApiFactory factory)
     // ---- Variants ----
 
     [Theory]
-    [InlineData(-0.01, null, "CK_Variants_RetailPrice")]
-    [InlineData(100_000_000.0, null, "CK_Variants_RetailPrice")]
-    [InlineData(null, -0.01, "CK_Variants_WholesalePrice")]
-    [InlineData(null, 100_000_000.0, "CK_Variants_WholesalePrice")]
-    public Task Variant_prices_out_of_range_are_rejected(double? retail, double? wholesale, string constraint) =>
-        ExpectViolation(constraint, SetVariantPrices((decimal?)retail, (decimal?)wholesale));
+    [InlineData(-0.01, "CK_Variants_RetailPrice")]
+    [InlineData(100_000_000.0, "CK_Variants_RetailPrice")]
+    public Task Variant_prices_out_of_range_are_rejected(double retail, string constraint) =>
+        ExpectViolation(constraint, SetVariantPrice((decimal)retail));
 
     [Fact]
     public async Task Variant_prices_within_range_or_missing_are_accepted()
     {
-        await ExpectAccepted(SetVariantPrices(0m, 99_999_999.99m));
-        await ExpectAccepted(SetVariantPrices(null, null));
+        await ExpectAccepted(SetVariantPrice(0m));
+        await ExpectAccepted(SetVariantPrice(99_999_999.99m));
+        await ExpectAccepted(SetVariantPrice(null));
     }
 
     // ---- Orders ----
 
     [Fact]
-    public async Task Valid_orders_of_both_zones_are_accepted()
+    public async Task Valid_orders_of_both_fulfillments_are_accepted()
     {
-        await ExpectAccepted(Save(With(BuenosAiresOrder(), o => { o.Latitude = 90; o.Longitude = -180; o.Items = [Item(100_000, 0m, 0m)]; })));
-        await ExpectAccepted(Save(With(OtherProvinceOrder(), o => o.Items = [Item(unitPrice: null, subtotal: null)])));
-        await ExpectAccepted(Save(With(BuenosAiresOrder(), o => o.CustomerType = CustomerType.Business)));
+        await ExpectAccepted(Save(With(DeliveryOrder(), o => { o.Latitude = 90; o.Longitude = -180; o.Items = [Item(100_000, 0m, 0m)]; })));
+        await ExpectAccepted(Save(With(PickupOrder(), o => o.Items = [Item(unitPrice: null, subtotal: null)])));
+        await ExpectAccepted(Save(With(DeliveryOrder(), o => o.CustomerType = CustomerType.Business)));
         // The phone is optional: the customer writes from their own WhatsApp.
-        await ExpectAccepted(Save(With(OtherProvinceOrder(), o => o.Phone = null)));
+        await ExpectAccepted(Save(With(PickupOrder(), o => o.Phone = null)));
+        // An approved payment needs its date, and the date comes with it.
+        await ExpectAccepted(Save(With(PickupOrder(), o => { o.PaymentStatus = PaymentStatus.Approved; o.PaidAt = DateTime.UtcNow; })));
     }
 
     public static TheoryData<string, Func<Order>> InvalidOrders => new()
     {
-        { "CK_Orders_CustomerType", () => With(BuenosAiresOrder(), o => o.CustomerType = (CustomerType)2) },
-        { "CK_Orders_CustomerType", () => With(BuenosAiresOrder(), o => o.CustomerType = (CustomerType)(-1)) },
-        { "CK_Orders_Status", () => With(BuenosAiresOrder(), o => o.Status = (OrderStatus)5) },
-        { "CK_Orders_Status", () => With(BuenosAiresOrder(), o => o.Status = (OrderStatus)(-1)) },
-        { "CK_Orders_Zone", () => With(BuenosAiresOrder(), o => o.Zone = (DeliveryZone)2) },
-        { "CK_Orders_Total", () => With(BuenosAiresOrder(), o => o.Total = -0.01m) },
-        { "CK_Orders_Coordinates", () => With(BuenosAiresOrder(), o => o.Latitude = 10) },
-        { "CK_Orders_Coordinates", () => With(BuenosAiresOrder(), o => o.Longitude = 10) },
-        { "CK_Orders_Latitude", () => With(BuenosAiresOrder(), o => { o.Latitude = 90.5; o.Longitude = 0; }) },
-        { "CK_Orders_Latitude", () => With(BuenosAiresOrder(), o => { o.Latitude = -90.5; o.Longitude = 0; }) },
-        { "CK_Orders_Longitude", () => With(BuenosAiresOrder(), o => { o.Latitude = 0; o.Longitude = 180.5; }) },
-        { "CK_Orders_Longitude", () => With(BuenosAiresOrder(), o => { o.Latitude = 0; o.Longitude = -180.5; }) },
-        { "CK_Orders_ZoneFields", () => With(BuenosAiresOrder(), o => o.Locality = null) },
-        { "CK_Orders_ZoneFields", () => With(BuenosAiresOrder(), o => o.Address = null) },
-        { "CK_Orders_ZoneFields", () => With(BuenosAiresOrder(), o => o.Province = "Córdoba") },
-        { "CK_Orders_ZoneFields", () => With(BuenosAiresOrder(), o => o.Carrier = "Andreani") },
-        { "CK_Orders_ZoneFields", () => With(OtherProvinceOrder(), o => o.Province = null) },
-        { "CK_Orders_ZoneFields", () => With(OtherProvinceOrder(), o => o.Carrier = null) },
-        { "CK_Orders_ZoneFields", () => With(OtherProvinceOrder(), o => o.Locality = "CABA") },
-        { "CK_Orders_ZoneFields", () => With(OtherProvinceOrder(), o => o.Address = "Calle 123") },
-        { "CK_Orders_ZoneFields", () => With(OtherProvinceOrder(), o => { o.Latitude = 0; o.Longitude = 0; }) },
+        { "CK_Orders_CustomerType", () => With(DeliveryOrder(), o => o.CustomerType = (CustomerType)2) },
+        { "CK_Orders_CustomerType", () => With(DeliveryOrder(), o => o.CustomerType = (CustomerType)(-1)) },
+        { "CK_Orders_Status", () => With(DeliveryOrder(), o => o.Status = (OrderStatus)5) },
+        { "CK_Orders_Status", () => With(DeliveryOrder(), o => o.Status = (OrderStatus)(-1)) },
+        { "CK_Orders_Fulfillment", () => With(DeliveryOrder(), o => o.Fulfillment = (Fulfillment)2) },
+        { "CK_Orders_PaymentStatus", () => With(PickupOrder(), o => o.PaymentStatus = (PaymentStatus)3) },
+        { "CK_Orders_PaidAt", () => With(PickupOrder(), o => o.PaymentStatus = PaymentStatus.Approved) },
+        { "CK_Orders_PaidAt", () => With(PickupOrder(), o => o.PaidAt = DateTime.UtcNow) },
+        { "CK_Orders_Total", () => With(DeliveryOrder(), o => o.Total = -0.01m) },
+        { "CK_Orders_Coordinates", () => With(DeliveryOrder(), o => o.Latitude = 10) },
+        { "CK_Orders_Coordinates", () => With(DeliveryOrder(), o => o.Longitude = 10) },
+        { "CK_Orders_Latitude", () => With(DeliveryOrder(), o => { o.Latitude = 90.5; o.Longitude = 0; }) },
+        { "CK_Orders_Latitude", () => With(DeliveryOrder(), o => { o.Latitude = -90.5; o.Longitude = 0; }) },
+        { "CK_Orders_Longitude", () => With(DeliveryOrder(), o => { o.Latitude = 0; o.Longitude = 180.5; }) },
+        { "CK_Orders_Longitude", () => With(DeliveryOrder(), o => { o.Latitude = 0; o.Longitude = -180.5; }) },
+        { "CK_Orders_FulfillmentAddress", () => With(DeliveryOrder(), o => o.Address = null) },
+        { "CK_Orders_FulfillmentAddress", () => With(PickupOrder(), o => o.Address = "Calle 123") },
+        { "CK_Orders_FulfillmentAddress", () => With(PickupOrder(), o => { o.Latitude = 0; o.Longitude = 0; }) },
     };
 
     [Theory]
@@ -157,9 +151,9 @@ public class DatabaseConstraintTests(ApiFactory factory)
 
     [Fact]
     public Task Order_number_must_be_positive() => ExpectViolation("CK_Orders_Number", db => db.Database.ExecuteSqlRawAsync("""
-        INSERT INTO "Orders" ("Number", "CreatedAt", "Status", "CustomerName", "Phone", "Zone", "Locality", "Address", "IsWholesale", "Total", "HasUnpricedItems")
+        INSERT INTO "Orders" ("Number", "CreatedAt", "Status", "CustomerType", "CustomerName", "Fulfillment", "TimeSlot", "Total", "HasUnpricedItems", "PaymentStatus")
         OVERRIDING SYSTEM VALUE
-        VALUES (0, now(), 0, 'Test', '1100000000', 0, 'CABA', 'Calle 123', false, 0, false)
+        VALUES (0, now(), 0, 0, 'Test', 1, 'Hoy 18 a 18:30', 0, false, 0)
         """));
 
     // ---- Order items ----
