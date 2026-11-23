@@ -73,7 +73,7 @@ Computed with the WCAG 2.x relative-luminance formula. Reference shades are unch
 - [x] T3: Apply it to checkout, result, not-found, header and footer surfaces. Route: delegated direct.
 - [x] T4: Remove remaining egg visuals where a static replacement is possible and report the rest. Route: delegated direct.
 
-- [ ] T5: Fix the price board review warnings (duplicate labels keep every variant reachable, labels differing inside parentheses stay distinct, 320px layout) with tests for the extracted pure logic. Route: delegated direct.
+- [x] T5: Fix the price board review warnings (duplicate labels keep every variant reachable, labels differing inside parentheses stay distinct, 320px layout) with tests for the extracted pure logic. Route: delegated direct.
 - [ ] T6: Remove the 3D egg intro and the crack sound, with dependencies used only by them. Route: delegated direct.
 
 ## Acceptance criteria
@@ -97,9 +97,11 @@ Test-first exception: visual styling has no meaningful deterministic RED; existi
 - T4 done: original CSS/SVG iced cup replaces the hero photo, journey egg, placeholders and toast mark; header capsules made more opaque. Checks: lint clean, 157/157 tests, build OK. Home, catalog and checkout screenshotted at 375px and 1280px against a local mock catalog, with no horizontal overflow or page errors. Commits `b5c0ee7` (file rename only; it does not build alone because a failed `git add` left out the rest) and `b1eec00`, which holds the T4 changes.
 - Left in place: 3D egg intro (`web/lib/intro`), crack sound on price clicks (`web/lib/crack-sound.ts`), unused `EGG.png` and `eggy-hero.png`, unused `splitProductName`, and the footer claim "Entregamos con camión propio".
 
+- T5 done (`050a5c0`): pure `price-board-model.ts` keeps every variant reachable, removes only the final parenthetical and keeps full labels on collisions; three-column cards stack the name in narrow containers; SVG clip id and disabled hover fixed. RED: 6 of 9 model tests failed on the extracted original logic; GREEN: 9/9. Checks: lint clean, 166/166 tests, build OK. Playwright with a local mock catalog at 320, 375 and 1280px: 16/16 prices with distinct names, no name/price overlap, no horizontal overflow, no console errors, and the repeated-label variant reaches the cart. `R3-dark-price-board-contrast` needs no change: `.dark` is never applied on the site.
+
 ## Next step
 
-Run T5 and T6. Still open: confirm the footer delivery wording and whether to delete the unused egg images.
+Run T6. Still open: confirm the footer delivery wording and whether to delete the unused egg images.
 
 ## Review status
 
