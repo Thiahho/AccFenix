@@ -3,7 +3,6 @@ import { Faq } from "@/components/home/faq";
 import { Hero } from "@/components/home/hero";
 import { HowWeWork } from "@/components/home/how-we-work";
 import { PriceBoard } from "@/components/home/price-board";
-import { NoScriptReveal } from "@/components/motion/reveal";
 import { JsonLd } from "@/components/seo/json-ld";
 import { api, type PublicSettings } from "@/lib/api";
 import { loadCatalogProducts } from "@/lib/catalog";
@@ -38,7 +37,6 @@ export default async function HomePage() {
   return (
     <>
       <JsonLd data={organization(settings.whatsappNumber)} />
-      <NoScriptReveal />
       <Hero />
       <PriceBoard products={products} />
       <HowWeWork />

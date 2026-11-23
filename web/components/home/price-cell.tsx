@@ -67,14 +67,14 @@ export function PriceCell({ item, imageUrl, productName, label, price, caption }
       onPointerLeave={(e) => e.pointerType === "mouse" && setActive(false)}
       onFocus={(e) => e.currentTarget.matches(":focus-visible") && setActive(true)}
       onBlur={() => setActive(false)}
-      className={`flex min-h-11 cursor-pointer touch-manipulation items-center justify-center gap-1 rounded-lg px-1 text-center transition-colors select-none enabled:hover:bg-espresso enabled:hover:text-ivory focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${caption ? "border border-latte px-3" : "w-full"}`}
+      className={`poster-focus-inset flex min-h-12 cursor-pointer touch-manipulation items-center justify-center gap-1.5 px-1 text-center transition-colors select-none enabled:hover:bg-espresso enabled:hover:text-ivory enabled:active:bg-caramel-deep enabled:active:text-ivory disabled:cursor-not-allowed disabled:opacity-50 ${caption ? "border-2 border-espresso px-3" : "w-full"}`}
     >
-      {caption && <span className="text-xs font-medium">{caption}</span>}
+      {caption && <span className="text-xs font-bold uppercase">{caption}</span>}
       <m.span variants={tag} initial={false} animate={state} className="inline-block">
         <m.span
           key={clicks}
           animate={clicks > 0 && !reduce ? shake : undefined}
-          className={`block font-heading font-extrabold whitespace-nowrap tabular-nums ${quoted ? "text-[11px]" : "text-sm sm:text-[15px]"}`}
+          className={`poster-price block whitespace-nowrap ${quoted ? "text-[13px]" : "text-lg sm:text-2xl"}`}
         >
           {price}
         </m.span>

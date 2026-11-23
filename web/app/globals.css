@@ -299,15 +299,6 @@ html {
   }
 }
 
-/* Truck riding the tip of the "Cómo trabajamos" trail (components/home/journey.tsx). */
-.journey-truck {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-.journey-truck[data-visible="true"] {
-  opacity: 1;
-}
-
 /*
  * Poster design for the public site. Everything hangs from `.poster`, set on the public layout and the root 404, so
  * admin keeps its fonts, radius and layout. Anton and Archivo are loaded by components/site/poster-fonts.ts only there.
@@ -399,6 +390,18 @@ html {
   /* The brand name spans the footer. */
   .poster-footer-name {
     font-size: clamp(4.5rem, 24vw, 22rem);
+    line-height: 1;
+  }
+  .poster-section-title {
+    font-size: clamp(3rem, 13vw, 7.5rem);
+    line-height: 1.04;
+  }
+  /* Menu prices: condensed and tabular, so the size columns line up. */
+  .poster-price {
+    font-family: var(--font-poster-display), Impact, sans-serif;
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.015em;
     line-height: 1;
   }
   /* Primary block action. */

@@ -1,8 +1,5 @@
-import { CircleHelpIcon } from "lucide-react";
 import { FaqItem } from "@/components/home/faq-item";
-import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import { JsonLd } from "@/components/seo/json-ld";
-import { MenuPill } from "@/components/site/menu-card";
 import { faqs } from "@/lib/home-content";
 
 export function Faq() {
@@ -17,20 +14,20 @@ export function Faq() {
   };
 
   return (
-    <section id="preguntas" className="anchor-section mx-auto max-w-3xl px-4 py-12 md:py-16" aria-labelledby="faq-titulo">
-      <Reveal>
-        <MenuPill as="span" icon={CircleHelpIcon}>Preguntas</MenuPill>
-        <h2 id="faq-titulo" className="title-display mt-4 text-4xl sm:text-5xl">
-          Preguntas frecuentes
-        </h2>
-      </Reveal>
-      <Stagger stagger={0.06} className="mt-8 divide-y divide-dashed divide-caramel/60 rounded-2xl border border-caramel/70 bg-card/70 px-4">
-        {faqs.map((f) => (
-          <StaggerItem key={f.question} y={10}>
-            <FaqItem question={f.question} answer={f.answer} />
-          </StaggerItem>
-        ))}
-      </Stagger>
+    <section id="preguntas" className="anchor-section bg-ivory" aria-labelledby="faq-titulo">
+      <div className="grid gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-8 lg:px-8 lg:py-16">
+        <div>
+          <p className="poster-label text-caramel-deep">Preguntas</p>
+          <h2 id="faq-titulo" className="poster-display poster-section-title mt-2 lg:text-6xl lg:leading-[1.15] xl:text-7xl xl:leading-[1.15]">
+            Preguntas frecuentes
+          </h2>
+        </div>
+        <div className="divide-y-2 divide-espresso border-y-[3px] border-espresso">
+          {faqs.map((f) => (
+            <FaqItem key={f.question} question={f.question} answer={f.answer} />
+          ))}
+        </div>
+      </div>
       <JsonLd data={jsonLd} />
     </section>
   );
