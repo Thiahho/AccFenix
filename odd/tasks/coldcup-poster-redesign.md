@@ -37,7 +37,7 @@ The user asked for a new design unlike Eggy and chose the "Poster cafe" directio
 
 - [x] T1: Add the poster type, shape, and stamp foundations scoped to the public site. Route: delegated direct (2+ non-trivial files).
 - [x] T2: Redesign header, footer, and hero. Route: delegated direct.
-- [ ] T3: Redesign the price board and remaining home sections. Route: delegated direct.
+- [x] T3: Redesign the price board and remaining home sections. Route: delegated direct.
 - [ ] T4: Apply the language to catalog, product, order, result, and not-found pages. Route: delegated direct.
 
 ## Acceptance criteria
@@ -55,7 +55,8 @@ Test-first exception: visual styling has no meaningful deterministic RED; existi
 ## Progress
 - T1: done in a91816a. Anton and Archivo load only in the public scope; lint, tests and build passed.
 - T2: done in 57adbee. Flat ruled header, full-bleed hero with headline and CTA in the first viewport at 320, 375 and 1280px; lint, tests and build passed.
+- T3: done in b085300. Full-width category bands with ruled size columns, numbered steps and a ruled FAQ; lint, tests and build passed.
 
 ## Next step
 
-Start T3.
+Start T4.
