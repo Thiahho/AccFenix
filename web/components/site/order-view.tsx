@@ -10,6 +10,7 @@ import { QtyStepper } from "@/components/site/qty-stepper";
 import { api } from "@/lib/api";
 import { useHydrated } from "@/lib/use-hydrated";
 import { cartTotals, formatArs, lineSubtotal, unitPrice } from "@/lib/pricing";
+import { unitsLabel } from "@/lib/qty";
 import { MAX_QTY, totalUnits, useCart } from "@/stores/cart";
 
 export function OrderView() {
@@ -51,7 +52,7 @@ export function OrderView() {
   const hasPrices = totals.pricedLines > 0;
 
   return (
-    <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_400px]">
+    <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
       <section aria-labelledby="productos">
         <h2 id="productos" className="sr-only">Productos</h2>
         {removedCount > 0 && (
@@ -69,8 +70,9 @@ export function OrderView() {
             const price = unitPrice(item);
             const subtotal = lineSubtotal(item);
             return (
-            <li key={item.variantId} className="flex flex-wrap items-center gap-4 p-4">
-              <div className="min-w-0 flex-1">
+            <li key={item.variantId} className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
+              {/* Full width on phones, so the size stays on one line above the controls. */}
+              <div className="w-full min-w-0 sm:w-auto sm:flex-1">
                 <Link href={`/producto/${item.productSlug}`} className="font-medium transition-colors hover:text-brand">
                   {item.productName}
                 </Link>
@@ -89,7 +91,7 @@ export function OrderView() {
                   <Trash2Icon />
                 </Button>
               </div>
-              <div className="w-full text-sm tabular-nums sm:w-36 sm:text-right">
+              <div className="ml-auto text-right text-sm tabular-nums sm:ml-0 sm:w-36">
                 {price !== null && subtotal !== null ? (
                   <>
                     <p className="font-medium">{formatArs(subtotal)}</p>
@@ -117,7 +119,7 @@ export function OrderView() {
         )}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
           <span className="text-muted-foreground">
-            {items.length} {items.length === 1 ? "producto" : "productos"} · <span className="tabular-nums">{units}</span> unidades
+            {items.length} {items.length === 1 ? "producto" : "productos"} · <span className="tabular-nums">{unitsLabel(units)}</span>
           </span>
         </div>
       </section>

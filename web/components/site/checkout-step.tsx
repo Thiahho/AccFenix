@@ -76,7 +76,7 @@ export function CheckoutStep({ index, title, status, summary, focusOnOpen, onOpe
               type="button"
               onClick={onOpen}
               aria-label={`Editar: ${title}${summary ? ` (${summary})` : ""}`}
-              className="ml-auto inline-flex min-h-9 max-w-[60%] items-center gap-1.5 rounded-full bg-background px-3 text-sm text-foreground ring-1 ring-border transition-colors hover:ring-brand focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              className="ml-auto inline-flex min-h-9 max-w-[55%] min-w-0 items-center gap-1.5 rounded-full bg-background px-3 text-sm text-foreground ring-1 ring-border transition-colors hover:ring-brand focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
             >
               <span className="truncate">{summary || "Completar"}</span>
               <PencilIcon aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />

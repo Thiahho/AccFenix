@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { CartButton } from "@/components/site/cart-button";
 import { MobileMenu } from "@/components/site/mobile-menu";
 import { Wordmark } from "@/components/site/wordmark";
-import { sectionLinks, useActiveSection, useHeaderCompact } from "@/lib/nav";
+import { categorySection, sectionLinks, useActiveSection, useHeaderCompact } from "@/lib/nav";
 import { site } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +39,7 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
     const indicator = indicatorRef.current;
     if (!nav || !indicator) return;
     const place = () => {
-      const link = active ? nav.querySelector<HTMLElement>(`[data-section="${active}"]`) : null;
+      const link = active ? nav.querySelector<HTMLElement>(`[data-section="${CSS.escape(active)}"]`) : null;
       if (!link || link.offsetWidth === 0) {
         indicator.dataset.visible = "false";
         return;
@@ -91,9 +91,9 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
             ))}
             {categories.length > 0 && <span aria-hidden className="mx-1.5 h-4 w-px bg-cream/25" />}
             {categories.map((c) => {
-              const href = `/catalogo/${c.slug}`;
+              const key = categorySection(c.slug);
               return (
-                <Link key={c.id} href={href} aria-current={pathname === href ? "page" : undefined} className={cn(linkClass, "[&[aria-current]]:text-latte")}>
+                <Link key={c.id} href={`/catalogo/${c.slug}`} data-section={key} aria-current={active === key ? "page" : undefined} className={linkClass}>
                   {c.name}
                 </Link>
               );

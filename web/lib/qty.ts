@@ -8,3 +8,8 @@ export function parseQty(text: string, max: number): number | null {
   const qty = Number(trimmed);
   return qty >= 1 ? Math.min(max, qty) : null;
 }
+
+/** "1 unidad", "2 unidades". */
+export function unitsLabel(units: number): string {
+  return `${units} ${units === 1 ? "unidad" : "unidades"}`;
+}

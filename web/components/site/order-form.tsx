@@ -15,6 +15,7 @@ import { orderSchema, type OrderForm } from "@/lib/order";
 import { unavailableResult, type SubmitOrderFailure } from "@/lib/orders/response";
 import { firstOpenStep, invalidSteps, orderSteps, stepFields, stepOfField, stepStatus, type StepId } from "@/lib/orders/steps";
 import { cartTotals, formatArs } from "@/lib/pricing";
+import { unitsLabel } from "@/lib/qty";
 import { QtyStepper } from "@/components/site/qty-stepper";
 import { MAX_QTY, totalUnits, useCart, type CartItem } from "@/stores/cart";
 
@@ -235,9 +236,7 @@ function OrderRecap({ items }: { items: CartItem[] }) {
         ))}
       </ul>
       <p className="mt-2 flex justify-between gap-3 border-t border-dashed border-caramel/60 pt-2 font-semibold">
-        <span>
-          {units} {units === 1 ? "unidad" : "unidades"}
-        </span>
+        <span>{unitsLabel(units)}</span>
         <span className="tabular-nums">
           {totals.pricedLines === 0 ? "A cotizar" : `${totals.partial ? "Parcial " : ""}${formatArs(totals.total)}`}
         </span>

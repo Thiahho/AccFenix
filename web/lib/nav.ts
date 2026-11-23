@@ -17,7 +17,16 @@ export function pickActiveSection(tops: { id: string; top: number | null }[], li
   return current;
 }
 
-/** Id de la sección visible: en la home sigue el scroll; en catálogo/producto marca "catalogo"; en el resto, ninguna. */
+/** Nav key of a category link. */
+export const categorySection = (slug: string) => `categoria:${slug}`;
+
+/** Nav key a route marks by itself: its category on a category page, nothing elsewhere. */
+export function routeSection(pathname: string): string | null {
+  const slug = /^\/catalogo\/([^/]+)\/?$/.exec(pathname)?.[1];
+  return slug ? categorySection(slug) : null;
+}
+
+/** Clave activa del menú: en la home sigue el scroll; en una categoría marca esa categoría; en el resto, ninguna. */
 export function useActiveSection(pathname: string): string | null {
   const [section, setSection] = useState("inicio");
 
@@ -44,7 +53,7 @@ export function useActiveSection(pathname: string): string | null {
   }, [pathname]);
 
   if (pathname === "/") return section;
-  return pathname.startsWith("/catalogo") || pathname.startsWith("/producto") ? "catalogo" : null;
+  return routeSection(pathname);
 }
 
 /** Whether the floating WhatsApp button belongs on this page: not on the checkout, which has its own send button. */

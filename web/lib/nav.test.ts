@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { isHeaderCompact, pickActiveSection, sectionLinks, showsWhatsappFab } from "./nav";
+import { categorySection, isHeaderCompact, pickActiveSection, routeSection, sectionLinks, showsWhatsappFab } from "./nav";
+
+describe("routeSection", () => {
+  it("marks the category of a category page", () => {
+    expect(routeSection("/catalogo/especiales")).toBe(categorySection("especiales"));
+    expect(routeSection("/catalogo/especiales/")).toBe(categorySection("especiales"));
+  });
+
+  it("marks nothing on pages outside a category", () => {
+    expect(routeSection("/catalogo")).toBeNull();
+    expect(routeSection("/producto/latte-frio")).toBeNull();
+    expect(routeSection("/pedido")).toBeNull();
+  });
+});
 
 describe("sectionLinks", () => {
   it("sends ordering to the price board, with no separate order section", () => {

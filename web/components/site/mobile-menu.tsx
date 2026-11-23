@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FolderIcon, ShoppingBagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { sectionLinks, useActiveSection } from "@/lib/nav";
+import { categorySection, sectionLinks, useActiveSection } from "@/lib/nav";
 import { useHydrated } from "@/lib/use-hydrated";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/stores/cart";
@@ -126,14 +126,22 @@ export function MobileMenu({ categories }: Props) {
               <>
                 <p className="mt-3 mb-1 border-t px-3 pt-4 text-sm font-medium text-muted-foreground">Catálogos</p>
                 <ul>
-                  {categories.map((c, i) => (
-                    <li key={c.id} className="menu-item-in" style={stagger(sectionLinks.length + i)}>
-                      <Link href={`/catalogo/${c.slug}`} onClick={close} className={cn(rowClass, "text-foreground hover:bg-muted")}>
-                        <FolderIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
-                        {c.name}
-                      </Link>
-                    </li>
-                  ))}
+                  {categories.map((c, i) => {
+                    const current = active === categorySection(c.slug);
+                    return (
+                      <li key={c.id} className="menu-item-in" style={stagger(sectionLinks.length + i)}>
+                        <Link
+                          href={`/catalogo/${c.slug}`}
+                          onClick={close}
+                          aria-current={current ? "page" : undefined}
+                          className={cn(rowClass, current ? "bg-brand-soft font-medium text-brand" : "text-foreground hover:bg-muted")}
+                        >
+                          <FolderIcon aria-hidden className={cn("size-5 shrink-0", !current && "text-muted-foreground")} />
+                          {c.name}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </>
             )}

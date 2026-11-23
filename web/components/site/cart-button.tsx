@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ShoppingBagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { unitsLabel } from "@/lib/qty";
 import { useHydrated } from "@/lib/use-hydrated";
 import { totalUnits, useCart } from "@/stores/cart";
 
@@ -13,7 +14,7 @@ export function CartButton() {
 
   return (
     <Button asChild variant="ghost" className="header-action relative gap-2 rounded-full">
-      <Link href="/pedido" aria-label={lines ? `Mi pedido, ${totalUnits(items)} unidades` : "Mi pedido"}>
+      <Link href="/pedido" aria-label={lines ? `Mi pedido, ${unitsLabel(totalUnits(items))}` : "Mi pedido"}>
         <ShoppingBagIcon aria-hidden />
         <span className="hidden sm:inline">Mi pedido</span>
         {lines > 0 && (

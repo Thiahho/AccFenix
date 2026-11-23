@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { parseQty } from "./qty";
+import { parseQty, unitsLabel } from "./qty";
+
+describe("unitsLabel", () => {
+  it("uses the singular only for one unit", () => {
+    expect(unitsLabel(1)).toBe("1 unidad");
+    expect(unitsLabel(2)).toBe("2 unidades");
+    expect(unitsLabel(0)).toBe("0 unidades");
+  });
+});
 
 describe("parseQty", () => {
   it("acepta números enteros dentro del rango", () => {
