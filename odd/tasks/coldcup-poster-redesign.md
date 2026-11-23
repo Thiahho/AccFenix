@@ -35,7 +35,7 @@ The user asked for a new design unlike Eggy and chose the "Poster cafe" directio
 
 ## Tasks
 
-- [ ] T1: Add the poster type, shape, and stamp foundations scoped to the public site. Route: delegated direct (2+ non-trivial files).
+- [x] T1: Add the poster type, shape, and stamp foundations scoped to the public site. Route: delegated direct (2+ non-trivial files).
 - [ ] T2: Redesign header, footer, and hero. Route: delegated direct.
 - [ ] T3: Redesign the price board and remaining home sections. Route: delegated direct.
 - [ ] T4: Apply the language to catalog, product, order, result, and not-found pages. Route: delegated direct.
@@ -53,9 +53,8 @@ From `web/`: `npm run lint`, `npm test`, `npm run build`, plus browser checks at
 Test-first exception: visual styling has no meaningful deterministic RED; existing tests guard behavior.
 
 ## Progress
-
-- Not started.
+- T1: done in a91816a. Anton and Archivo load only in the public scope; lint, tests and build passed.
 
 ## Next step
 
-Start T1.
+Start T2.
