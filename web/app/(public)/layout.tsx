@@ -3,6 +3,7 @@ import { WhatsappFab } from "@/components/home/whatsapp-fab";
 import { MotionProvider } from "@/components/motion/motion-provider";
 import { Wordmark } from "@/components/site/wordmark";
 import { OrderToaster } from "@/components/site/order-toast";
+import { posterClass } from "@/components/site/poster-fonts";
 import { SiteHeader } from "@/components/site/site-header";
 import { api, type Category } from "@/lib/api";
 import { site } from "@/lib/site";
@@ -28,7 +29,7 @@ export default async function PublicLayout({ children }: { children: React.React
 
   return (
     <MotionProvider>
-      <div className="flex min-h-dvh flex-col">
+      <div className={`${posterClass} flex min-h-dvh flex-col`}>
         <SiteHeader categories={categories} />
 
         <main className="flex-1">{children}</main>

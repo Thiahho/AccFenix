@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CupSodaIcon } from "lucide-react";
 import { MenuPill } from "@/components/site/menu-card";
+import { posterClass } from "@/components/site/poster-fonts";
 import { Button } from "@/components/ui/button";
 import { site } from "@/lib/site";
 
@@ -10,7 +11,7 @@ export const metadata: Metadata = { title: "Página no encontrada", robots: { in
 // Rendered for URLs that match no route group, so it cannot rely on the public layout (header, footer).
 export default function RootNotFound() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl flex-col items-center justify-center px-4 py-24 text-center">
+    <main className={`${posterClass} mx-auto flex min-h-dvh max-w-xl flex-col items-center justify-center px-4 py-24 text-center`}>
       <Link href="/" className="text-lg font-bold text-brand">
         {site.name}
       </Link>

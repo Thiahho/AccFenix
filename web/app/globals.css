@@ -468,3 +468,90 @@ html {
 .journey-truck[data-visible="true"] {
   opacity: 1;
 }
+
+/*
+ * Poster design for the public site. Everything hangs from `.poster`, set on the public layout and the root 404, so
+ * admin keeps its fonts, radius and layout. Anton and Archivo are loaded by components/site/poster-fonts.ts only there.
+ * Rules that restyle shadcn primitives stay unlayered on purpose: they must beat the primitives' own utilities.
+ */
+.poster {
+  --radius: 0rem;
+  --border: var(--espresso);
+  --input: var(--espresso);
+  --ring: var(--espresso);
+  --poster-focus: var(--espresso);
+  font-family: var(--font-poster-text), system-ui, sans-serif;
+}
+/* Solid dark block: text, rules and focus turn light. */
+.poster-ink {
+  --border: var(--cream);
+  --poster-focus: var(--cream);
+  background-color: var(--espresso);
+  color: var(--ivory);
+}
+.poster :focus-visible {
+  outline: 3px solid var(--poster-focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.poster [data-slot="button"],
+.poster [data-slot="input"],
+.poster [data-slot="textarea"] {
+  min-height: 2.75rem;
+  box-shadow: none;
+}
+.poster [data-slot="button"][data-size^="icon"] {
+  min-width: 2.75rem;
+}
+.poster [data-slot="button"][data-variant="default"] {
+  padding-inline: 1.25rem;
+  font-family: var(--font-poster-display), Impact, sans-serif;
+  font-size: 1.125rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.poster [data-slot="button"][data-variant="default"]:hover {
+  background-color: var(--roast);
+}
+.poster [data-slot="radio-group-item"],
+.poster [data-slot="radio-group-indicator"] > span {
+  border-radius: 0;
+}
+
+@layer components {
+  /* Condensed display type. Anton ships one weight, so synthetic bold is off. */
+  .poster-display {
+    font-family: var(--font-poster-display), Impact, "Arial Narrow", sans-serif;
+    font-weight: 400;
+    font-synthesis: none;
+    line-height: 0.95;
+    letter-spacing: 0.005em;
+    text-transform: uppercase;
+  }
+  /* Small hard label above a title; its color comes from the block it sits on. */
+  .poster-label {
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  /* Primary block action. */
+  .poster-cta {
+    display: inline-flex;
+    min-height: 3.5rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding-inline: 1.75rem;
+    font-family: var(--font-poster-display), Impact, sans-serif;
+    font-size: 1.375rem;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    text-transform: uppercase;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+}
