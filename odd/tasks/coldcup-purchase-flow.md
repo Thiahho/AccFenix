@@ -29,7 +29,7 @@ Design audit approved by the user on 2026-11-23 (points 1 and 2 plus secondary i
 - [x] T1: Remove the customer type step from checkout. Route: delegated direct (2+ non-trivial files).
 - [x] T2: Make the price board the single home ordering path and keep product cards on category pages. Route: delegated direct.
 - [x] T3: Add price and action to catalog cards and address the repeated description. Route: delegated direct.
-- [ ] T4: Fix active navigation, `1 unidades`, and the phone cart row. Route: delegated direct.
+- [x] T4: Fix active navigation, `1 unidades`, and the phone cart row. Route: delegated direct.
 
 ## Acceptance criteria
 
@@ -49,7 +49,8 @@ Test-first applies to pure logic (step sequence, payload, pluralization, active 
 - T1 done in 2b862c6. The API requires `customerType`, so the web always sends `personal`; legacy `cliente` values are stripped. The checkout form was never persisted (only the cart is). Tests changed: order, request, response, steps. lint, 146 tests and build pass; browser checks run at the end.
 - T2 done in 901fd56. Removed `OrderCatalog` and `ProductCard` (no other users, no dedicated tests). Nav and board CTA no longer use `#catalogo`; the anchor is kept on the board for old links. WhatsApp stays in the hero, floating button and product page. Test added to nav.
 - T3 done in ee07587. Cards show plain, `Desde`, or `Consultar` prices and a product action. `Café frío preparado en el momento` is in neither the tracked code, the seed, nor git history, so it is live database data: left alone, and repeated descriptions are hidden on cards. Tests added to pricing and catalog.
+- T4 done in ac98b39. Nav marks the current category, units are singular or plural, the phone cart row is fixed, and a checkout overflow on phones was fixed. Verified: lint, 157 tests, build, and 127 Playwright checks at 320, 375 and 1280px against a production build with a mock API, including delivery and pickup payloads and an old saved cart. Not verified: the real API and real Mercado Pago.
 
 ## Next step
 
-Start T4.
+Review the branch. Push, PR and merge remain the user's decision.
