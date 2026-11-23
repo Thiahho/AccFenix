@@ -97,3 +97,7 @@ Test-first exception: visual styling has no meaningful deterministic RED; existi
 ## Next step
 
 Product decisions: replace or remove the 3D egg intro and the crack sound, and confirm the footer delivery wording.
+
+## Review status
+
+- Native review for `60093be..4ff87ef`: medium risk, granted by the user, approved and acknowledged (reliability lens). Six non-blocking advisory findings remain as later work, in `price-board.tsx`, `price-cell.tsx` and `iced-cup.tsx`.
