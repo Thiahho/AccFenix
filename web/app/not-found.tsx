@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CupSodaIcon } from "lucide-react";
+import { MenuPill } from "@/components/site/menu-card";
 import { Button } from "@/components/ui/button";
 import { site } from "@/lib/site";
 
@@ -12,10 +14,10 @@ export default function RootNotFound() {
       <Link href="/" className="text-lg font-bold text-brand">
         {site.name}
       </Link>
-      <p className="eyebrow mt-10 text-caramel-deep">404</p>
-      <h1 className="title-display mt-3 text-4xl sm:text-5xl">No encontramos esta página</h1>
+      <MenuPill icon={CupSodaIcon} tone="caramel" className="mt-10">404</MenuPill>
+      <h1 className="title-display mt-4 text-4xl sm:text-5xl">No encontramos esta página</h1>
       <p className="mt-3 text-muted-foreground">Revisá la dirección o volvé al inicio para ver el catálogo.</p>
-      <Button asChild className="mt-8">
+      <Button asChild className="mt-8 rounded-full px-5">
         <Link href="/">Volver al inicio</Link>
       </Button>
     </main>

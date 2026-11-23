@@ -53,7 +53,7 @@ export function CheckoutStep({ index, title, status, summary, focusOnOpen, onOpe
         aria-labelledby={headingId}
         className={cn(
           "rounded-xl border transition-[background-color,border-color,opacity] duration-300",
-          active ? "border-brand/60 bg-background shadow-[0_8px_24px_rgb(60_30_10/0.08)]" : "border-border/70 bg-muted/30",
+          active ? "border-espresso bg-background" : "border-dashed border-caramel/60 bg-muted/30",
           locked && "opacity-55",
         )}
       >

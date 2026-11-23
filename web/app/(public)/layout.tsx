@@ -33,7 +33,7 @@ export default async function PublicLayout({ children }: { children: React.React
 
         <main className="flex-1">{children}</main>
 
-        <footer className="bg-espresso text-cream/80">
+        <footer className="border-t-4 border-double border-caramel bg-espresso text-cream/80">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-10 text-sm sm:flex-row sm:items-end sm:justify-between">
             <div className="flex flex-col gap-1">
               <Wordmark tone="light" className="text-4xl" />
@@ -46,7 +46,7 @@ export default async function PublicLayout({ children }: { children: React.React
               href="/admin/login"
               prefetch={false}
               rel="nofollow"
-              className="text-xs text-cream/40 transition-colors hover:text-cream/80"
+              className="text-xs text-cream/70 transition-colors hover:text-cream"
             >
               Acceso administración
             </Link>

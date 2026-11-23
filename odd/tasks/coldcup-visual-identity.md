@@ -70,7 +70,7 @@ Computed with the WCAG 2.x relative-luminance formula. Reference shades are unch
 
 - [x] T1: Replace theme tokens with the ColdCup palette and rename legacy tokens. Route: delegated direct (2+ non-trivial files).
 - [x] T2: Build the menu-card language in the public catalog and home. Route: delegated direct.
-- [ ] T3: Apply it to checkout, result, not-found, header and footer surfaces. Route: delegated direct.
+- [x] T3: Apply it to checkout, result, not-found, header and footer surfaces. Route: delegated direct.
 - [ ] T4: Remove remaining egg visuals where a static replacement is possible and report the rest. Route: delegated direct.
 
 ## Acceptance criteria
@@ -89,8 +89,9 @@ Test-first exception: visual styling has no meaningful deterministic RED; existi
 
 - Baseline before T1: lint clean, 157/157 tests, build OK.
 - T1 done (`411f49a`): tokens renamed, palette applied. Checks: lint clean, 157/157 tests, build OK.
-- T2 done: menu-card language on home and catalog; price board grouped by category with size columns. Checks: lint clean, 157/157 tests, build OK; no horizontal overflow at 375px and 1280px against a local mock catalog.
+- T2 done: menu-card language on home and catalog; price board grouped by category with size columns. Checks: lint clean, 157/157 tests, build OK; no horizontal overflow at 375px and 1280px against a local mock catalog. Commit `50388fa`.
+- T3 done: checkout, result, not-found and footer surfaces use the menu language; footer admin link raised to AA. Checks: lint clean, 157/157 tests, build OK.
 
 ## Next step
 
-Start T3.
+Start T4.

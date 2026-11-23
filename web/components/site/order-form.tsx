@@ -252,7 +252,7 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
   };
 
   return (
-    <aside className="h-fit space-y-4 rounded-xl border p-4 sm:p-6 lg:sticky lg:top-24">
+    <aside className="h-fit space-y-4 rounded-2xl border border-caramel/70 bg-card/60 p-4 sm:p-6 lg:sticky lg:top-24">
       <h2 className="text-lg font-semibold">Tus datos</h2>
       <CheckoutProgress current={active} total={orderSteps.length} />
       <form onSubmit={onFormSubmit} noValidate>
@@ -301,7 +301,7 @@ function OrderRecap({ items }: { items: CartItem[] }) {
           </li>
         ))}
       </ul>
-      <p className="mt-2 flex justify-between gap-3 border-t border-brand/15 pt-2 font-semibold">
+      <p className="mt-2 flex justify-between gap-3 border-t border-dashed border-caramel/60 pt-2 font-semibold">
         <span>
           {units} {units === 1 ? "unidad" : "unidades"}
         </span>

@@ -36,7 +36,7 @@ export function OrderView() {
   // The cart is already empty here: it is cleared as soon as the order is stored.
   if (items.length === 0) {
     return (
-      <div className="mt-8 rounded-xl border border-dashed p-10 text-center">
+      <div className="mt-8 rounded-2xl border border-dashed border-caramel p-10 text-center">
         <p className="font-medium">Tu pedido está vacío</p>
         <p className="mt-1 text-sm text-muted-foreground">Agregá cafés desde la carta.</p>
         <Button asChild className="mt-6">
@@ -64,7 +64,7 @@ export function OrderView() {
             No pudimos actualizar los precios. Los confirmamos por WhatsApp al recibir tu pedido.
           </p>
         )}
-        <ul className="divide-y rounded-xl border">
+        <ul className="divide-y divide-dashed divide-caramel/60 rounded-2xl border border-caramel/70 bg-card">
           {items.map((item) => {
             const price = unitPrice(item);
             const subtotal = lineSubtotal(item);
@@ -104,7 +104,7 @@ export function OrderView() {
           })}
         </ul>
         {hasPrices && (
-          <div className="mt-4 rounded-xl border bg-brand-soft/50 p-4">
+          <div className="mt-4 rounded-2xl border border-caramel/70 bg-oat/60 p-4">
             <p className="flex items-baseline justify-between gap-3">
               <span className="font-medium">{totals.partial ? "Total parcial" : "Total"}</span>
               <span className="text-2xl font-semibold tabular-nums">{formatArs(totals.total)}</span>

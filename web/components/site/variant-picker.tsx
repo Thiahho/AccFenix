@@ -103,7 +103,7 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
           ))}
         </div>
 
-        <div className="mt-8 rounded-xl border bg-brand-soft/50 p-4">
+        <div className="mt-8 rounded-2xl border border-caramel/70 bg-card p-4">
           <div className="flex min-h-6 items-center justify-between gap-3 text-sm">
             {variant ? (
               <>

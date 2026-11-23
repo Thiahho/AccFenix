@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MessageCircleIcon } from "lucide-react";
+import { CupSodaIcon, MessageCircleIcon } from "lucide-react";
 import { ClearCartOnPaid, PaymentPoller } from "@/components/site/checkout-follow-up";
+import { MenuPill } from "@/components/site/menu-card";
 import { Button } from "@/components/ui/button";
 import { api, baseUrl } from "@/lib/api";
 import type { OrderPayment } from "@/lib/orders/types";
@@ -20,7 +21,7 @@ async function paymentOf(number: number): Promise<OrderPayment | null> {
 }
 
 function Panel({ children }: { children: React.ReactNode }) {
-  return <div className="mx-auto mt-10 max-w-xl rounded-xl border bg-brand-soft/50 p-6 text-center sm:p-8">{children}</div>;
+  return <div className="mx-auto mt-10 max-w-xl rounded-2xl border border-caramel/70 bg-card p-6 text-center sm:p-8">{children}</div>;
 }
 
 export default async function ThanksPage({ searchParams }: { searchParams: Promise<{ pedido?: string }> }) {
@@ -34,8 +35,8 @@ export default async function ThanksPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <p className="eyebrow text-caramel-deep">Pedido {valid ? `#${number}` : ""}</p>
-      <h1 className="title-display mt-3 text-4xl sm:text-5xl">¡Gracias!</h1>
+      <MenuPill icon={CupSodaIcon}>Pedido {valid ? `#${number}` : ""}</MenuPill>
+      <h1 className="title-display mt-4 text-4xl sm:text-5xl">¡Gracias!</h1>
 
       {!valid && (
         <Panel>
