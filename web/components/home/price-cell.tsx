@@ -5,7 +5,6 @@ import * as m from "motion/react-m";
 import type { TargetAndTransition, Transition, Variants } from "motion/react";
 import { usePrefersReducedMotion } from "@/components/motion/use-reduced-motion";
 import { notifyAdded } from "@/components/site/order-toast";
-import { playCrack } from "@/lib/crack-sound";
 import { useCart, type CartItem } from "@/stores/cart";
 
 type Props = {
@@ -60,7 +59,6 @@ export function PriceCell({ item, imageUrl, productName, label, price, caption }
       disabled={!item}
       onClick={() => {
         if (!item) return;
-        playCrack();
         setClicks((n) => n + 1);
         add(item, 1);
         notifyAdded({ title: item.productName, detail: item.valuesLabel, availability: item.availability, imageUrl });

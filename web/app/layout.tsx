@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Montserrat, Yellowtail } from "next/font/google";
 import { baseOpenGraph } from "@/components/seo/open-graph";
-import { IntroSplash } from "@/components/site/intro-splash";
 import { Toaster } from "@/components/ui/sonner";
 import { site } from "@/lib/site";
 import "./globals.css";
@@ -32,10 +31,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    // suppressHydrationWarning: the intro script toggles a class on <html> before React hydrates.
-    <html lang="es-AR" className={`${montserrat.variable} ${yellowtail.variable}`} suppressHydrationWarning>
+    <html lang="es-AR" className={`${montserrat.variable} ${yellowtail.variable}`}>
       <body className="antialiased">
-        <IntroSplash />
         {children}
         <Toaster position="top-center" />
       </body>
