@@ -9,13 +9,21 @@ public enum OrderStatus
     Cancelled = 4,
 }
 
-/// <summary>Where the order is delivered; each zone asks the customer for different data.</summary>
-public enum DeliveryZone
+/// <summary>How the customer gets the order: delivered in Moreno, or picked up at the shop.</summary>
+public enum Fulfillment
 {
-    /// <summary>Own delivery: locality, address and an optional map point.</summary>
-    BuenosAires = 0,
-    /// <summary>Shipped through a carrier: province and carrier.</summary>
-    OtherProvince = 1,
+    /// <summary>Delivery in Moreno: needs an address; the map point is optional.</summary>
+    Delivery = 0,
+    /// <summary>Pickup at the shop: needs a time slot and no address.</summary>
+    Pickup = 1,
+}
+
+/// <summary>Payment state, kept apart from the order status. Only an approved payment reaches the owner as paid.</summary>
+public enum PaymentStatus
+{
+    Unpaid = 0,
+    Approved = 1,
+    Rejected = 2,
 }
 
 /// <summary>Who places the order: a person ("Personal") or a business ("Comercio").</summary>
@@ -32,35 +40,36 @@ public enum CustomerType
 public class Order
 {
     public int Id { get; set; }
-    /// <summary>Human-friendly sequential number, assigned by the database.</summary>
+    /// <summary>Human-friendly sequential number, assigned by the database. Also the Mercado Pago external reference.</summary>
     public int Number { get; set; }
     public DateTime CreatedAt { get; set; }
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
     public CustomerType CustomerType { get; set; } = CustomerType.Personal;
     public required string CustomerName { get; set; }
-    /// <summary>Optional: the customer sends the order from their own WhatsApp, so the number usually comes with it.</summary>
+    /// <summary>Optional: the customer may leave a phone number.</summary>
     public string? Phone { get; set; }
-    public DeliveryZone Zone { get; set; }
 
-    // Buenos Aires only.
-    public string? Locality { get; set; }
+    public Fulfillment Fulfillment { get; set; }
+    /// <summary>Time slot the customer picked, for delivery or pickup. Free text, e.g. "Hoy 18:00 a 18:30".</summary>
+    public required string TimeSlot { get; set; }
+
+    // Delivery only.
     public string? Address { get; set; }
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
 
-    // Other province only.
-    public string? Province { get; set; }
-    public string? Carrier { get; set; }
-
     public string? Comments { get; set; }
 
-    /// <summary>Whether the order reached the wholesale threshold in force when it was placed.</summary>
-    public bool IsWholesale { get; set; }
     /// <summary>Sum of the priced lines, in ARS.</summary>
     public decimal Total { get; set; }
-    /// <summary>True when at least one line had no price, so the total does not cover the whole order.</summary>
+    /// <summary>True when at least one line had no price, so the order cannot be paid online.</summary>
     public bool HasUnpricedItems { get; set; }
+
+    public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Unpaid;
+    public string? MercadoPagoPreferenceId { get; set; }
+    public string? MercadoPagoPaymentId { get; set; }
+    public DateTime? PaidAt { get; set; }
 
     public List<OrderItem> Items { get; set; } = [];
 }
@@ -76,7 +85,7 @@ public class OrderItem
 
     public required string ProductName { get; set; }
     public required string Sku { get; set; }
-    /// <summary>Readable description of the variant, e.g. "Medida 34 · Color Cedro".</summary>
+    /// <summary>Readable description of the variant, e.g. "Tamaño Grande (700 cc) · Extra leche de almendras".</summary>
     public required string VariantLabel { get; set; }
 
     public int Quantity { get; set; }
@@ -90,26 +99,14 @@ public static class OrderLimits
 {
     public const int Name = 120;
     public const int Phone = 40;
-    public const int Locality = 120;
     public const int Address = 200;
-    public const int Province = 60;
-    public const int Carrier = 200;
+    public const int TimeSlot = 60;
     public const int Comments = 500;
     public const int VariantLabel = 1000;
+    public const int MercadoPagoId = 100;
 
     public const int MaxLines = 100;
     public const int MaxQuantity = 100_000;
     /// <summary>Largest amount the numeric(12,2) money columns of an order can hold.</summary>
     public const decimal MaxAmount = 9_999_999_999.99m;
-}
-
-/// <summary>Provinces served through a carrier. Mirrors the list offered by the order form of the site.</summary>
-public static class Provinces
-{
-    public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
-    {
-        "Catamarca", "Chaco", "Chubut", "Córdoba", "Corrientes", "Entre Ríos", "Formosa", "Jujuy", "La Pampa", "La Rioja",
-        "Mendoza", "Misiones", "Neuquén", "Río Negro", "Salta", "San Juan", "San Luis", "Santa Cruz", "Santa Fe",
-        "Santiago del Estero", "Tierra del Fuego", "Tucumán",
-    };
 }

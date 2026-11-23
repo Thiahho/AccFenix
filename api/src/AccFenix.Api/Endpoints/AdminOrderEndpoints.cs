@@ -8,23 +8,24 @@ namespace AccFenix.Api.Endpoints;
 // ---- Requests ----
 public record OrderStatusRequest(OrderStatus? Status);
 
-/// <summary>New delivery location of an own-delivery order. Without coordinates the map point is removed.</summary>
-public record OrderLocationRequest(string? Locality, string? Address, double? Latitude, double? Longitude) : IBuenosAiresLocation;
+/// <summary>New address of a delivery order. Without coordinates the map point is removed.</summary>
+public record OrderLocationRequest(string? Address, double? Latitude, double? Longitude) : IDeliveryLocation;
 
 // ---- Responses ----
 public record AdminOrderSummaryDto(
     int Id, int Number, DateTime CreatedAt, OrderStatus Status, CustomerType CustomerType,
-    string CustomerName, string? Phone, DeliveryZone Zone,
-    string? Locality, string? Address, double? Latitude, double? Longitude,
-    bool IsWholesale, decimal Total, bool HasUnpricedItems, int ItemCount, int TotalUnits);
+    string CustomerName, string? Phone, Fulfillment Fulfillment, string TimeSlot, string? Address,
+    PaymentStatus PaymentStatus, DateTime? PaidAt,
+    decimal Total, bool HasUnpricedItems, int ItemCount, int TotalUnits);
 
 public record AdminOrderPageDto(int Total, int Page, int PageSize, List<AdminOrderSummaryDto> Items);
 
 public record AdminOrderDto(
     int Id, int Number, DateTime CreatedAt, OrderStatus Status, CustomerType CustomerType,
-    string CustomerName, string? Phone, DeliveryZone Zone,
-    string? Locality, string? Address, double? Latitude, double? Longitude, string? Province, string? Carrier, string? Comments,
-    bool IsWholesale, decimal Total, bool HasUnpricedItems, List<OrderItemDto> Items);
+    string CustomerName, string? Phone, Fulfillment Fulfillment, string TimeSlot,
+    string? Address, double? Latitude, double? Longitude, string? Comments,
+    PaymentStatus PaymentStatus, string? MercadoPagoPaymentId, DateTime? PaidAt,
+    decimal Total, bool HasUnpricedItems, List<OrderItemDto> Items);
 
 public record AdminOrderStatusDto(int Id, int Number, OrderStatus Status);
 
@@ -37,12 +38,12 @@ public class OrderStatusRequestValidator : AbstractValidator<OrderStatusRequest>
     }
 }
 
-/// <summary>Same location rules as public order creation.</summary>
+/// <summary>Same address rules as public order creation.</summary>
 public class OrderLocationRequestValidator : AbstractValidator<OrderLocationRequest>
 {
     public OrderLocationRequestValidator()
     {
-        Include(BuenosAiresLocationValidator.Instance);
+        Include(DeliveryLocationValidator.Instance);
     }
 }
 
@@ -53,8 +54,9 @@ public static class AdminOrderEndpoints
 
     public static RouteGroupBuilder MapAdminOrderEndpoints(this RouteGroupBuilder admin)
     {
-        // Newest first. "status" takes the same names the JSON uses (pending, outForDelivery…).
-        admin.MapGet("/orders", async (int? page, int? pageSize, string? status, AppDbContext db, CancellationToken ct) =>
+        // Newest first. "status" takes the same names the JSON uses (pending, outForDelivery...).
+        // "paid=true" lists only orders whose payment was approved: the ones the owner has to prepare.
+        admin.MapGet("/orders", async (int? page, int? pageSize, string? status, bool? paid, AppDbContext db, CancellationToken ct) =>
         {
             var pageNumber = page ?? 1;
             var size = pageSize ?? DefaultPageSize;
@@ -71,16 +73,20 @@ public static class AdminOrderEndpoints
             }
             if (errors.Count > 0) return Results.ValidationProblem(errors);
 
-            var query = db.Orders.AsNoTracking().Where(o => filter == null || o.Status == filter);
+            var onlyPaid = paid == true;
+            var query = db.Orders.AsNoTracking()
+                .Where(o => filter == null || o.Status == filter)
+                .Where(o => !onlyPaid || o.PaymentStatus == PaymentStatus.Approved);
             var total = await query.CountAsync(ct);
             var items = await query
                 .OrderByDescending(o => o.CreatedAt).ThenByDescending(o => o.Id)
                 // long arithmetic: a huge page number must not overflow the offset.
                 .Skip((int)Math.Min((long)(pageNumber - 1) * size, int.MaxValue)).Take(size)
                 .Select(o => new AdminOrderSummaryDto(
-                    o.Id, o.Number, o.CreatedAt, o.Status, o.CustomerType, o.CustomerName, o.Phone, o.Zone,
-                    o.Locality, o.Address, o.Latitude, o.Longitude,
-                    o.IsWholesale, o.Total, o.HasUnpricedItems, o.Items.Count, o.Items.Sum(i => i.Quantity)))
+                    o.Id, o.Number, o.CreatedAt, o.Status, o.CustomerType, o.CustomerName, o.Phone,
+                    o.Fulfillment, o.TimeSlot, o.Address,
+                    o.PaymentStatus, o.PaidAt,
+                    o.Total, o.HasUnpricedItems, o.Items.Count, o.Items.Sum(i => i.Quantity)))
                 .ToListAsync(ct);
             return Results.Ok(new AdminOrderPageDto(total, pageNumber, size, items));
         });
@@ -91,15 +97,14 @@ public static class AdminOrderEndpoints
             return o is null ? Results.NotFound() : Results.Ok(ToDto(o));
         });
 
-        // Only own-delivery orders have a locality and address; carrier orders are a 409 (their state forbids it).
+        // Only delivery orders have an address; pickup orders are a 409 (their state forbids it).
         admin.MapPatch("/orders/{id:int}/location", async (int id, OrderLocationRequest req, AppDbContext db, CancellationToken ct) =>
         {
             var order = await db.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id, ct);
             if (order is null) return Results.NotFound();
-            if (order.Zone != DeliveryZone.BuenosAires)
-                return ValidationExtensions.Conflict("Solo se puede editar la ubicación de pedidos con envío propio");
+            if (order.Fulfillment != Fulfillment.Delivery)
+                return ValidationExtensions.Conflict("Solo se puede editar la dirección de pedidos con envío");
 
-            order.Locality = req.Locality!.Trim();
             order.Address = req.Address!.Trim();
             order.Latitude = req.Latitude;
             order.Longitude = req.Longitude;
@@ -121,8 +126,9 @@ public static class AdminOrderEndpoints
     }
 
     static AdminOrderDto ToDto(Order o) => new(
-        o.Id, o.Number, o.CreatedAt, o.Status, o.CustomerType, o.CustomerName, o.Phone, o.Zone,
-        o.Locality, o.Address, o.Latitude, o.Longitude, o.Province, o.Carrier, o.Comments,
-        o.IsWholesale, o.Total, o.HasUnpricedItems,
+        o.Id, o.Number, o.CreatedAt, o.Status, o.CustomerType, o.CustomerName, o.Phone,
+        o.Fulfillment, o.TimeSlot, o.Address, o.Latitude, o.Longitude, o.Comments,
+        o.PaymentStatus, o.MercadoPagoPaymentId, o.PaidAt,
+        o.Total, o.HasUnpricedItems,
         o.Items.OrderBy(i => i.Id).Select(OrderEndpoints.ToDto).ToList());
 }

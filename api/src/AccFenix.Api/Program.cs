@@ -23,6 +23,10 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.Configure<CloudinaryOptions>(config.GetSection("Cloudinary"));
 builder.Services.AddSingleton<IMediaStorage, CloudinaryMediaStorage>();
 
+// Mercado Pago (Checkout Pro). Sin token configurado, los pedidos se crean pero no abren el pago.
+builder.Services.Configure<MercadoPagoOptions>(config.GetSection("MercadoPago"));
+builder.Services.AddHttpClient<MercadoPagoClient>(c => c.BaseAddress = new Uri("https://api.mercadopago.com/"));
+
 // ---- Auth (JWT para el panel admin) ----
 builder.Services.AddOptions<JwtOptions>()
     .Bind(config.GetSection("Jwt"))
@@ -114,6 +118,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapHealthChecks("/health/ready");
 app.MapPublicEndpoints();
 app.MapOrderEndpoints();
+app.MapPaymentEndpoints();
 app.MapAuthEndpoints();
 app.MapGroup("/api/admin")
     .RequireAuthorization()

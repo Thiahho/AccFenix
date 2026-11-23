@@ -1,4 +1,3 @@
-using System.Globalization;
 using AccFenix.Api.Data;
 using AccFenix.Api.Domain;
 using AccFenix.Api.Services;
@@ -58,7 +57,6 @@ public class CatalogSeeder(AppDbContext db, VariantGenerator generator, AdminAcc
             await SeedCatalogAsync(ct);
         }
 
-        await EnsureSettingAsync(SettingKeys.WholesaleThreshold, WholesaleThreshold.Default.ToString(CultureInfo.InvariantCulture), ct);
         await EnsureSettingAsync(SettingKeys.WhatsappNumber, "5491122692061", ct);
         await EnsureAdminAsync(ct);
 

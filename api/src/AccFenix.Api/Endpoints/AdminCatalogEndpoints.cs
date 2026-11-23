@@ -19,32 +19,29 @@ public record ProductRequest(int CategoryId, string Name, string? Slug, string? 
 public record VariantPatchRequest(Availability? Availability, bool? IsActive)
 {
     readonly decimal? _retailPrice;
-    readonly decimal? _wholesalePrice;
 
     public decimal? RetailPrice { get => _retailPrice; init { _retailPrice = value; HasRetailPrice = true; } }
-    public decimal? WholesalePrice { get => _wholesalePrice; init { _wholesalePrice = value; HasWholesalePrice = true; } }
 
     [JsonIgnore] public bool HasRetailPrice { get; private init; }
-    [JsonIgnore] public bool HasWholesalePrice { get; private init; }
 }
-/// <summary>Both prices are always applied as sent: null clears the price.</summary>
-public record VariantPriceItem(int VariantId, decimal? RetailPrice, decimal? WholesalePrice);
+/// <summary>The retail price is always applied as sent: null clears the price.</summary>
+public record VariantPriceItem(int VariantId, decimal? RetailPrice);
 public record VariantPricesRequest(List<VariantPriceItem> Prices);
 public record ProductBulkDeleteRequest(List<int> Ids);
 public record VariantBulkRequest(int ProductId, List<int> ValueIds, Availability Availability);
-public record SettingsRequest(string WhatsappNumber, int WholesaleThreshold);
+public record SettingsRequest(string WhatsappNumber);
 
 // ---- Responses ----
 public record AdminCategoryDto(int Id, string Name, string Slug, string? Description, int SortOrder, bool IsActive, List<int> AttributeIds, int ProductCount);
 public record AdminValueDto(int Id, string Label, int SortOrder, string? ColorHex);
 public record AdminAttributeDto(int Id, string Name, string Slug, int SortOrder, List<AdminValueDto> Values);
 public record AdminProductSummaryDto(int Id, int CategoryId, string CategoryName, string Name, string Slug, bool IsActive, int SortOrder, int ActiveVariants, int OnRequestVariants, string? CoverUrl);
-public record AdminVariantDto(int Id, string Sku, List<int> ValueIds, Availability Availability, bool IsActive, decimal? RetailPrice, decimal? WholesalePrice);
+public record AdminVariantDto(int Id, string Sku, List<int> ValueIds, Availability Availability, bool IsActive, decimal? RetailPrice);
 public record AdminMediaDto(int Id, MediaType Type, string Url, int? AttributeValueId, int SortOrder);
 public record AdminProductDto(
     int Id, int CategoryId, string Name, string Slug, string? Description, int SortOrder, bool IsActive,
     List<int> AllowedValueIds, List<AdminAttributeDto> CategoryAttributes, List<AdminVariantDto> Variants, List<AdminMediaDto> Media);
-public record AdminSettingsDto(string WhatsappNumber, int WholesaleThreshold);
+public record AdminSettingsDto(string WhatsappNumber);
 
 // ---- Validators ----
 public class CategoryRequestValidator : AbstractValidator<CategoryRequest>
@@ -99,7 +96,6 @@ public class VariantPatchRequestValidator : AbstractValidator<VariantPatchReques
     {
         RuleFor(x => x.Availability).IsInEnum();
         RuleFor(x => x.RetailPrice).ValidPrice();
-        RuleFor(x => x.WholesalePrice).ValidPrice();
     }
 }
 
@@ -119,7 +115,6 @@ public class VariantPricesRequestValidator : AbstractValidator<VariantPricesRequ
         {
             item.RuleFor(i => i.VariantId).GreaterThan(0);
             item.RuleFor(i => i.RetailPrice).ValidPrice();
-            item.RuleFor(i => i.WholesalePrice).ValidPrice();
         });
     }
 }
@@ -150,7 +145,6 @@ public class SettingsRequestValidator : AbstractValidator<SettingsRequest>
     {
         RuleFor(x => x.WhatsappNumber).NotEmpty().Matches(@"^\+?[0-9 \-]{8,20}$")
             .WithMessage("Número con código de país, p. ej. 5491122334455");
-        RuleFor(x => x.WholesaleThreshold).InclusiveBetween(1, 1_000_000);
     }
 }
 
@@ -342,7 +336,7 @@ public static class AdminCatalogEndpoints
                         ca.Attribute.Values.OrderBy(v => v.SortOrder).Select(v => new AdminValueDto(v.Id, v.Label, v.SortOrder, v.ColorHex)).ToList()))
                     .ToList(),
                 p.Variants.OrderBy(v => v.Id)
-                    .Select(v => new AdminVariantDto(v.Id, v.Sku, v.Values.Select(x => x.AttributeValueId).Order().ToList(), v.Availability, v.IsActive, v.RetailPrice, v.WholesalePrice))
+                    .Select(v => new AdminVariantDto(v.Id, v.Sku, v.Values.Select(x => x.AttributeValueId).Order().ToList(), v.Availability, v.IsActive, v.RetailPrice))
                     .ToList(),
                 p.Media.OrderBy(m => m.SortOrder).Select(m => new AdminMediaDto(m.Id, m.Type, m.Url, m.AttributeValueId, m.SortOrder)).ToList()));
         });
@@ -450,7 +444,6 @@ public static class AdminCatalogEndpoints
             foreach (var item in req.Prices)
             {
                 variants[item.VariantId].RetailPrice = item.RetailPrice;
-                variants[item.VariantId].WholesalePrice = item.WholesalePrice;
             }
             await db.SaveChangesAsync(ct);
             return Results.Ok(new { Updated = variants.Count });
@@ -466,10 +459,9 @@ public static class AdminCatalogEndpoints
             if (req.Availability is { } availability) variant.Availability = availability;
             if (req.IsActive is { } active) variant.IsActive = active;
             if (req.HasRetailPrice) variant.RetailPrice = req.RetailPrice;
-            if (req.HasWholesalePrice) variant.WholesalePrice = req.WholesalePrice;
             await db.SaveChangesAsync(ct);
             var valueIds = variant.Values.Select(x => x.AttributeValueId).Order().ToList();
-            return Results.Ok(new AdminVariantDto(variant.Id, variant.Sku, valueIds, variant.Availability, variant.IsActive, variant.RetailPrice, variant.WholesalePrice));
+            return Results.Ok(new AdminVariantDto(variant.Id, variant.Sku, valueIds, variant.Availability, variant.IsActive, variant.RetailPrice));
         }).Validate<VariantPatchRequest>();
 
         // Cambia la disponibilidad de todas las variantes del producto que contengan todos los valores indicados
@@ -492,15 +484,12 @@ public static class AdminCatalogEndpoints
         admin.MapGet("/settings", async (AppDbContext db, CancellationToken ct) =>
         {
             var s = await db.Settings.ToDictionaryAsync(x => x.Key, x => x.Value, ct);
-            return new AdminSettingsDto(
-                s.GetValueOrDefault(SettingKeys.WhatsappNumber, ""),
-                WholesaleThreshold.Parse(s.GetValueOrDefault(SettingKeys.WholesaleThreshold)));
+            return new AdminSettingsDto(s.GetValueOrDefault(SettingKeys.WhatsappNumber, ""));
         });
 
         admin.MapPut("/settings", async (SettingsRequest req, AppDbContext db, CancellationToken ct) =>
         {
             await Upsert(db, SettingKeys.WhatsappNumber, new string(req.WhatsappNumber.Where(char.IsDigit).ToArray()), ct);
-            await Upsert(db, SettingKeys.WholesaleThreshold, req.WholesaleThreshold.ToString(), ct);
             await db.SaveChangesAsync(ct);
             return Results.NoContent();
         }).Validate<SettingsRequest>();

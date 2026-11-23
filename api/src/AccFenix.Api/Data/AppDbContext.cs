@@ -73,7 +73,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Sku).HasMaxLength(Variant.SkuMaxLength);
             e.Property(x => x.CombinationKey).HasMaxLength(200);
             e.Property(x => x.RetailPrice).HasPrecision(12, 2);
-            e.Property(x => x.WholesalePrice).HasPrecision(12, 2);
             e.HasIndex(x => x.Sku).IsUnique();
             e.HasIndex(x => new { x.ProductId, x.CombinationKey }).IsUnique();
             e.HasOne(x => x.Product).WithMany(p => p.Variants).HasForeignKey(x => x.ProductId);
@@ -81,7 +80,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.ToTable(t =>
             {
                 t.HasCheckConstraint("CK_Variants_RetailPrice", OptionalPriceRule("RetailPrice"));
-                t.HasCheckConstraint("CK_Variants_WholesalePrice", OptionalPriceRule("WholesalePrice"));
             });
         });
 
@@ -121,31 +119,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(x => x.Number).IsUnique();
             e.Property(x => x.CustomerName).HasMaxLength(OrderLimits.Name);
             e.Property(x => x.Phone).HasMaxLength(OrderLimits.Phone);
-            e.Property(x => x.Locality).HasMaxLength(OrderLimits.Locality);
+            e.Property(x => x.TimeSlot).HasMaxLength(OrderLimits.TimeSlot);
             e.Property(x => x.Address).HasMaxLength(OrderLimits.Address);
-            e.Property(x => x.Province).HasMaxLength(OrderLimits.Province);
-            e.Property(x => x.Carrier).HasMaxLength(OrderLimits.Carrier);
             e.Property(x => x.Comments).HasMaxLength(OrderLimits.Comments);
             e.Property(x => x.Total).HasPrecision(12, 2);
+            e.Property(x => x.MercadoPagoPreferenceId).HasMaxLength(OrderLimits.MercadoPagoId);
+            e.Property(x => x.MercadoPagoPaymentId).HasMaxLength(OrderLimits.MercadoPagoId);
             // The admin list is read newest first, optionally by status.
             e.HasIndex(x => x.CreatedAt);
             e.HasIndex(x => new { x.Status, x.CreatedAt });
-            // Enums are stored as integers; these rules mirror the order validator of the API.
+            // Enums are stored as integers; these rules mirror the order validator of the API and coffee-demo.sql.
             e.ToTable(t =>
             {
                 t.HasCheckConstraint("CK_Orders_Status", $"\"Status\" IN ({EnumValues<OrderStatus>()})");
-                t.HasCheckConstraint("CK_Orders_Zone", $"\"Zone\" IN ({EnumValues<DeliveryZone>()})");
                 t.HasCheckConstraint("CK_Orders_CustomerType", $"\"CustomerType\" IN ({EnumValues<CustomerType>()})");
+                t.HasCheckConstraint("CK_Orders_Fulfillment", $"\"Fulfillment\" IN ({EnumValues<Fulfillment>()})");
+                t.HasCheckConstraint("CK_Orders_PaymentStatus", $"\"PaymentStatus\" IN ({EnumValues<PaymentStatus>()})");
+                t.HasCheckConstraint("CK_Orders_PaidAt", "(\"PaymentStatus\" = 1) = (\"PaidAt\" IS NOT NULL)");
                 t.HasCheckConstraint("CK_Orders_Number", "\"Number\" > 0");
                 t.HasCheckConstraint("CK_Orders_Total", "\"Total\" >= 0");
+                // Each fulfillment carries only its own fields: delivery has an address, pickup has none.
+                t.HasCheckConstraint("CK_Orders_FulfillmentAddress",
+                    Invariant($"(\"Fulfillment\" = {(int)Fulfillment.Delivery} AND \"Address\" IS NOT NULL)")
+                    + Invariant($" OR (\"Fulfillment\" = {(int)Fulfillment.Pickup} AND \"Address\" IS NULL AND \"Latitude\" IS NULL AND \"Longitude\" IS NULL)"));
                 t.HasCheckConstraint("CK_Orders_Coordinates", "(\"Latitude\" IS NULL) = (\"Longitude\" IS NULL)");
                 t.HasCheckConstraint("CK_Orders_Latitude", "\"Latitude\" IS NULL OR \"Latitude\" BETWEEN -90 AND 90");
                 t.HasCheckConstraint("CK_Orders_Longitude", "\"Longitude\" IS NULL OR \"Longitude\" BETWEEN -180 AND 180");
-                // Each zone carries only its own delivery fields (a single line keeps the migration SQL stable).
-                t.HasCheckConstraint("CK_Orders_ZoneFields",
-                    Invariant($"(\"Zone\" = {(int)DeliveryZone.BuenosAires} AND \"Locality\" IS NOT NULL AND \"Address\" IS NOT NULL AND \"Province\" IS NULL AND \"Carrier\" IS NULL)")
-                    + Invariant($" OR (\"Zone\" = {(int)DeliveryZone.OtherProvince} AND \"Province\" IS NOT NULL AND \"Carrier\" IS NOT NULL")
-                    + " AND \"Locality\" IS NULL AND \"Address\" IS NULL AND \"Latitude\" IS NULL AND \"Longitude\" IS NULL)");
             });
         });
 

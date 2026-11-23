@@ -16,7 +16,7 @@ public record ValueDto(int Id, string Label, string? ColorHex);
 
 public record AttributeDto(int Id, string Name, string Slug, List<ValueDto> Values);
 
-public record VariantDto(int Id, string Sku, List<int> ValueIds, Availability Availability, decimal? RetailPrice, decimal? WholesalePrice);
+public record VariantDto(int Id, string Sku, List<int> ValueIds, Availability Availability, decimal? RetailPrice);
 
 public record MediaDto(int Id, MediaType Type, string Url, int? AttributeValueId);
 
@@ -26,9 +26,9 @@ public record ProductDetailDto(
 
 public record CategoryRefDto(string Name, string Slug);
 
-public record VariantStatusDto(int Id, bool IsActive, Availability Availability, decimal? RetailPrice, decimal? WholesalePrice);
+public record VariantStatusDto(int Id, bool IsActive, Availability Availability, decimal? RetailPrice);
 
-public record PublicSettingsDto(string WhatsappNumber, int WholesaleThreshold);
+public record PublicSettingsDto(string WhatsappNumber);
 
 public static class PublicEndpoints
 {
@@ -91,17 +91,15 @@ public static class PublicEndpoints
             // but never exposes its prices.
             return await db.Variants
                 .Where(v => idList.Contains(v.Id))
-                .Select(v => new { v.Id, Visible = v.IsActive && v.Product.IsActive && v.Product.Category.IsActive, v.Availability, v.RetailPrice, v.WholesalePrice })
-                .Select(v => new VariantStatusDto(v.Id, v.Visible, v.Availability, v.Visible ? v.RetailPrice : null, v.Visible ? v.WholesalePrice : null))
+                .Select(v => new { v.Id, Visible = v.IsActive && v.Product.IsActive && v.Product.Category.IsActive, v.Availability, v.RetailPrice })
+                .Select(v => new VariantStatusDto(v.Id, v.Visible, v.Availability, v.Visible ? v.RetailPrice : null))
                 .ToListAsync(ct);
         });
 
         api.MapGet("/settings/public", async (AppDbContext db, CancellationToken ct) =>
         {
             var settings = await db.Settings.ToDictionaryAsync(s => s.Key, s => s.Value, ct);
-            return new PublicSettingsDto(
-                settings.GetValueOrDefault(SettingKeys.WhatsappNumber, ""),
-                WholesaleThreshold.Parse(settings.GetValueOrDefault(SettingKeys.WholesaleThreshold)));
+            return new PublicSettingsDto(settings.GetValueOrDefault(SettingKeys.WhatsappNumber, ""));
         });
     }
 
@@ -123,7 +121,7 @@ public static class PublicEndpoints
             new CategoryRefDto(p.Category.Name, p.Category.Slug),
             attributes,
             p.Variants.OrderBy(v => v.Id)
-                .Select(v => new VariantDto(v.Id, v.Sku, v.Values.Select(x => x.AttributeValueId).Order().ToList(), v.Availability, v.RetailPrice, v.WholesalePrice))
+                .Select(v => new VariantDto(v.Id, v.Sku, v.Values.Select(x => x.AttributeValueId).Order().ToList(), v.Availability, v.RetailPrice))
                 .ToList(),
             p.Media.OrderBy(m => m.SortOrder)
                 .Select(m => new MediaDto(m.Id, m.Type, m.Url, m.AttributeValueId))

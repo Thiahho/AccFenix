@@ -12,20 +12,17 @@ public record OrderLineRequest(int VariantId, int Quantity);
 
 /// <summary>
 /// An order as sent by the site. It carries no prices: the server prices every line itself.
-/// Buenos Aires orders send locality, address and optionally both coordinates; orders to another
-/// province send province and carrier. Fields of the other zone must be absent.
-/// The phone is optional (the customer sends the order from their own WhatsApp); a blank phone is stored as null.
+/// Delivery orders send an address and optionally a map point. Pickup orders send no address.
+/// Both send the time slot. The phone is optional; a blank phone is stored as null.
 /// </summary>
 public record CreateOrderRequest(
-    DeliveryZone? Zone, CustomerType? CustomerType, string? CustomerName, string? Phone,
-    string? Locality, string? Address, double? Latitude, double? Longitude,
-    string? Province, string? Carrier,
-    string? Comments, List<OrderLineRequest>? Items) : IBuenosAiresLocation;
+    Fulfillment? Fulfillment, CustomerType? CustomerType, string? CustomerName, string? Phone,
+    string? TimeSlot, string? Address, double? Latitude, double? Longitude,
+    string? Comments, List<OrderLineRequest>? Items) : IDeliveryLocation;
 
-/// <summary>Delivery location of an own-delivery (Buenos Aires) order: locality, address and an optional map point.</summary>
-public interface IBuenosAiresLocation
+/// <summary>Delivery location of a delivery order: an address and an optional map point.</summary>
+public interface IDeliveryLocation
 {
-    string? Locality { get; }
     string? Address { get; }
     double? Latitude { get; }
     double? Longitude { get; }
@@ -34,39 +31,37 @@ public interface IBuenosAiresLocation
 // ---- Responses ----
 public record OrderItemDto(int Id, int? VariantId, string ProductName, string Sku, string VariantLabel, int Quantity, decimal? UnitPrice, decimal? Subtotal);
 
-/// <summary>Confirmation of a new order. It deliberately leaves out the customer's personal data.</summary>
-public record OrderCreatedDto(int Id, int Number, OrderStatus Status, DateTime CreatedAt, bool IsWholesale, decimal Total, bool HasUnpricedItems, List<OrderItemDto> Items);
+/// <summary>
+/// Confirmation of a new order. It leaves out the customer's personal data. CheckoutUrl is where the customer pays;
+/// it is null when the order cannot be paid online (an unpriced line, or Mercado Pago not configured).
+/// </summary>
+public record OrderCreatedDto(
+    int Id, int Number, OrderStatus Status, PaymentStatus PaymentStatus, DateTime CreatedAt,
+    decimal Total, bool HasUnpricedItems, List<OrderItemDto> Items, string? CheckoutUrl);
 
 // ---- Validators ----
 public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequest>
 {
-    const string WrongZone = "No corresponde a la zona de entrega elegida";
+    const string WrongFulfillment = "No corresponde a la forma de entrega elegida";
 
     public CreateOrderRequestValidator()
     {
-        RuleFor(x => x.Zone).NotNull().IsInEnum();
+        RuleFor(x => x.Fulfillment).NotNull().IsInEnum();
         RuleFor(x => x.CustomerType).NotNull().IsInEnum();
         RequiredText(x => x.CustomerName!, OrderLimits.Name);
         When(x => !string.IsNullOrWhiteSpace(x.Phone), () => RequiredText(x => x.Phone!, OrderLimits.Phone));
+        RequiredText(x => x.TimeSlot!, OrderLimits.TimeSlot);
         RuleFor(x => x.Comments)
             .Must(s => s is null || (s.Trim().Length <= OrderLimits.Comments && !s.Contains('\0')))
             .WithMessage($"Hasta {OrderLimits.Comments} caracteres, sin caracteres no válidos");
 
-        When(x => x.Zone == DeliveryZone.BuenosAires, () =>
-        {
-            Include(BuenosAiresLocationValidator.Instance);
-            RuleFor(x => x.Province).Null().WithMessage(WrongZone);
-            RuleFor(x => x.Carrier).Null().WithMessage(WrongZone);
-        });
+        When(x => x.Fulfillment == Fulfillment.Delivery, () => Include(DeliveryLocationValidator.Instance));
 
-        When(x => x.Zone == DeliveryZone.OtherProvince, () =>
+        When(x => x.Fulfillment == Fulfillment.Pickup, () =>
         {
-            RuleFor(x => x.Province).Must(p => p is not null && Provinces.All.Contains(p.Trim())).WithMessage("Elegí la provincia");
-            RequiredText(x => x.Carrier!, OrderLimits.Carrier);
-            RuleFor(x => x.Locality).Null().WithMessage(WrongZone);
-            RuleFor(x => x.Address).Null().WithMessage(WrongZone);
-            RuleFor(x => x.Latitude).Null().WithMessage(WrongZone);
-            RuleFor(x => x.Longitude).Null().WithMessage(WrongZone);
+            RuleFor(x => x.Address).Null().WithMessage(WrongFulfillment);
+            RuleFor(x => x.Latitude).Null().WithMessage(WrongFulfillment);
+            RuleFor(x => x.Longitude).Null().WithMessage(WrongFulfillment);
         });
 
         RuleFor(x => x.Items).Cascade(CascadeMode.Stop)
@@ -86,16 +81,15 @@ public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequest>
 }
 
 /// <summary>
-/// Rules of a Buenos Aires delivery location, shared by public order creation and the admin location edit.
+/// Rules of a delivery location, shared by public order creation and the admin location edit.
 /// Internal so assembly scanning does not register it as a validator of its own.
 /// </summary>
-internal sealed class BuenosAiresLocationValidator : AbstractValidator<IBuenosAiresLocation>
+internal sealed class DeliveryLocationValidator : AbstractValidator<IDeliveryLocation>
 {
-    public static readonly BuenosAiresLocationValidator Instance = new();
+    public static readonly DeliveryLocationValidator Instance = new();
 
-    BuenosAiresLocationValidator()
+    DeliveryLocationValidator()
     {
-        RuleFor(x => x.Locality!).RequiredText(OrderLimits.Locality);
         RuleFor(x => x.Address!).RequiredText(OrderLimits.Address);
         RuleFor(x => x.Latitude).InclusiveBetween(-90, 90);
         RuleFor(x => x.Longitude).InclusiveBetween(-180, 180);
@@ -125,7 +119,7 @@ public static class OrderEndpoints
     public static void MapOrderEndpoints(this IEndpointRouteBuilder app)
     {
         // The only public order endpoint. Orders hold personal data, so there is no public way to read them back.
-        app.MapPost("/api/orders", async (CreateOrderRequest req, AppDbContext db, ILoggerFactory loggers, CancellationToken ct) =>
+        app.MapPost("/api/orders", async (CreateOrderRequest req, AppDbContext db, ILoggerFactory loggers, MercadoPagoClient mercadoPago, CancellationToken ct) =>
         {
             var lines = req.Items!;
             var ids = lines.Select(l => l.VariantId).ToList();
@@ -138,7 +132,6 @@ public static class OrderEndpoints
                     v.Id,
                     v.Sku,
                     v.RetailPrice,
-                    v.WholesalePrice,
                     ProductName = v.Product.Name,
                     Values = v.Values.Select(x => new
                     {
@@ -152,18 +145,11 @@ public static class OrderEndpoints
                 .ToDictionaryAsync(v => v.Id, ct);
             if (variants.Count != ids.Count) return ItemsProblem("Hay productos que ya no están disponibles");
 
-            var thresholdSetting = await db.Settings.Where(s => s.Key == SettingKeys.WholesaleThreshold).Select(s => s.Value).FirstOrDefaultAsync(ct);
-            var threshold = WholesaleThreshold.Parse(thresholdSetting);
-            var pricedUnits = lines
-                .Where(l => OrderPricing.CountsTowardWholesale(variants[l.VariantId].RetailPrice, variants[l.VariantId].WholesalePrice))
-                .Sum(l => l.Quantity);
-            var isWholesale = OrderPricing.IsWholesale(pricedUnits, threshold);
-
             var items = lines.Select(line =>
             {
                 var variant = variants[line.VariantId];
-                var unitPrice = OrderPricing.UnitPrice(variant.RetailPrice, variant.WholesalePrice, isWholesale);
-                // Same wording the site shows in the cart: "Medida 34 · Color Cedro".
+                var unitPrice = OrderPricing.UnitPrice(variant.RetailPrice);
+                // Same wording the site shows in the cart: "Tamaño Grande (700 cc)".
                 var label = string.Join(" · ", variant.Values.OrderBy(x => x.SortOrder ?? int.MaxValue).ThenBy(x => x.AttributeName).Select(x => $"{x.AttributeName} {x.Label}"));
                 return new OrderItem
                 {
@@ -180,37 +166,46 @@ public static class OrderEndpoints
             var total = items.Sum(i => i.Subtotal ?? 0);
             if (total > OrderLimits.MaxAmount) return ItemsProblem("El total del pedido supera el máximo admitido");
 
-            var buenosAires = req.Zone == DeliveryZone.BuenosAires;
+            var delivery = req.Fulfillment == Fulfillment.Delivery;
             var order = new Order
             {
                 CreatedAt = DateTime.UtcNow,
                 Status = OrderStatus.Pending,
+                PaymentStatus = PaymentStatus.Unpaid,
                 CustomerType = req.CustomerType!.Value,
                 CustomerName = req.CustomerName!.Trim(),
                 Phone = string.IsNullOrWhiteSpace(req.Phone) ? null : req.Phone.Trim(),
-                Zone = req.Zone!.Value,
-                Locality = buenosAires ? req.Locality!.Trim() : null,
-                Address = buenosAires ? req.Address!.Trim() : null,
-                Latitude = buenosAires ? req.Latitude : null,
-                Longitude = buenosAires ? req.Longitude : null,
-                Province = buenosAires ? null : req.Province!.Trim(),
-                Carrier = buenosAires ? null : req.Carrier!.Trim(),
+                Fulfillment = req.Fulfillment!.Value,
+                TimeSlot = req.TimeSlot!.Trim(),
+                Address = delivery ? req.Address!.Trim() : null,
+                Latitude = delivery ? req.Latitude : null,
+                Longitude = delivery ? req.Longitude : null,
                 Comments = string.IsNullOrWhiteSpace(req.Comments) ? null : req.Comments.Trim(),
-                IsWholesale = isWholesale,
                 Total = total,
                 HasUnpricedItems = items.Any(i => i.UnitPrice is null),
                 Items = items,
             };
             db.Orders.Add(order);
             await db.SaveChangesAsync(ct);
+
+            // The order exists before paying; a pending payment leaves it unpaid and invisible to the owner.
+            string? checkoutUrl = null;
+            if (!order.HasUnpricedItems && mercadoPago.IsConfigured)
+            {
+                var preference = await mercadoPago.CreatePreferenceAsync(order, ct);
+                order.MercadoPagoPreferenceId = preference.Id;
+                await db.SaveChangesAsync(ct);
+                checkoutUrl = preference.InitPoint;
+            }
+
             // No personal data in the log: only what identifies the order and its amount.
             loggers.CreateLogger(LogCategory).LogInformation(
-                "Order created: id {OrderId}, number {OrderNumber}, total {OrderTotal}, wholesale {IsWholesale}",
-                order.Id, order.Number, order.Total, order.IsWholesale);
+                "Order created: id {OrderId}, number {OrderNumber}, total {OrderTotal}, checkout {HasCheckout}",
+                order.Id, order.Number, order.Total, checkoutUrl is not null);
 
             return Results.Created((string?)null, new OrderCreatedDto(
-                order.Id, order.Number, order.Status, order.CreatedAt, order.IsWholesale, order.Total, order.HasUnpricedItems,
-                order.Items.Select(ToDto).ToList()));
+                order.Id, order.Number, order.Status, order.PaymentStatus, order.CreatedAt, order.Total, order.HasUnpricedItems,
+                order.Items.Select(ToDto).ToList(), checkoutUrl));
         })
         .Validate<CreateOrderRequest>()
         .RequireRateLimiting(CreateRateLimit)
