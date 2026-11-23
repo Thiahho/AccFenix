@@ -1,5 +1,7 @@
+import { ShoppingBagIcon } from "lucide-react";
 import { ProductCard } from "@/components/home/product-card";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
+import { MenuPill } from "@/components/site/menu-card";
 import type { ProductDetail } from "@/lib/api";
 
 type Props = { products: ProductDetail[]; phone: string };
@@ -12,8 +14,8 @@ export function OrderCatalog({ products, phone }: Props) {
     <section id="catalogo" className="anchor-section border-b bg-background" aria-labelledby="catalogo-titulo">
       <div className="mx-auto max-w-6xl px-4 py-14 md:py-20">
         <Reveal>
-          <p className="eyebrow text-caramel-deep">Hacé tu pedido</p>
-          <h2 id="catalogo-titulo" className="title-display mt-3 max-w-2xl text-4xl sm:text-5xl">
+          <MenuPill icon={ShoppingBagIcon} tone="caramel">Hacé tu pedido</MenuPill>
+          <h2 id="catalogo-titulo" className="title-display mt-4 max-w-2xl text-4xl sm:text-5xl">
             Elegí la presentación y sumala al pedido
           </h2>
           <p className="mt-3 max-w-xl text-muted-foreground text-pretty">

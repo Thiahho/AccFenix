@@ -19,7 +19,7 @@ import { useCart } from "@/stores/cart";
 type Props = { product: ProductDetail; phone: string };
 
 const chip =
-  "inline-flex h-11 min-w-12 items-center justify-center rounded-md border bg-background px-3 text-sm font-semibold transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none";
+  "inline-flex h-11 min-w-12 items-center justify-center rounded-full border border-caramel/70 bg-background px-4 text-sm font-semibold transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none";
 
 /** One product: the visitor picks a presentation, sees its price and adds it to the order or asks by WhatsApp. */
 export function ProductCard({ product, phone }: Props) {
@@ -61,11 +61,11 @@ export function ProductCard({ product, phone }: Props) {
       whileHover={{ y: -4 }}
       transition={{ type: "spring", stiffness: 380, damping: 26 }}
       className={cn(
-        "flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgb(60_30_10/0.05),0_8px_24px_rgb(60_30_10/0.06)] transition-shadow duration-300 hover:shadow-[0_2px_4px_rgb(60_30_10/0.06),0_18px_40px_rgb(60_30_10/0.14)]",
-        inCart > 0 && "border-brand ring-3 ring-brand/15",
+        "flex h-full flex-col overflow-hidden rounded-2xl border border-caramel/70 bg-card transition-colors duration-300 hover:border-espresso",
+        inCart > 0 && "border-espresso ring-2 ring-espresso/20",
       )}
     >
-      <ProductImage src={cover} alt={product.name} className="aspect-[4/3] rounded-none" sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw" />
+      <ProductImage src={cover} alt={product.name} className="aspect-[4/3] rounded-none border-b border-dashed border-caramel/60" sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw" />
 
       <div className="flex flex-1 flex-col gap-4 p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-2">
@@ -105,7 +105,7 @@ export function ProductCard({ product, phone }: Props) {
           </fieldset>
         ))}
 
-        <div aria-live="polite" className="rounded-lg bg-brand-soft/60 px-3 py-2.5">
+        <div aria-live="polite" className="border-y border-dashed border-caramel/60 py-2.5">
           {variant ? (
             <>
               <p className="flex items-baseline justify-between gap-3">
@@ -125,7 +125,7 @@ export function ProductCard({ product, phone }: Props) {
           <m.div whileTap={variant ? { scale: 0.97 } : undefined} className="flex flex-col">
             <Button
               type="button"
-              className={cn("h-auto min-h-11 whitespace-normal py-2 text-center leading-tight", inCart > 0 && "bg-caramel-deep hover:bg-caramel-deep/90")}
+              className={cn("h-auto min-h-11 rounded-full whitespace-normal py-2 text-center leading-tight", inCart > 0 && "bg-caramel-deep hover:bg-caramel-deep/90")}
               disabled={!variant}
               onClick={handleAdd}
             >
@@ -144,7 +144,7 @@ export function ProductCard({ product, phone }: Props) {
             </Button>
           </m.div>
           {phone && variant ? (
-            <Button asChild variant="outline" className="h-auto min-h-11 whitespace-normal py-2 text-center leading-tight">
+            <Button asChild variant="outline" className="h-auto min-h-11 rounded-full border-espresso whitespace-normal py-2 text-center leading-tight">
               <a href={whatsappUrl(phone, buildVariantMessage(product.name, label))} target="_blank" rel="noopener noreferrer">
                 <MessageCircleIcon aria-hidden /> Pedir por WhatsApp
               </a>

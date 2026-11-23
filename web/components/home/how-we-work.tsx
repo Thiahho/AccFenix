@@ -2,7 +2,7 @@ import { Journey } from "@/components/home/journey";
 import { Reveal } from "@/components/motion/reveal";
 import { journeyGoal, steps } from "@/lib/home-content";
 
-/** The three real steps of an order as a route on the warm red band, ending at the egg. */
+/** The three real steps of an order as a route on the espresso band, ending at the cup. */
 export function HowWeWork() {
   return (
     <section id="como-trabajamos" className="anchor-section overflow-hidden bg-brand text-brand-foreground" aria-labelledby="como-trabajamos-titulo">

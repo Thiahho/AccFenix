@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CupSodaIcon } from "lucide-react";
+import { MenuPill } from "@/components/site/menu-card";
 import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/seo/json-ld";
 import { ProductImage } from "@/components/site/product-image";
@@ -55,8 +57,8 @@ export default async function CategoryPage({ params }: Props) {
       <nav aria-label="Ruta" className="text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">Inicio</Link> / <span className="text-foreground">{category.name}</span>
       </nav>
-      <p className="eyebrow mt-6 text-caramel-deep">Catálogo</p>
-      <h1 className="title-display mt-3 text-4xl sm:text-5xl">{category.name}</h1>
+      <MenuPill icon={CupSodaIcon} className="mt-6">Catálogo</MenuPill>
+      <h1 className="title-display mt-4 text-4xl sm:text-5xl">{category.name}</h1>
       {category.description && <p className="mt-2 max-w-2xl text-muted-foreground">{category.description}</p>}
 
       {products.length === 0 ? (
@@ -67,7 +69,7 @@ export default async function CategoryPage({ params }: Props) {
             <li key={p.id}>
               <Link
                 href={`/producto/${p.slug}`}
-                className="group flex min-h-24 items-center gap-4 rounded-lg focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:block"
+                className="group flex h-full min-h-24 items-center gap-4 rounded-2xl border border-caramel/70 bg-card p-3 transition-colors hover:border-espresso focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:block"
               >
                 <ProductImage
                   src={p.coverUrl}

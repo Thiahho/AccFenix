@@ -8,6 +8,12 @@ export const heroImage = {
   alt: "Vaso de café frío con hielo",
 };
 
+/** Handwritten phrases taken from the printed ColdCup menu. */
+export const accentPhrases = {
+  hero: "Good Coffee, Cooler Days",
+  board: "Más café frío, por favor",
+};
+
 export type Step = { title: string; text: string };
 
 export const steps: Step[] = [
