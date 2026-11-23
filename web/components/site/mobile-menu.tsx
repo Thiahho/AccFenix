@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FolderIcon, ShoppingBagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { categorySection, sectionLinks, useActiveSection } from "@/lib/nav";
 import { useHydrated } from "@/lib/use-hydrated";
@@ -12,11 +11,8 @@ import { useCart } from "@/stores/cart";
 
 type Props = { categories: { id: number; name: string; slug: string }[] };
 
-/** Stagger index for the menu items slide-in (see `.menu-item-in` in globals.css). */
-const stagger = (i: number) => ({ "--i": i }) as CSSProperties;
-
 const rowClass =
-  "flex min-h-12 items-center gap-3 rounded-lg px-3 text-base transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";
+  "poster-display poster-focus-inset flex min-h-14 items-center justify-between gap-3 border-b-2 border-espresso px-4 text-2xl transition-colors";
 
 /** Botón burger + panel desplegable para mobile. Se cierra al elegir un enlace, cambiar de ruta, con Escape, tocando fuera o al pasar a desktop. */
 export function MobileMenu({ categories }: Props) {
@@ -77,12 +73,12 @@ export function MobileMenu({ categories }: Props) {
   }, [open]);
 
   return (
-    <div className="md:hidden">
+    <div className="flex md:hidden">
       <Button
         ref={buttonRef}
         type="button"
         variant="ghost"
-        className="header-action rounded-full"
+        className="poster-focus-inset h-full w-14 rounded-none border-l-[3px] border-l-espresso hover:bg-oat aria-expanded:bg-oat"
         size="icon"
         aria-label={open ? "Cerrar menú" : "Abrir menú"}
         aria-expanded={open}
@@ -99,23 +95,22 @@ export function MobileMenu({ categories }: Props) {
 
       {open && (
         <>
-          <button type="button" tabIndex={-1} aria-hidden onClick={close} className="pointer-events-auto absolute inset-x-0 top-(--menu-top) h-dvh cursor-default bg-black/30 motion-safe:animate-in motion-safe:fade-in" />
+          <button type="button" tabIndex={-1} aria-hidden onClick={close} className="absolute inset-x-0 top-full h-dvh cursor-default bg-roast/60" />
           <nav
             ref={navRef}
             id="menu-movil"
             aria-label="Menú"
-            className="pointer-events-auto absolute inset-x-3 top-(--menu-top) max-h-[calc(100dvh-var(--menu-top)-0.75rem)] overflow-y-auto rounded-2xl border bg-background px-3 pt-2 pb-4 shadow-xl motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-200"
+            className="absolute inset-x-0 top-full max-h-[calc(100dvh-4rem-3px)] overflow-y-auto border-b-[3px] border-espresso bg-ivory"
           >
             <ul>
-              {sectionLinks.map((s, i) => (
-                <li key={s.id} className="menu-item-in" style={stagger(i)}>
+              {sectionLinks.map((s) => (
+                <li key={s.id}>
                   <Link
                     href={s.href}
                     onClick={close}
                     aria-current={active === s.id ? "true" : undefined}
-                    className={cn(rowClass, active === s.id ? "bg-brand-soft font-medium text-brand" : "text-foreground hover:bg-muted")}
+                    className={cn(rowClass, active === s.id ? "bg-espresso text-ivory" : "hover:bg-oat")}
                   >
-                    <s.icon aria-hidden className="size-5 shrink-0" />
                     {s.label}
                   </Link>
                 </li>
@@ -124,19 +119,18 @@ export function MobileMenu({ categories }: Props) {
 
             {categories.length > 0 && (
               <>
-                <p className="mt-3 mb-1 border-t px-3 pt-4 text-sm font-medium text-muted-foreground">Catálogos</p>
+                <p className="poster-label bg-latte px-4 py-2 text-espresso">Catálogos</p>
                 <ul>
-                  {categories.map((c, i) => {
+                  {categories.map((c) => {
                     const current = active === categorySection(c.slug);
                     return (
-                      <li key={c.id} className="menu-item-in" style={stagger(sectionLinks.length + i)}>
+                      <li key={c.id}>
                         <Link
                           href={`/catalogo/${c.slug}`}
                           onClick={close}
                           aria-current={current ? "page" : undefined}
-                          className={cn(rowClass, current ? "bg-brand-soft font-medium text-brand" : "text-foreground hover:bg-muted")}
+                          className={cn(rowClass, current ? "bg-espresso text-ivory" : "hover:bg-oat")}
                         >
-                          <FolderIcon aria-hidden className={cn("size-5 shrink-0", !current && "text-muted-foreground")} />
                           {c.name}
                         </Link>
                       </li>
@@ -146,18 +140,15 @@ export function MobileMenu({ categories }: Props) {
               </>
             )}
 
-            <div className="menu-item-in mt-3 border-t pt-3" style={stagger(sectionLinks.length + categories.length)}>
-              <Link href="/pedido" onClick={close} className={cn(rowClass, "font-medium text-foreground hover:bg-muted")}>
-                <ShoppingBagIcon aria-hidden className="size-5 shrink-0" />
-                Mi pedido
-                {lines > 0 && (
-                  <span className="ml-auto rounded-full bg-brand px-2 py-0.5 text-xs font-semibold text-brand-foreground tabular-nums">
-                    {lines}
-                    <span className="sr-only"> {lines === 1 ? "producto" : "productos"}</span>
-                  </span>
-                )}
-              </Link>
-            </div>
+            <Link href="/pedido" onClick={close} className={cn(rowClass, "border-b-0 bg-caramel-deep text-ivory hover:bg-espresso")}>
+              Mi pedido
+              {lines > 0 && (
+                <span className="bg-ivory px-2 py-1 text-sm tracking-normal text-espresso tabular-nums">
+                  {lines}
+                  <span className="sr-only"> {lines === 1 ? "producto" : "productos"}</span>
+                </span>
+              )}
+            </Link>
           </nav>
         </>
       )}

@@ -1,68 +1,52 @@
 import Link from "next/link";
-import { ArrowDownIcon, CupSodaIcon, MessageCircleIcon, TruckIcon } from "lucide-react";
-import { HeroCup } from "@/components/home/hero-cup";
+import { ArrowDownIcon } from "lucide-react";
 import { IcedCup } from "@/components/home/iced-cup";
-import { CoffeeStains, MenuPill, ScriptAccent } from "@/components/site/menu-card";
-import { Wordmark } from "@/components/site/wordmark";
-import { accentPhrases, heroCupLabel } from "@/lib/home-content";
-import { whatsappUrl } from "@/lib/whatsapp";
+import { Starburst } from "@/components/site/starburst";
+import { heroCupLabel, posterPhrases } from "@/lib/home-content";
 
-/** ColdCup cover: menu-paper background with coffee-stain corners, the cup and the two main actions. */
-export function Hero({ phone }: { phone: string }) {
+/** Repeats enough to run past the right edge of a wide screen; the band clips the rest. */
+const STRIP_REPEATS = 6;
+
+/** Poster cover: giant stacked words on espresso, the cup on a burst, a stamp and one action. Static server markup. */
+export function Hero() {
   return (
-    <section
-      id="inicio"
-      aria-labelledby="hero-titulo"
-      className="relative overflow-hidden bg-background text-foreground"
-    >
-      <CoffeeStains />
-      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pt-28 pb-14 md:grid-cols-[1.15fr_1fr] md:gap-12 md:pt-36 md:pb-20">
-        {/* Above the fold: the headline is static markup (it is the LCP candidate); the items around it enter with a CSS
-            keyframe (.hero-in in globals.css), so they play on first paint and end fully visible even without JS. */}
-        <div className="flex flex-col gap-6">
-          <div className="hero-in [--hero-i:0] [--hero-y:10px]">
-            <MenuPill icon={CupSodaIcon}>Cafés fríos</MenuPill>
-          </div>
-          <h1 id="hero-titulo" className="flex flex-col gap-1">
-            <span className="title-display text-5xl sm:text-6xl lg:text-7xl">Somos</span>
-            <span className="-mt-1 flex">
-              <Wordmark className="text-7xl sm:text-8xl lg:text-9xl" />
-            </span>
-            <span className="mt-3 text-sm font-bold tracking-[0.3em] text-caramel-deep uppercase sm:text-base">
-              Para llevar y a domicilio
-            </span>
+    <>
+      <section id="inicio" aria-labelledby="hero-titulo" className="poster-ink relative overflow-hidden">
+        <div className="relative mx-auto max-w-7xl px-4 pt-5 pb-7 sm:px-6 lg:grid lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-x-10 lg:px-8 lg:pt-10 lg:pb-12">
+          <h1 id="hero-titulo" className="poster-display poster-hero-title relative z-10">
+            <span className="block">Café</span>
+            <span className="poster-hero-accented block">Frío.</span>
+            <span className="block text-latte">Moreno.</span>
           </h1>
-          <p className="hero-in max-w-md text-lg text-pretty text-muted-foreground [--hero-i:1]">
-            Cafés fríos con leche, sabores y tamaños a elegir. Pedí desde la web, pagá con Mercado Pago y retirá o recibí en Moreno.
-          </p>
-          <div className="hero-in flex flex-col gap-3 [--hero-i:2] sm:flex-row sm:items-center">
-            <Link
-              href="#precios"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-7 text-[15px] font-bold tracking-wide text-brand-foreground uppercase transition-[background-color,translate] hover:-translate-y-0.5 hover:bg-roast focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none motion-reduce:hover:translate-y-0"
-            >
-              Ver precios <ArrowDownIcon aria-hidden className="size-4" />
-            </Link>
-            {phone && (
-              <a
-                href={whatsappUrl(phone, "¡Hola! Quiero hacer un pedido de café frío.")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full border-2 border-espresso px-6 text-[15px] font-semibold transition-colors hover:bg-espresso hover:text-ivory focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-              >
-                <MessageCircleIcon aria-hidden className="size-4" /> Pedir por WhatsApp
-              </a>
-            )}
-          </div>
-          <p className="hero-in flex items-center gap-2 text-sm text-muted-foreground [--hero-i:3] [--hero-y:8px]">
-            <TruckIcon aria-hidden className="size-5 text-caramel-deep" /> Envíos en Moreno o retiro en el local
-          </p>
-          <ScriptAccent className="hero-in -rotate-2 text-3xl [--hero-i:4] sm:text-4xl">{accentPhrases.hero}</ScriptAccent>
-        </div>
 
-        <HeroCup>
-          <IcedCup label={heroCupLabel} className="mx-auto max-w-56 sm:max-w-64" />
-        </HeroCup>
+          <div className="absolute top-1 -right-5 w-[52vw] max-w-88 sm:right-2 lg:relative lg:top-auto lg:right-auto lg:row-span-2 lg:w-full lg:max-w-136 lg:self-center lg:justify-self-center">
+            <Starburst spikes={18} fill="var(--cream)" className="w-full" />
+            <IcedCup label={heroCupLabel} className="absolute top-1/2 left-1/2 w-[38%] -translate-x-1/2 -translate-y-1/2" />
+            <Starburst
+              lines={["Iced", "coffee", "to go"]}
+              spikes={14}
+              fill="var(--caramel-deep)"
+              ink="var(--ivory)"
+              className="absolute right-[12%] -bottom-[3%] w-[42%] -rotate-12 lg:right-0 lg:bottom-[2%] lg:w-[34%]"
+            />
+          </div>
+
+          <div className="relative z-10 mt-5 flex flex-col gap-4 lg:mt-8 lg:max-w-xl">
+            <p className="max-w-md text-base leading-snug text-pretty text-cream lg:text-lg">
+              Cafés fríos con leche, sabores y tamaños a elegir. Pedí desde la web, pagá con Mercado Pago y retirá o recibí en Moreno.
+            </p>
+            <Link href="#precios" className="poster-cta w-full bg-cream text-espresso hover:bg-latte sm:w-fit">
+              Ver precios <ArrowDownIcon aria-hidden className="size-5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <div aria-hidden className="overflow-hidden border-b-[3px] border-espresso bg-latte py-2 text-espresso">
+        <p className="poster-display text-xl whitespace-pre sm:text-2xl">
+          {Array.from({ length: STRIP_REPEATS }, () => posterPhrases.join("  /  ")).join("  /  ")}
+        </p>
       </div>
-    </section>
+    </>
   );
 }

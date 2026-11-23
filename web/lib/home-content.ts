@@ -5,11 +5,11 @@ export const PENDING = "*****";
 
 export const heroCupLabel = "Vaso de café frío con hielo";
 
-/** Handwritten phrases taken from the printed ColdCup menu. */
-export const accentPhrases = {
-  hero: "Good Coffee, Cooler Days",
-  board: "Más café frío, por favor",
-};
+/** True brand phrases from the printed ColdCup menu, set on the poster strip. */
+export const posterPhrases = ["Iced coffee to go", "Good coffee, cooler days", "Moreno"];
+
+/** Closing line of the price board, from the printed menu. */
+export const boardPhrase = "Más café frío, por favor";
 
 export type Step = { title: string; text: string };
 

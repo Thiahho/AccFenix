@@ -39,7 +39,7 @@ export default async function HomePage() {
     <>
       <JsonLd data={organization(settings.whatsappNumber)} />
       <NoScriptReveal />
-      <Hero phone={settings.whatsappNumber} />
+      <Hero />
       <PriceBoard products={products} />
       <HowWeWork />
       <Faq />

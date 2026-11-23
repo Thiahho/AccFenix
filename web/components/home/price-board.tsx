@@ -6,7 +6,7 @@ import { PriceCell } from "@/components/home/price-cell";
 import { CoffeeStains, MenuCard, MenuPill, ScriptAccent } from "@/components/site/menu-card";
 import type { ProductDetail } from "@/lib/api";
 import { priceRowCartItem } from "@/lib/catalog";
-import { accentPhrases } from "@/lib/home-content";
+import { boardPhrase } from "@/lib/home-content";
 import { formatArs } from "@/lib/pricing";
 
 type Props = { products: ProductDetail[] };
@@ -67,7 +67,7 @@ export function PriceBoard({ products }: Props) {
             >
               Ver mi pedido <ArrowRightIcon aria-hidden className="size-4" />
             </Link>
-            <ScriptAccent className="-rotate-3 text-3xl">{accentPhrases.board}</ScriptAccent>
+            <ScriptAccent className="-rotate-3 text-3xl">{boardPhrase}</ScriptAccent>
           </Reveal>
         )}
       </div>

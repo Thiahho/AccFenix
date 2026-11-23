@@ -13,13 +13,17 @@ export function CartButton() {
   const lines = hydrated ? items.length : 0;
 
   return (
-    <Button asChild variant="ghost" className="header-action relative gap-2 rounded-full">
+    <Button
+      asChild
+      variant="ghost"
+      className="poster-ink poster-focus-inset h-full gap-2 border-0 rounded-none px-4 text-[13px] font-bold tracking-wide uppercase hover:bg-roast hover:text-ivory md:h-full lg:px-6"
+    >
       <Link href="/pedido" aria-label={lines ? `Mi pedido, ${unitsLabel(totalUnits(items))}` : "Mi pedido"}>
-        <ShoppingBagIcon aria-hidden />
-        <span className="hidden sm:inline">Mi pedido</span>
+        <ShoppingBagIcon aria-hidden className="size-5" />
+        <span className="hidden lg:inline">Mi pedido</span>
         {lines > 0 && (
           // La key reinicia el pulso cada vez que cambia el pedido.
-          <span key={totalUnits(items)} className="cart-bump absolute -top-2.5 -right-2.5 grid h-6 min-w-6 place-items-center rounded-full bg-brand px-1.5 text-[13px] font-semibold text-brand-foreground tabular-nums">
+          <span key={totalUnits(items)} className="cart-bump grid h-6 min-w-6 place-items-center bg-cream px-1 text-[13px] font-extrabold text-espresso tabular-nums">
             {lines}
           </span>
         )}
