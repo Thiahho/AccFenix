@@ -7,9 +7,9 @@ export function normalizeSiteUrl(value: string | undefined) {
 
 // Brand data. Placeholders until the client delivers the final material.
 export const site = {
-  name: process.env.NEXT_PUBLIC_BRAND_NAME || "Eggy",
-  tagline: "Distribuidora de huevos",
+  name: process.env.NEXT_PUBLIC_BRAND_NAME || "ColdCup",
+  tagline: "Cafés fríos",
   description:
-    "Huevos frescos por maple, medio cajón y cajón, para tu casa o tu comercio. Precios minoristas y mayoristas, pedidos por WhatsApp y entrega con camión propio.",
+    "Cafés fríos para llevar o pedir a domicilio en Moreno. Elegí tu bebida, tamaño y extras, y pagá con Mercado Pago.",
   url: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
 };

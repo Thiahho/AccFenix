@@ -1,57 +1,47 @@
-// Editable home copy. Texts marked "a confirmar con el cliente" are proposals, not verified business data.
+// Editable home copy for ColdCup (demo). Datos sin confirmar van como "*****" hasta que el cliente los entregue.
+
+/** Placeholder para datos que todavía no entregó el cliente (dirección, horario, alias, costo y mínimo de envío). */
+export const PENDING = "*****";
 
 export const heroImage = {
   src: "/eggy-hero.png",
-  alt: "Huevo blanco con el logo de Eggy apoyado en una maple roja",
+  alt: "Vaso de café frío con hielo",
 };
 
 export type Step = { title: string; text: string };
 
 export const steps: Step[] = [
-  { title: "Pedís", text: "Por WhatsApp o armando tu pedido acá en la web, por maple, medio cajón o cajón." },
-  { title: "Confirmamos", text: "Te respondemos con el total, el día y la franja de entrega." },
-  { title: "Entregamos", text: "Llevamos el pedido con nuestro camión propio, cuidado para que llegue entero." },
+  { title: "Elegís", text: "Armá tu pedido en la web: bebida, tamaño y extras. El total se calcula al momento." },
+  { title: "Pagás", text: "Pagás con Mercado Pago. Cuando el pago se aprueba, tu pedido queda registrado." },
+  { title: "Retirás o recibís", text: "Pasás a buscarlo por el local o te lo llevamos a Moreno. El pago en efectivo se hace al retirar." },
 ];
 
 /** Where the "Cómo trabajamos" journey ends. */
-export const journeyGoal: Step = { title: "Tus huevos, en tu puerta", text: "El día y en la franja que acordamos, listos para usar." };
+export const journeyGoal: Step = { title: "Tu café, listo", text: "Frío y en el momento que lo pediste." };
 
 export type Faq = { question: string; answer: string };
 
-// A confirmar con el cliente: zones, payment methods and wholesale rules are proposals.
 export const faqs: Faq[] = [
   {
-    question: "¿Qué es un maple?",
-    answer: "Es la bandeja de cartón donde vienen los huevos: un maple trae 30 huevos.",
-  },
-  {
-    question: "¿Cuántos huevos trae un cajón y un medio cajón?",
-    answer: "El cajón trae 12 maples, es decir 360 huevos. El medio cajón trae 6 maples: 180 huevos.",
-  },
-  {
-    question: "¿A qué zonas entregan?",
+    question: "¿Cómo pago?",
     answer:
-      "Entregamos con camión propio en nuestra zona de reparto. Al hacer el pedido te confirmamos si llegamos a tu dirección y qué día pasamos.",
+      "Pagás con Mercado Pago desde la web. Cuando se aprueba el pago, te mandamos el comprobante por WhatsApp. Si preferís pagar en efectivo, es al retirar el café.",
   },
   {
-    question: "¿Venden por mayor?",
-    answer:
-      "Sí. Trabajamos con comercios, almacenes, verdulerías y restaurantes. Los pedidos grandes se cobran a precio mayorista: el mínimo figura en la sección Mayoristas.",
+    question: "¿A dónde envían?",
+    answer: `Hacemos envíos solo en Moreno. El costo de envío es ${PENDING} y el pedido mínimo es ${PENDING}.`,
   },
   {
-    question: "¿Cómo se paga?",
-    answer: "Podés pagar en efectivo o por transferencia al recibir el pedido. Si necesitás otra forma de pago, consultanos por WhatsApp.",
+    question: "¿Puedo pasar a buscar el pedido?",
+    answer: `Sí. Retirás en el local, en ${PENDING}, en el horario de ${PENDING}.`,
+  },
+  {
+    question: "¿Cuánto cuestan los extras?",
+    answer: "Leche de almendras suma $1.000 y leche deslactosada suma $500. El extra tiene el mismo precio sin importar el tamaño.",
   },
   {
     question: "¿Los precios de la web están actualizados?",
     answer:
-      "Sí, los cargamos nosotros y los actualizamos cuando cambian. Si un producto dice \"Consultar\", te pasamos el precio por WhatsApp.",
+      "Sí, los cargamos nosotros y los actualizamos cuando cambian. Si un producto no tiene precio, te lo pasamos por WhatsApp.",
   },
-];
-
-// A confirmar con el cliente antes de publicar.
-export const wholesaleConditions: string[] = [
-  "Precio mayorista para comercios, almacenes, verdulerías y restaurantes.",
-  "Reparto programado con camión propio, en el día y la franja que te queden cómodos.",
-  "Un solo contacto por WhatsApp para pedidos, cambios y facturación.",
 ];

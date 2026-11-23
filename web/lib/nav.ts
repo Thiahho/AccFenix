@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { CircleHelpIcon, HouseIcon, ShoppingBasketIcon, StoreIcon, TagIcon } from "lucide-react";
+import { CircleHelpIcon, HouseIcon, ShoppingBasketIcon, TagIcon } from "lucide-react";
 
 /** Secciones de la home, en el orden en que aparecen en la página. Única fuente para el header y el menú mobile. */
 export const sectionLinks = [
   { id: "inicio", href: "/", label: "Inicio", icon: HouseIcon },
   { id: "precios", href: "/#precios", label: "Precios", icon: TagIcon },
   { id: "catalogo", href: "/#catalogo", label: "Hacé tu pedido", icon: ShoppingBasketIcon },
-  { id: "mayoristas", href: "/#mayoristas", label: "Mayoristas", icon: StoreIcon },
   { id: "preguntas", href: "/#preguntas", label: "Preguntas", icon: CircleHelpIcon },
 ];
 

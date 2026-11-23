@@ -13,17 +13,37 @@ namespace AccFenix.Api.Seed;
 /// </summary>
 public class CatalogSeeder(AppDbContext db, VariantGenerator generator, AdminAccountService admins, IConfiguration config, ILogger<CatalogSeeder> logger)
 {
-    // PLACEHOLDER: catálogo y precios de referencia a confirmar con el cliente.
-    // Presentaciones: Cajón = 360 huevos, Medio cajón = 180, Maple = 30.
-    static readonly string[] Presentaciones = ["Cajón", "Medio cajón", "Maple"];
+    // Carta de ColdCup (demo). Precios tomados del Instagram del cliente, a confirmar.
+    // Tamaños: Chico = 500 cc, Grande = 700 cc. Los extras tienen el mismo precio en ambos tamaños.
+    static readonly string[] Tamanos = ["Chico (500 cc)", "Grande (700 cc)"];
 
-    /// <summary>Precio minorista (ARS) por producto y presentación. El mayorista queda sin cargar (a consultar).</summary>
-    static readonly (string Product, string Description, Dictionary<string, decimal> Retail)[] Huevos =
+    /// <summary>Un producto de la carta con su precio minorista por tamaño, en ARS.</summary>
+    static readonly (string Category, string Product, string Description, Dictionary<string, decimal> Retail)[] Carta =
     [
-        ("Huevos N°1", "Huevos frescos de granja, calibre N°1.",
-            new() { ["Cajón"] = 60000m, ["Medio cajón"] = 35000m, ["Maple"] = 6500m }),
-        ("Huevos N°2", "Huevos frescos de granja, calibre N°2.",
-            new() { ["Cajón"] = 55000m, ["Medio cajón"] = 27000m, ["Maple"] = 5500m }),
+        ("Cafés clásicos", "Latte frío", "Café con leche fría.",
+            new() { ["Chico (500 cc)"] = 4500m, ["Grande (700 cc)"] = 6000m }),
+        ("Cafés clásicos", "Latte frío vainilla", "Latte frío con jarabe de vainilla.",
+            new() { ["Chico (500 cc)"] = 5000m, ["Grande (700 cc)"] = 6500m }),
+        ("Cafés clásicos", "Latte frío caramel", "Latte frío con caramelo.",
+            new() { ["Chico (500 cc)"] = 5500m, ["Grande (700 cc)"] = 7000m }),
+        ("Cafés clásicos", "Latte frío mocca", "Latte frío con chocolate.",
+            new() { ["Chico (500 cc)"] = 5000m, ["Grande (700 cc)"] = 6500m }),
+        ("Cafés clásicos", "Iced americano", "Café americano con hielo.",
+            new() { ["Chico (500 cc)"] = 4000m, ["Grande (700 cc)"] = 5500m }),
+        ("Especiales", "Latte frío oreo", "Latte frío con galletita Oreo.",
+            new() { ["Chico (500 cc)"] = 7500m, ["Grande (700 cc)"] = 8200m }),
+        ("Especiales", "Latte frío tiramisú", "Latte frío estilo tiramisú.",
+            new() { ["Chico (500 cc)"] = 7900m, ["Grande (700 cc)"] = 8500m }),
+        ("Especiales", "Latte frío banana cream", "Latte frío con banana y crema.",
+            new() { ["Chico (500 cc)"] = 7500m, ["Grande (700 cc)"] = 8200m }),
+        ("Especiales", "Latte frío cookies and cream", "Latte frío con galletitas cookies and cream.",
+            new() { ["Chico (500 cc)"] = 7500m, ["Grande (700 cc)"] = 8500m }),
+        ("Refrescantes", "Limonada (menta y jengibre)", "Limonada con menta y jengibre.",
+            new() { ["Chico (500 cc)"] = 5500m, ["Grande (700 cc)"] = 6500m }),
+        ("Extras", "Extra leche de almendras", "Se suma al producto.",
+            new() { ["Chico (500 cc)"] = 1000m, ["Grande (700 cc)"] = 1000m }),
+        ("Extras", "Extra leche deslactosada", "Se suma al producto.",
+            new() { ["Chico (500 cc)"] = 500m, ["Grande (700 cc)"] = 500m }),
     ];
 
     public async Task SeedAsync(CancellationToken ct = default)
@@ -48,13 +68,20 @@ public class CatalogSeeder(AppDbContext db, VariantGenerator generator, AdminAcc
 
     async Task SeedCatalogAsync(CancellationToken ct)
     {
-        var presentacion = await EnsureAttributeAsync("Presentación", 0, Presentaciones.Select(p => (p, (string?)null)), ct);
-        var huevos = await EnsureCategoryAsync("Huevos", 0, "Huevos frescos por cajón (360), medio cajón (180) o maple (30).", [presentacion], ct);
+        var tamano = await EnsureAttributeAsync("Tamaño", 0, Tamanos.Select(t => (t, (string?)null)), ct);
+        var attrs = new[] { tamano };
+        var categorias = new Dictionary<string, Category>();
+        var orden = 0;
 
-        for (var i = 0; i < Huevos.Length; i++)
+        foreach (var (categoria, producto, descripcion, retail) in Carta)
         {
-            var (name, description, retail) = Huevos[i];
-            var product = await EnsureProductAsync(huevos, name, i, description, [.. presentacion.Values], ct);
+            if (!categorias.TryGetValue(categoria, out var cat))
+            {
+                cat = await EnsureCategoryAsync(categoria, categorias.Count, $"{categoria} de ColdCup.", attrs, ct);
+                categorias[categoria] = cat;
+            }
+
+            var product = await EnsureProductAsync(cat, producto, orden++, descripcion, [.. tamano.Values], ct);
             await generator.GenerateAsync(product.Id, ct);
             await SetRetailPricesAsync(product.Id, retail, ct);
         }
