@@ -165,5 +165,5 @@ public class DatabaseConstraintTests(ApiFactory factory)
     [InlineData(1, -0.01, null, "CK_OrderItems_UnitPrice")]
     [InlineData(1, null, -0.01, "CK_OrderItems_Subtotal")]
     public Task Invalid_order_items_are_rejected(int quantity, double? unitPrice, double? subtotal, string constraint) =>
-        ExpectViolation(constraint, Save(With(BuenosAiresOrder(), o => o.Items = [Item(quantity, (decimal?)unitPrice, (decimal?)subtotal)])));
+        ExpectViolation(constraint, Save(With(DeliveryOrder(), o => o.Items = [Item(quantity, (decimal?)unitPrice, (decimal?)subtotal)])));
 }
