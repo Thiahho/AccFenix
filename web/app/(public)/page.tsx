@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Faq } from "@/components/home/faq";
 import { Hero } from "@/components/home/hero";
 import { HowWeWork } from "@/components/home/how-we-work";
-import { OrderCatalog } from "@/components/home/order-catalog";
 import { PriceBoard } from "@/components/home/price-board";
 import { NoScriptReveal } from "@/components/motion/reveal";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -42,7 +41,6 @@ export default async function HomePage() {
       <NoScriptReveal />
       <Hero phone={settings.whatsappNumber} />
       <PriceBoard products={products} />
-      <OrderCatalog products={products} phone={settings.whatsappNumber} />
       <HowWeWork />
       <Faq />
     </>

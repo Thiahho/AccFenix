@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDownIcon, CupSodaIcon, GlassWaterIcon, MilkIcon, ReceiptTextIcon, SparklesIcon, type LucideIcon } from "lucide-react";
+import { ArrowRightIcon, CupSodaIcon, GlassWaterIcon, MilkIcon, ReceiptTextIcon, SparklesIcon, type LucideIcon } from "lucide-react";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import { buildCategoryBoard, groupByCategory, type BoardCell, type CategoryGroup } from "@/components/home/price-board-model";
 import { PriceCell } from "@/components/home/price-cell";
@@ -33,6 +33,8 @@ export function PriceBoard({ products }: Props) {
 
   return (
     <section id="precios" aria-labelledby="precios-titulo" className="anchor-section relative overflow-hidden border-y border-latte bg-cream">
+      {/* Links shared before the board became the only ordering section still land here. */}
+      <span id="catalogo" aria-hidden className="anchor-section absolute top-0" />
       <CoffeeStains />
       <div className="relative mx-auto max-w-5xl px-4 py-14 md:py-20">
         <Reveal>
@@ -60,10 +62,10 @@ export function PriceBoard({ products }: Props) {
         {groups.length > 0 && (
           <Reveal y={12} className="mt-10 flex flex-wrap items-center justify-between gap-4">
             <Link
-              href="#catalogo"
+              href="/pedido"
               className="inline-flex h-12 items-center gap-2 rounded-full bg-espresso px-7 text-[15px] font-bold tracking-wide text-ivory uppercase transition-colors hover:bg-roast focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
             >
-              Hacé tu pedido <ArrowDownIcon aria-hidden className="size-4" />
+              Ver mi pedido <ArrowRightIcon aria-hidden className="size-4" />
             </Link>
             <ScriptAccent className="-rotate-3 text-3xl">{accentPhrases.board}</ScriptAccent>
           </Reveal>

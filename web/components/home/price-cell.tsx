@@ -24,7 +24,7 @@ type Props = {
  * One price of the menu board. The hover layer drives its own `rest`/`hover` state from React instead of whileHover (a
  * variant-controlling parent would cut the inherited entrance). Transforms only; MotionConfig reducedMotion="user" turns
  * them into instant changes for people who ask for less motion. A click adds one unit to the cart and shows the same
- * "added" toast the product card shows.
+ * "added" toast the product page shows.
  */
 
 const wobbly: Transition = { type: "spring", stiffness: 420, damping: 12 };

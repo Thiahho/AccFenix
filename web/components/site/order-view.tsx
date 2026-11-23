@@ -40,7 +40,7 @@ export function OrderView() {
         <p className="font-medium">Tu pedido está vacío</p>
         <p className="mt-1 text-sm text-muted-foreground">Agregá cafés desde la carta.</p>
         <Button asChild className="mt-6">
-          <Link href="/">Ir al catálogo</Link>
+          <Link href="/#precios">Ver la carta</Link>
         </Button>
       </div>
     );

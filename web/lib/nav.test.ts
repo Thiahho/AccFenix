@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { isHeaderCompact, pickActiveSection, showsWhatsappFab } from "./nav";
+import { isHeaderCompact, pickActiveSection, sectionLinks, showsWhatsappFab } from "./nav";
+
+describe("sectionLinks", () => {
+  it("sends ordering to the price board, with no separate order section", () => {
+    expect(sectionLinks.map((s) => s.href)).toEqual(["/", "/#precios", "/#preguntas"]);
+  });
+});
 
 describe("pickActiveSection", () => {
   const line = 400;

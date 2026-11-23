@@ -2,7 +2,7 @@ import { api, type Availability, type ProductDetail } from "@/lib/api";
 import type { CartItem } from "@/stores/cart";
 
 /**
- * Every active product with its variants, for the home price board and order grid.
+ * Every active product with its variants, for the home price board.
  * The home must render without the API, so any failure yields fewer products instead of an error.
  */
 export async function loadCatalogProducts(): Promise<ProductDetail[]> {
@@ -56,7 +56,7 @@ export function priceRows(product: Pick<ProductDetail, "attributes" | "variants"
 }
 
 /**
- * The cart line a price-board row adds: the same shape the product card adds, labelled like `describeSelection`
+ * The cart line a price-board row adds: the same shape the product page adds, labelled like `describeSelection`
  * ("Presentación Cajón") so both entry points merge into one line. Null when the variant is not in the product.
  */
 export function priceRowCartItem(
