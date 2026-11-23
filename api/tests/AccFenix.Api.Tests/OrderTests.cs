@@ -63,25 +63,24 @@ public class OrderTests(ApiFactory factory)
     static object[] Lines(params (int VariantId, int Quantity)[] items) =>
         items.Select(i => (object)new { variantId = i.VariantId, quantity = i.Quantity }).ToArray();
 
-    static Dictionary<string, object?> BuenosAires(params (int VariantId, int Quantity)[] items) => new()
+    static Dictionary<string, object?> Delivery(params (int VariantId, int Quantity)[] items) => new()
     {
-        ["zone"] = "buenosAires",
+        ["fulfillment"] = "delivery",
         ["customerType"] = "personal",
         ["customerName"] = "Ana Pérez",
         ["phone"] = "11 5555-0000",
-        ["locality"] = "Morón",
+        ["timeSlot"] = "Hoy 18:00 a 18:30",
         ["address"] = "Av. Siempre Viva 742",
         ["items"] = Lines(items),
     };
 
-    static Dictionary<string, object?> OtherProvince(params (int VariantId, int Quantity)[] items) => new()
+    static Dictionary<string, object?> Pickup(params (int VariantId, int Quantity)[] items) => new()
     {
-        ["zone"] = "otherProvince",
+        ["fulfillment"] = "pickup",
         ["customerType"] = "personal",
         ["customerName"] = "Luis Gómez",
-        ["phone"] = "351 555-0000",
-        ["province"] = "Córdoba",
-        ["carrier"] = "Expreso Lancioni",
+        ["phone"] = "11 4444-0000",
+        ["timeSlot"] = "Hoy 19:00 a 19:30",
         ["items"] = Lines(items),
     };
 
@@ -101,17 +100,14 @@ public class OrderTests(ApiFactory factory)
 
     static List<JsonElement> Items(JsonElement order) => order.GetProperty("items").EnumerateArray().ToList();
 
-    async Task<int> WholesaleThreshold() =>
-        (await _public.GetFromJsonAsync<JsonElement>("/api/settings/public")).GetProperty("wholesaleThreshold").GetInt32();
-
     async Task<int> TotalOrders(HttpClient admin, string query = "") =>
         (await admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}?pageSize=1{query}")).GetProperty("total").GetInt32();
 
     /// <summary>A product with one attribute and two values, hence two variants ("First" and "Second").</summary>
     sealed record TestProduct(HttpClient Admin, int AttributeId, int CategoryId, int ProductId, string Name, string AttributeName, int First, int Second) : IAsyncDisposable
     {
-        public async Task SetPrices(int variantId, decimal? retailPrice, decimal? wholesalePrice) =>
-            (await Admin.PatchAsJsonAsync($"/api/admin/variants/{variantId}", new { retailPrice, wholesalePrice })).EnsureSuccessStatusCode();
+        public async Task SetPrice(int variantId, decimal? retailPrice) =>
+            (await Admin.PatchAsJsonAsync($"/api/admin/variants/{variantId}", new { retailPrice })).EnsureSuccessStatusCode();
 
         public async Task<string> Sku(int variantId) =>
             (await Admin.GetFromJsonAsync<JsonElement>($"/api/admin/products/{ProductId}")).GetProperty("variants").EnumerateArray()
@@ -159,18 +155,20 @@ public class OrderTests(ApiFactory factory)
     // ---- Creation and pricing ----
 
     [Fact]
-    public async Task Order_below_the_threshold_uses_retail_prices()
+    public async Task Order_uses_retail_prices()
     {
         await using var product = await CreateProduct();
-        await product.SetPrices(product.First, 100.50m, 80m);
-        var quantity = await WholesaleThreshold() - 1;
+        await product.SetPrice(product.First, 100.50m);
+        const int quantity = 99;
 
-        var order = await Created(BuenosAires((product.First, quantity)));
+        var order = await Created(Delivery((product.First, quantity)));
 
         order.GetProperty("id").GetInt32().Should().BePositive();
         order.GetProperty("number").GetInt32().Should().BePositive();
         order.GetProperty("status").GetString().Should().Be("pending");
-        order.GetProperty("isWholesale").GetBoolean().Should().BeFalse();
+        order.GetProperty("paymentStatus").GetString().Should().Be("unpaid");
+        order.GetProperty("checkoutUrl").ValueKind.Should().Be(JsonValueKind.Null, "Mercado Pago is not configured in tests");
+        order.TryGetProperty("isWholesale", out _).Should().BeFalse();
         order.GetProperty("hasUnpricedItems").GetBoolean().Should().BeFalse();
         Money(order, "total").Should().Be(100.50m * quantity);
 
@@ -187,74 +185,37 @@ public class OrderTests(ApiFactory factory)
         order.TryGetProperty("phone", out _).Should().BeFalse();
         order.TryGetProperty("customerName", out _).Should().BeFalse();
         order.TryGetProperty("address", out _).Should().BeFalse();
+        order.TryGetProperty("timeSlot", out _).Should().BeFalse();
     }
 
     [Fact]
-    public async Task Order_at_exactly_the_threshold_uses_wholesale_prices()
+    public async Task Large_multi_line_order_keeps_retail_prices()
     {
         await using var product = await CreateProduct();
-        await product.SetPrices(product.First, 100m, 80m);
-        await product.SetPrices(product.Second, 60m, 45.25m);
-        var threshold = await WholesaleThreshold();
+        await product.SetPrice(product.First, 100m);
+        await product.SetPrice(product.Second, 60m);
 
-        // The threshold counts the units of the whole order, not of each line.
-        var order = await Created(BuenosAires((product.First, threshold - 1), (product.Second, 1)));
+        // ColdCup has one price list, whatever the size of the order.
+        var order = await Created(Delivery((product.First, 500), (product.Second, 500)));
 
-        order.GetProperty("isWholesale").GetBoolean().Should().BeTrue();
-        var lines = Items(order).ToDictionary(l => l.GetProperty("variantId").GetInt32());
-        Money(lines[product.First], "unitPrice").Should().Be(80m);
-        Money(lines[product.First], "subtotal").Should().Be(80m * (threshold - 1));
-        Money(lines[product.Second], "unitPrice").Should().Be(45.25m);
-        Money(order, "total").Should().Be(80m * (threshold - 1) + 45.25m);
-    }
-
-    [Fact]
-    public async Task Variant_without_wholesale_price_falls_back_to_retail_in_a_wholesale_order()
-    {
-        await using var product = await CreateProduct();
-        await product.SetPrices(product.First, 100m, 80m);
-        await product.SetPrices(product.Second, 60m, null);
-        var threshold = await WholesaleThreshold();
-
-        var order = await Created(BuenosAires((product.First, threshold), (product.Second, 2)));
-
-        order.GetProperty("isWholesale").GetBoolean().Should().BeTrue();
-        order.GetProperty("hasUnpricedItems").GetBoolean().Should().BeFalse();
-        var lines = Items(order).ToDictionary(l => l.GetProperty("variantId").GetInt32());
-        Money(lines[product.First], "unitPrice").Should().Be(80m);
-        Money(lines[product.Second], "unitPrice").Should().Be(60m);
-        Money(order, "total").Should().Be(80m * threshold + 120m);
-    }
-
-    [Fact]
-    public async Task Units_quoted_on_request_do_not_count_towards_the_wholesale_threshold()
-    {
-        await using var product = await CreateProduct();
-        await product.SetPrices(product.First, 100m, 80m);
-        await product.SetPrices(product.Second, null, null);
-        var threshold = await WholesaleThreshold();
-
-        // Priced units stay one short of the threshold; the unpriced line alone would push it over.
-        var order = await Created(BuenosAires((product.First, threshold - 1), (product.Second, 5)));
-
-        order.GetProperty("isWholesale").GetBoolean().Should().BeFalse();
-        order.GetProperty("hasUnpricedItems").GetBoolean().Should().BeTrue();
+        order.TryGetProperty("isWholesale", out _).Should().BeFalse();
         var lines = Items(order).ToDictionary(l => l.GetProperty("variantId").GetInt32());
         Money(lines[product.First], "unitPrice").Should().Be(100m);
-        Money(order, "total").Should().Be(100m * (threshold - 1));
+        Money(lines[product.First], "subtotal").Should().Be(50_000m);
+        Money(lines[product.Second], "unitPrice").Should().Be(60m);
+        Money(order, "total").Should().Be(80_000m);
     }
 
     [Fact]
     public async Task Unpriced_variants_have_null_line_prices_and_flag_the_order()
     {
         await using var product = await CreateProduct();
-        await product.SetPrices(product.First, 10m, null);
-        // A wholesale price alone does not price a retail order.
-        await product.SetPrices(product.Second, null, 5m);
+        await product.SetPrice(product.First, 10m);
+        await product.SetPrice(product.Second, null);
 
-        var order = await Created(BuenosAires((product.First, 3), (product.Second, 4)));
+        var order = await Created(Delivery((product.First, 3), (product.Second, 4)));
 
-        order.GetProperty("isWholesale").GetBoolean().Should().BeFalse();
+        order.TryGetProperty("isWholesale", out _).Should().BeFalse();
         order.GetProperty("hasUnpricedItems").GetBoolean().Should().BeTrue();
         Money(order, "total").Should().Be(30m);
         var lines = Items(order).ToDictionary(l => l.GetProperty("variantId").GetInt32());
@@ -267,11 +228,11 @@ public class OrderTests(ApiFactory factory)
     public async Task Stored_snapshot_survives_later_catalog_changes()
     {
         var product = await CreateProduct();
-        await product.SetPrices(product.First, 100m, 80m);
+        await product.SetPrice(product.First, 100m);
         var sku = await product.Sku(product.First);
-        var id = (await Created(BuenosAires((product.First, 2)))).GetProperty("id").GetInt32();
+        var id = (await Created(Delivery((product.First, 2)))).GetProperty("id").GetInt32();
 
-        await product.SetPrices(product.First, 999m, 888m);
+        await product.SetPrice(product.First, 999m);
         var afterPriceChange = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
         Money(afterPriceChange, "total").Should().Be(200m);
         Money(Items(afterPriceChange).Single(), "unitPrice").Should().Be(100m);
@@ -294,9 +255,9 @@ public class OrderTests(ApiFactory factory)
     {
         await using var product = await CreateProduct();
 
-        var first = (await Created(BuenosAires((product.First, 1)))).GetProperty("number").GetInt32();
-        var second = (await Created(OtherProvince((product.Second, 1)))).GetProperty("number").GetInt32();
-        var third = (await Created(BuenosAires((product.First, 1)))).GetProperty("number").GetInt32();
+        var first = (await Created(Delivery((product.First, 1)))).GetProperty("number").GetInt32();
+        var second = (await Created(Pickup((product.Second, 1)))).GetProperty("number").GetInt32();
+        var third = (await Created(Delivery((product.First, 1)))).GetProperty("number").GetInt32();
 
         second.Should().Be(first + 1);
         third.Should().Be(first + 2);
@@ -306,11 +267,12 @@ public class OrderTests(ApiFactory factory)
     public async Task Prices_and_server_fields_sent_by_the_client_are_ignored()
     {
         await using var product = await CreateProduct();
-        await product.SetPrices(product.First, 100m, 80m);
+        await product.SetPrice(product.First, 100m);
 
         var res = await PostOrder($$"""
-            {"zone":"buenosAires","customerType":"personal","customerName":"Ana","phone":"11 5555-0000","locality":"Morón","address":"Calle 1",
-             "id":999999,"number":999999,"status":"delivered","isWholesale":true,"total":1,"hasUnpricedItems":true,
+            {"fulfillment":"delivery","customerType":"personal","customerName":"Ana","phone":"11 5555-0000","timeSlot":"Hoy 18:00","address":"Calle 1",
+             "id":999999,"number":999999,"status":"delivered","paymentStatus":"approved","paidAt":"2026-01-01T00:00:00Z","mercadoPagoPaymentId":"fake",
+             "isWholesale":true,"total":1,"hasUnpricedItems":true,
              "items":[{"variantId":{{product.First}},"quantity":2,"unitPrice":0.01,"subtotal":0.02,"wholesalePrice":0.01,"productName":"Fake","sku":"FAKE"}]}
             """);
 
@@ -318,7 +280,8 @@ public class OrderTests(ApiFactory factory)
         var order = await res.Content.ReadFromJsonAsync<JsonElement>();
         order.GetProperty("number").GetInt32().Should().NotBe(999999);
         order.GetProperty("status").GetString().Should().Be("pending");
-        order.GetProperty("isWholesale").GetBoolean().Should().BeFalse();
+        order.GetProperty("paymentStatus").GetString().Should().Be("unpaid");
+        order.TryGetProperty("isWholesale", out _).Should().BeFalse();
         order.GetProperty("hasUnpricedItems").GetBoolean().Should().BeFalse();
         Money(order, "total").Should().Be(200m);
         var line = Items(order).Single();
@@ -328,6 +291,9 @@ public class OrderTests(ApiFactory factory)
         var stored = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{order.GetProperty("id").GetInt32()}");
         Money(stored, "total").Should().Be(200m);
         stored.GetProperty("status").GetString().Should().Be("pending");
+        stored.GetProperty("paymentStatus").GetString().Should().Be("unpaid");
+        stored.GetProperty("paidAt").ValueKind.Should().Be(JsonValueKind.Null);
+        stored.GetProperty("mercadoPagoPaymentId").ValueKind.Should().Be(JsonValueKind.Null);
     }
 
     // ---- Validation ----
@@ -336,64 +302,68 @@ public class OrderTests(ApiFactory factory)
     public async Task Invalid_orders_are_rejected_and_nothing_is_stored()
     {
         await using var product = await CreateProduct();
-        var ba = BuenosAires((product.First, 1));
-        var op = OtherProvince((product.First, 1));
+        var delivery = Delivery((product.First, 1));
+        var pickup = Pickup((product.First, 1));
         var long121 = new string('a', 121);
         var long201 = new string('a', 201);
+        var long61 = new string('a', 61);
         var before = await TotalOrders(product.Admin);
 
         var cases = new Dictionary<string, Dictionary<string, object?>>
         {
-            ["missing zone"] = Without(ba, "zone"),
-            ["unknown zone"] = With(ba, "zone", "mars"),
-            ["numeric zone"] = With(ba, "zone", 0),
+            ["missing fulfillment"] = Without(delivery, "fulfillment"),
+            ["null fulfillment"] = With(delivery, "fulfillment", null),
+            ["unknown fulfillment"] = With(delivery, "fulfillment", "mars"),
+            ["numeric fulfillment"] = With(delivery, "fulfillment", 0),
 
-            ["missing customer type"] = Without(ba, "customerType"),
-            ["null customer type"] = With(ba, "customerType", null),
-            ["unknown customer type"] = With(ba, "customerType", "company"),
-            ["numeric customer type"] = With(ba, "customerType", 1),
+            ["missing customer type"] = Without(delivery, "customerType"),
+            ["null customer type"] = With(delivery, "customerType", null),
+            ["unknown customer type"] = With(delivery, "customerType", "company"),
+            ["numeric customer type"] = With(delivery, "customerType", 1),
 
-            ["BA: missing name"] = Without(ba, "customerName"),
-            ["BA: blank name"] = With(ba, "customerName", "   "),
-            ["BA: name too long"] = With(ba, "customerName", long121),
-            ["BA: name with a line break"] = With(ba, "customerName", "Ana\nPérez"),
-            ["BA: phone too long"] = With(ba, "phone", new string('1', 41)),
-            ["BA: phone with a line break"] = With(ba, "phone", "11\n5555-0000"),
-            ["BA: missing locality"] = Without(ba, "locality"),
-            ["BA: locality too long"] = With(ba, "locality", long121),
-            ["BA: blank address"] = With(ba, "address", " "),
-            ["BA: address too long"] = With(ba, "address", long201),
-            ["BA: comments too long"] = With(ba, "comments", new string('a', 501)),
-            ["BA: comments with a null character"] = With(ba, "comments", "a\0b"),
-            ["BA: latitude out of range"] = With(With(ba, "latitude", 90.01), "longitude", 10),
-            ["BA: longitude out of range"] = With(With(ba, "latitude", 10), "longitude", -180.01),
-            ["BA: latitude without longitude"] = With(ba, "latitude", -34.6),
-            ["BA: longitude without latitude"] = With(ba, "longitude", -58.4),
-            ["BA: province belongs to the other zone"] = With(ba, "province", "Córdoba"),
-            ["BA: carrier belongs to the other zone"] = With(ba, "carrier", "Expreso"),
+            ["delivery: missing name"] = Without(delivery, "customerName"),
+            ["delivery: blank name"] = With(delivery, "customerName", "   "),
+            ["delivery: name too long"] = With(delivery, "customerName", long121),
+            ["delivery: name with a line break"] = With(delivery, "customerName", "Ana\nPérez"),
+            ["delivery: phone too long"] = With(delivery, "phone", new string('1', 41)),
+            ["delivery: phone with a line break"] = With(delivery, "phone", "11\n5555-0000"),
+            ["delivery: missing time slot"] = Without(delivery, "timeSlot"),
+            ["delivery: blank time slot"] = With(delivery, "timeSlot", "   "),
+            ["delivery: time slot too long"] = With(delivery, "timeSlot", long61),
+            ["delivery: time slot with a line break"] = With(delivery, "timeSlot", "Hoy\n18:00"),
+            ["delivery: missing address"] = Without(delivery, "address"),
+            ["delivery: blank address"] = With(delivery, "address", " "),
+            ["delivery: address too long"] = With(delivery, "address", long201),
+            ["delivery: address with a line break"] = With(delivery, "address", "Calle\n1"),
+            ["delivery: comments too long"] = With(delivery, "comments", new string('a', 501)),
+            ["delivery: comments with a null character"] = With(delivery, "comments", "a\0b"),
+            ["delivery: latitude out of range"] = With(With(delivery, "latitude", 90.01), "longitude", 10),
+            ["delivery: longitude out of range"] = With(With(delivery, "latitude", 10), "longitude", -180.01),
+            ["delivery: latitude without longitude"] = With(delivery, "latitude", -34.6),
+            ["delivery: longitude without latitude"] = With(delivery, "longitude", -58.4),
 
-            ["OP: missing name"] = Without(op, "customerName"),
-            ["OP: phone too long once trimmed"] = With(op, "phone", $"  {new string('1', 41)}  "),
-            ["OP: missing province"] = Without(op, "province"),
-            ["OP: unknown province"] = With(op, "province", "Atlantis"),
-            ["OP: Buenos Aires is not another province"] = With(op, "province", "Buenos Aires"),
-            ["OP: blank carrier"] = With(op, "carrier", ""),
-            ["OP: carrier too long"] = With(op, "carrier", long201),
-            ["OP: comments too long"] = With(op, "comments", new string('a', 501)),
-            ["OP: locality belongs to the other zone"] = With(op, "locality", "Morón"),
-            ["OP: address belongs to the other zone"] = With(op, "address", "Calle 1"),
-            ["OP: coordinates belong to the other zone"] = With(With(op, "latitude", -34.6), "longitude", -58.4),
+            ["pickup: missing name"] = Without(pickup, "customerName"),
+            ["pickup: phone too long once trimmed"] = With(pickup, "phone", $"  {new string('1', 41)}  "),
+            ["pickup: missing time slot"] = Without(pickup, "timeSlot"),
+            ["pickup: blank time slot"] = With(pickup, "timeSlot", ""),
+            ["pickup: time slot too long"] = With(pickup, "timeSlot", long61),
+            ["pickup: comments too long"] = With(pickup, "comments", new string('a', 501)),
+            ["pickup: address belongs to delivery"] = With(pickup, "address", "Calle 1"),
+            ["pickup: blank address belongs to delivery"] = With(pickup, "address", ""),
+            ["pickup: latitude belongs to delivery"] = With(pickup, "latitude", -34.6),
+            ["pickup: longitude belongs to delivery"] = With(pickup, "longitude", -58.4),
+            ["pickup: coordinates belong to delivery"] = With(With(pickup, "latitude", -34.6), "longitude", -58.4),
 
-            ["missing items"] = Without(ba, "items"),
-            ["no lines"] = With(ba, "items", Lines()),
-            ["null line"] = With(ba, "items", new object?[] { null }),
-            ["too many lines"] = With(ba, "items", Lines(Enumerable.Range(1, 101).Select(i => (i, 1)).ToArray())),
-            ["duplicate variants"] = With(ba, "items", Lines((product.First, 1), (product.Second, 1), (product.First, 2))),
-            ["quantity zero"] = With(ba, "items", Lines((product.First, 0))),
-            ["negative quantity"] = With(ba, "items", Lines((product.First, -5))),
-            ["quantity above the maximum"] = With(ba, "items", Lines((product.First, 100_001))),
-            ["variant id zero"] = With(ba, "items", Lines((0, 1))),
-            ["unknown variant"] = With(ba, "items", Lines((product.First, 1), (int.MaxValue, 1))),
+            ["missing items"] = Without(delivery, "items"),
+            ["no lines"] = With(delivery, "items", Lines()),
+            ["null line"] = With(delivery, "items", new object?[] { null }),
+            ["too many lines"] = With(delivery, "items", Lines(Enumerable.Range(1, 101).Select(i => (i, 1)).ToArray())),
+            ["duplicate variants"] = With(delivery, "items", Lines((product.First, 1), (product.Second, 1), (product.First, 2))),
+            ["quantity zero"] = With(delivery, "items", Lines((product.First, 0))),
+            ["negative quantity"] = With(delivery, "items", Lines((product.First, -5))),
+            ["quantity above the maximum"] = With(delivery, "items", Lines((product.First, 100_001))),
+            ["variant id zero"] = With(delivery, "items", Lines((0, 1))),
+            ["unknown variant"] = With(delivery, "items", Lines((product.First, 1), (int.MaxValue, 1))),
         };
 
         foreach (var (name, body) in cases)
@@ -410,7 +380,7 @@ public class OrderTests(ApiFactory factory)
     {
         await using var product = await CreateProduct();
 
-        var res = await PostOrder(With(With(BuenosAires((product.First, 0)), "phone", new string('1', 41)), "address", ""));
+        var res = await PostOrder(With(With(Delivery((product.First, 0)), "phone", new string('1', 41)), "address", ""));
 
         res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var errors = (await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors");
@@ -423,20 +393,20 @@ public class OrderTests(ApiFactory factory)
         await using var product = await CreateProduct();
         (await product.Admin.PatchAsJsonAsync($"/api/admin/variants/{product.Second}", new { isActive = false })).EnsureSuccessStatusCode();
 
-        (await PostOrder(BuenosAires((product.First, 1), (product.Second, 1)))).StatusCode.Should().Be(HttpStatusCode.BadRequest, "the second variant is inactive");
-        (await PostOrder(BuenosAires((product.First, 1)))).StatusCode.Should().Be(HttpStatusCode.Created, "the first variant is still active");
+        (await PostOrder(Delivery((product.First, 1), (product.Second, 1)))).StatusCode.Should().Be(HttpStatusCode.BadRequest, "the second variant is inactive");
+        (await PostOrder(Delivery((product.First, 1)))).StatusCode.Should().Be(HttpStatusCode.Created, "the first variant is still active");
 
         await product.SetProductActive(false);
-        (await PostOrder(BuenosAires((product.First, 1)))).StatusCode.Should().Be(HttpStatusCode.BadRequest, "the product is inactive");
+        (await PostOrder(Delivery((product.First, 1)))).StatusCode.Should().Be(HttpStatusCode.BadRequest, "the product is inactive");
     }
 
     [Fact]
     public async Task Order_whose_total_does_not_fit_the_money_column_is_rejected()
     {
         await using var product = await CreateProduct();
-        await product.SetPrices(product.First, 99_999_999.99m, null);
+        await product.SetPrice(product.First, 99_999_999.99m);
 
-        var res = await PostOrder(BuenosAires((product.First, 100_000)));
+        var res = await PostOrder(Delivery((product.First, 100_000)));
 
         res.StatusCode.Should().Be(HttpStatusCode.BadRequest, await res.Content.ReadAsStringAsync());
     }
@@ -445,10 +415,10 @@ public class OrderTests(ApiFactory factory)
     public async Task Boundary_values_are_accepted_and_text_is_trimmed()
     {
         await using var product = await CreateProduct();
-        var body = BuenosAires((product.First, 100_000));
+        var body = Delivery((product.First, 100_000));
         body["customerName"] = $"  {new string('n', 120)}  ";
         body["phone"] = new string('1', 40);
-        body["locality"] = new string('l', 120);
+        body["timeSlot"] = $"  {new string('t', 60)}  ";
         body["address"] = new string('d', 200);
         body["comments"] = $"{new string('c', 249)}\n{new string('c', 250)}";
         body["latitude"] = -90;
@@ -458,6 +428,8 @@ public class OrderTests(ApiFactory factory)
 
         var stored = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
         stored.GetProperty("customerName").GetString().Should().Be(new string('n', 120));
+        stored.GetProperty("timeSlot").GetString().Should().Be(new string('t', 60));
+        stored.GetProperty("address").GetString().Should().Be(new string('d', 200));
         stored.GetProperty("comments").GetString().Should().HaveLength(500);
         stored.GetProperty("latitude").GetDouble().Should().Be(-90);
         stored.GetProperty("longitude").GetDouble().Should().Be(180);
@@ -471,7 +443,7 @@ public class OrderTests(ApiFactory factory)
     {
         await using var product = await CreateProduct();
 
-        var id = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
+        var id = (await Created(Delivery((product.First, 1)))).GetProperty("id").GetInt32();
 
         var stored = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
         stored.GetProperty("customerType").GetString().Should().Be("personal");
@@ -483,7 +455,7 @@ public class OrderTests(ApiFactory factory)
     {
         await using var product = await CreateProduct();
 
-        var id = (await Created(Business(OtherProvince((product.First, 1))))).GetProperty("id").GetInt32();
+        var id = (await Created(Business(Pickup((product.First, 1))))).GetProperty("id").GetInt32();
 
         var stored = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
         stored.GetProperty("customerType").GetString().Should().Be("business");
@@ -498,7 +470,7 @@ public class OrderTests(ApiFactory factory)
     {
         await using var product = await CreateProduct();
 
-        var body = With(Business(BuenosAires((product.First, 1))), "businessName", businessName);
+        var body = With(Business(Delivery((product.First, 1))), "businessName", businessName);
         var id = (await Created(body)).GetProperty("id").GetInt32();
 
         var stored = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
@@ -510,8 +482,8 @@ public class OrderTests(ApiFactory factory)
     public async Task Admin_list_shows_the_customer_type()
     {
         await using var product = await CreateProduct();
-        var personal = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
-        var business = (await Created(Business(BuenosAires((product.First, 1))))).GetProperty("id").GetInt32();
+        var personal = (await Created(Delivery((product.First, 1)))).GetProperty("id").GetInt32();
+        var business = (await Created(Business(Delivery((product.First, 1))))).GetProperty("id").GetInt32();
 
         var list = Items(await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}?pageSize=100"))
             .ToDictionary(o => o.GetProperty("id").GetInt32());
@@ -531,12 +503,12 @@ public class OrderTests(ApiFactory factory)
     public async Task Order_without_phone_is_stored_without_phone(string phone)
     {
         await using var product = await CreateProduct();
-        // The customer sends the order from their own WhatsApp, so the distributor already has the number.
+        // The phone is optional: blank values are stored as null.
         var body = phone switch
         {
-            "absent" => Without(BuenosAires((product.First, 1)), "phone"),
-            "null" => With(BuenosAires((product.First, 1)), "phone", null),
-            _ => With(BuenosAires((product.First, 1)), "phone", phone),
+            "absent" => Without(Delivery((product.First, 1)), "phone"),
+            "null" => With(Delivery((product.First, 1)), "phone", null),
+            _ => With(Delivery((product.First, 1)), "phone", phone),
         };
 
         var id = (await Created(body)).GetProperty("id").GetInt32();
@@ -552,10 +524,10 @@ public class OrderTests(ApiFactory factory)
     {
         await using var product = await CreateProduct();
 
-        var id = (await Created(With(OtherProvince((product.First, 1)), "phone", "  351 555-0000  "))).GetProperty("id").GetInt32();
+        var id = (await Created(With(Pickup((product.First, 1)), "phone", "  11 4444-0000  "))).GetProperty("id").GetInt32();
 
         var stored = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
-        stored.GetProperty("phone").GetString().Should().Be("351 555-0000");
+        stored.GetProperty("phone").GetString().Should().Be("11 4444-0000");
     }
 
     // ---- Rate limit ----
@@ -569,13 +541,13 @@ public class OrderTests(ApiFactory factory)
         // Rejected requests count too: the limit protects the endpoint, not only the table.
         for (var i = 0; i < RateLimit; i++)
         {
-            var body = i % 2 == 0 ? BuenosAires((product.First, 1)) : With(BuenosAires((product.First, 1)), "address", "");
+            var body = i % 2 == 0 ? Delivery((product.First, 1)) : With(Delivery((product.First, 1)), "address", "");
             (await PostOrder(body, visitor)).StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.BadRequest);
         }
-        (await PostOrder(BuenosAires((product.First, 1)), visitor)).StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        (await PostOrder(Delivery((product.First, 1)), visitor)).StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
 
         // Another visitor is not affected.
-        (await PostOrder(BuenosAires((product.First, 1)))).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await PostOrder(Delivery((product.First, 1)))).StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     [Fact]
@@ -587,7 +559,7 @@ public class OrderTests(ApiFactory factory)
         // Without the key every request counts against the connection, whatever the header says.
         for (var i = 0; i <= RateLimit; i++)
         {
-            var req = new HttpRequestMessage(HttpMethod.Post, OrdersUrl) { Content = JsonContent.Create(BuenosAires((product.First, 1))) };
+            var req = new HttpRequestMessage(HttpMethod.Post, OrdersUrl) { Content = JsonContent.Create(Delivery((product.First, 1))) };
             req.Headers.Add(ClientIp.IpHeader, NextIp());
             statuses.Add((await _public.SendAsync(req)).StatusCode);
         }
@@ -601,12 +573,12 @@ public class OrderTests(ApiFactory factory)
     public async Task Admin_lists_orders_newest_first_and_paged()
     {
         await using var product = await CreateProduct();
-        await product.SetPrices(product.First, 10m, null);
+        await product.SetPrice(product.First, 10m);
         var before = await TotalOrders(product.Admin);
         var numbers = new List<int>();
         for (var i = 1; i <= 3; i++)
         {
-            numbers.Add((await Created(BuenosAires((product.First, i), (product.Second, 1)))).GetProperty("number").GetInt32());
+            numbers.Add((await Created(Delivery((product.First, i), (product.Second, 1)))).GetProperty("number").GetInt32());
         }
 
         var firstPage = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}?page=1&pageSize=2");
@@ -622,10 +594,14 @@ public class OrderTests(ApiFactory factory)
         newest.GetProperty("status").GetString().Should().Be("pending");
         newest.GetProperty("customerName").GetString().Should().Be("Ana Pérez");
         newest.GetProperty("phone").GetString().Should().Be("11 5555-0000");
-        newest.GetProperty("zone").GetString().Should().Be("buenosAires");
+        newest.GetProperty("fulfillment").GetString().Should().Be("delivery");
+        newest.GetProperty("timeSlot").GetString().Should().Be("Hoy 18:00 a 18:30");
+        newest.GetProperty("address").GetString().Should().Be("Av. Siempre Viva 742");
+        newest.GetProperty("paymentStatus").GetString().Should().Be("unpaid");
+        newest.GetProperty("paidAt").ValueKind.Should().Be(JsonValueKind.Null);
         newest.GetProperty("itemCount").GetInt32().Should().Be(2);
         newest.GetProperty("totalUnits").GetInt32().Should().Be(4);
-        newest.GetProperty("isWholesale").GetBoolean().Should().BeFalse();
+        newest.TryGetProperty("isWholesale", out _).Should().BeFalse();
         newest.GetProperty("hasUnpricedItems").GetBoolean().Should().BeTrue();
         Money(newest, "total").Should().Be(30m);
         newest.GetProperty("createdAt").GetDateTimeOffset().Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(5));
@@ -645,8 +621,8 @@ public class OrderTests(ApiFactory factory)
     {
         await using var product = await CreateProduct();
         var cancelledBefore = await TotalOrders(product.Admin, "&status=cancelled");
-        var kept = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
-        var cancelled = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
+        var kept = (await Created(Delivery((product.First, 1)))).GetProperty("id").GetInt32();
+        var cancelled = (await Created(Delivery((product.First, 1)))).GetProperty("id").GetInt32();
         (await product.Admin.PatchAsJsonAsync($"{AdminOrdersUrl}/{cancelled}/status", new { status = "cancelled" })).EnsureSuccessStatusCode();
 
         var cancelledList = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}?status=cancelled&pageSize=100");
@@ -660,31 +636,35 @@ public class OrderTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Admin_list_exposes_the_delivery_location()
+    public async Task Admin_exposes_the_delivery_location()
     {
         await using var product = await CreateProduct();
-        var withCoords = (await Created(With(With(BuenosAires((product.First, 1)), "latitude", -34.65), "longitude", -58.62))).GetProperty("id").GetInt32();
-        var addressOnly = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
-        var carrier = (await Created(OtherProvince((product.First, 1)))).GetProperty("id").GetInt32();
+        var withCoords = (await Created(With(With(Delivery((product.First, 1)), "latitude", -34.65), "longitude", -58.62))).GetProperty("id").GetInt32();
+        var addressOnly = (await Created(Delivery((product.First, 1)))).GetProperty("id").GetInt32();
+        var pickup = (await Created(Pickup((product.First, 1)))).GetProperty("id").GetInt32();
 
         var list = Items(await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}?pageSize=100"));
         JsonElement Find(int id) => list.Single(o => o.GetProperty("id").GetInt32() == id);
+        Task<JsonElement> Detail(int id) => product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
 
-        var c = Find(withCoords);
-        c.GetProperty("locality").GetString().Should().Be("Morón");
+        // The list carries the address; the map point is read from the order detail.
+        Find(withCoords).GetProperty("address").GetString().Should().Be("Av. Siempre Viva 742");
+        var c = await Detail(withCoords);
         c.GetProperty("address").GetString().Should().Be("Av. Siempre Viva 742");
         c.GetProperty("latitude").GetDouble().Should().Be(-34.65);
         c.GetProperty("longitude").GetDouble().Should().Be(-58.62);
 
-        var a = Find(addressOnly);
+        Find(addressOnly).GetProperty("address").GetString().Should().Be("Av. Siempre Viva 742");
+        var a = await Detail(addressOnly);
         a.GetProperty("address").GetString().Should().Be("Av. Siempre Viva 742");
         a.GetProperty("latitude").ValueKind.Should().Be(JsonValueKind.Null);
         a.GetProperty("longitude").ValueKind.Should().Be(JsonValueKind.Null);
 
-        var p = Find(carrier);
-        p.GetProperty("locality").ValueKind.Should().Be(JsonValueKind.Null);
+        Find(pickup).GetProperty("address").ValueKind.Should().Be(JsonValueKind.Null);
+        var p = await Detail(pickup);
         p.GetProperty("address").ValueKind.Should().Be(JsonValueKind.Null);
         p.GetProperty("latitude").ValueKind.Should().Be(JsonValueKind.Null);
+        p.GetProperty("longitude").ValueKind.Should().Be(JsonValueKind.Null);
     }
 
     [Theory]
@@ -701,43 +681,43 @@ public class OrderTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Admin_reads_the_full_detail_of_both_zones()
+    public async Task Admin_reads_the_full_detail_of_both_fulfillments()
     {
         await using var product = await CreateProduct();
-        await product.SetPrices(product.First, 10m, 8m);
-        var baBody = With(With(With(BuenosAires((product.First, 2)), "latitude", -34.65), "longitude", -58.62), "comments", "Tocar timbre.\nDepto B");
-        var ba = await Created(baBody);
-        var op = await Created(OtherProvince((product.First, 1), (product.Second, 3)));
+        await product.SetPrice(product.First, 10m);
+        var deliveryBody = With(With(With(Delivery((product.First, 2)), "latitude", -34.65), "longitude", -58.62), "comments", "Tocar timbre.\nDepto B");
+        var delivery = await Created(deliveryBody);
+        var pickup = await Created(Pickup((product.First, 1), (product.Second, 3)));
 
-        var baDetail = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{ba.GetProperty("id").GetInt32()}");
-        var opDetail = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{op.GetProperty("id").GetInt32()}");
+        var deliveryDetail = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{delivery.GetProperty("id").GetInt32()}");
+        var pickupDetail = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{pickup.GetProperty("id").GetInt32()}");
 
-        baDetail.GetProperty("number").GetInt32().Should().Be(ba.GetProperty("number").GetInt32());
-        baDetail.GetProperty("status").GetString().Should().Be("pending");
-        baDetail.GetProperty("zone").GetString().Should().Be("buenosAires");
-        baDetail.GetProperty("customerName").GetString().Should().Be("Ana Pérez");
-        baDetail.GetProperty("phone").GetString().Should().Be("11 5555-0000");
-        baDetail.GetProperty("locality").GetString().Should().Be("Morón");
-        baDetail.GetProperty("address").GetString().Should().Be("Av. Siempre Viva 742");
-        baDetail.GetProperty("latitude").GetDouble().Should().Be(-34.65);
-        baDetail.GetProperty("longitude").GetDouble().Should().Be(-58.62);
-        baDetail.GetProperty("province").ValueKind.Should().Be(JsonValueKind.Null);
-        baDetail.GetProperty("carrier").ValueKind.Should().Be(JsonValueKind.Null);
-        baDetail.GetProperty("comments").GetString().Should().Be("Tocar timbre.\nDepto B");
-        baDetail.GetProperty("isWholesale").GetBoolean().Should().BeFalse();
-        baDetail.GetProperty("hasUnpricedItems").GetBoolean().Should().BeFalse();
-        Money(baDetail, "total").Should().Be(20m);
-        baDetail.GetProperty("createdAt").GetDateTimeOffset().Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(5));
+        deliveryDetail.GetProperty("number").GetInt32().Should().Be(delivery.GetProperty("number").GetInt32());
+        deliveryDetail.GetProperty("status").GetString().Should().Be("pending");
+        deliveryDetail.GetProperty("fulfillment").GetString().Should().Be("delivery");
+        deliveryDetail.GetProperty("customerName").GetString().Should().Be("Ana Pérez");
+        deliveryDetail.GetProperty("phone").GetString().Should().Be("11 5555-0000");
+        deliveryDetail.GetProperty("timeSlot").GetString().Should().Be("Hoy 18:00 a 18:30");
+        deliveryDetail.GetProperty("address").GetString().Should().Be("Av. Siempre Viva 742");
+        deliveryDetail.GetProperty("latitude").GetDouble().Should().Be(-34.65);
+        deliveryDetail.GetProperty("longitude").GetDouble().Should().Be(-58.62);
+        deliveryDetail.GetProperty("comments").GetString().Should().Be("Tocar timbre.\nDepto B");
+        deliveryDetail.GetProperty("paymentStatus").GetString().Should().Be("unpaid");
+        deliveryDetail.GetProperty("mercadoPagoPaymentId").ValueKind.Should().Be(JsonValueKind.Null);
+        deliveryDetail.GetProperty("paidAt").ValueKind.Should().Be(JsonValueKind.Null);
+        deliveryDetail.TryGetProperty("isWholesale", out _).Should().BeFalse();
+        deliveryDetail.GetProperty("hasUnpricedItems").GetBoolean().Should().BeFalse();
+        Money(deliveryDetail, "total").Should().Be(20m);
+        deliveryDetail.GetProperty("createdAt").GetDateTimeOffset().Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(5));
 
-        opDetail.GetProperty("zone").GetString().Should().Be("otherProvince");
-        opDetail.GetProperty("province").GetString().Should().Be("Córdoba");
-        opDetail.GetProperty("carrier").GetString().Should().Be("Expreso Lancioni");
-        opDetail.GetProperty("locality").ValueKind.Should().Be(JsonValueKind.Null);
-        opDetail.GetProperty("address").ValueKind.Should().Be(JsonValueKind.Null);
-        opDetail.GetProperty("latitude").ValueKind.Should().Be(JsonValueKind.Null);
-        opDetail.GetProperty("comments").ValueKind.Should().Be(JsonValueKind.Null);
-        opDetail.GetProperty("hasUnpricedItems").GetBoolean().Should().BeTrue();
-        var lines = Items(opDetail);
+        pickupDetail.GetProperty("fulfillment").GetString().Should().Be("pickup");
+        pickupDetail.GetProperty("timeSlot").GetString().Should().Be("Hoy 19:00 a 19:30");
+        pickupDetail.GetProperty("address").ValueKind.Should().Be(JsonValueKind.Null);
+        pickupDetail.GetProperty("latitude").ValueKind.Should().Be(JsonValueKind.Null);
+        pickupDetail.GetProperty("longitude").ValueKind.Should().Be(JsonValueKind.Null);
+        pickupDetail.GetProperty("comments").ValueKind.Should().Be(JsonValueKind.Null);
+        pickupDetail.GetProperty("hasUnpricedItems").GetBoolean().Should().BeTrue();
+        var lines = Items(pickupDetail);
         lines.Should().HaveCount(2);
         lines[0].GetProperty("variantId").GetInt32().Should().Be(product.First);
         lines[0].GetProperty("id").GetInt32().Should().BePositive();
@@ -752,7 +732,7 @@ public class OrderTests(ApiFactory factory)
     public async Task Admin_moves_an_order_through_every_status()
     {
         await using var product = await CreateProduct();
-        var id = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
+        var id = (await Created(Delivery((product.First, 1)))).GetProperty("id").GetInt32();
 
         foreach (var status in new[] { "confirmed", "outForDelivery", "delivered", "cancelled", "pending" })
         {
@@ -775,7 +755,7 @@ public class OrderTests(ApiFactory factory)
     public async Task Status_update_rejects_invalid_values(string body)
     {
         await using var product = await CreateProduct();
-        var id = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
+        var id = (await Created(Delivery((product.First, 1)))).GetProperty("id").GetInt32();
 
         var res = await product.Admin.PatchAsync($"{AdminOrdersUrl}/{id}/status", new StringContent(body, Encoding.UTF8, "application/json"));
 
@@ -800,21 +780,19 @@ public class OrderTests(ApiFactory factory)
     public async Task Admin_updates_the_location_and_sets_the_map_point()
     {
         await using var product = await CreateProduct();
-        var id = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
+        var id = (await Created(Delivery((product.First, 1)))).GetProperty("id").GetInt32();
 
-        var res = await PatchLocation(product.Admin, id, new { locality = "  Castelar ", address = " Arias 2100 ", latitude = -34.651, longitude = -58.644 });
+        var res = await PatchLocation(product.Admin, id, new { address = " Arias 2100 ", latitude = -34.651, longitude = -58.644 });
 
         res.StatusCode.Should().Be(HttpStatusCode.OK, await res.Content.ReadAsStringAsync());
         var updated = await res.Content.ReadFromJsonAsync<JsonElement>();
         updated.GetProperty("id").GetInt32().Should().Be(id);
-        updated.GetProperty("locality").GetString().Should().Be("Castelar");
         updated.GetProperty("address").GetString().Should().Be("Arias 2100");
         updated.GetProperty("latitude").GetDouble().Should().Be(-34.651);
         updated.GetProperty("longitude").GetDouble().Should().Be(-58.644);
         Items(updated).Should().HaveCount(1);
 
         var detail = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
-        detail.GetProperty("locality").GetString().Should().Be("Castelar");
         detail.GetProperty("address").GetString().Should().Be("Arias 2100");
         detail.GetProperty("latitude").GetDouble().Should().Be(-34.651);
         detail.GetProperty("customerName").GetString().Should().Be("Ana Pérez");
@@ -824,9 +802,9 @@ public class OrderTests(ApiFactory factory)
     public async Task Admin_removes_the_map_point_by_omitting_the_coordinates()
     {
         await using var product = await CreateProduct();
-        var id = (await Created(With(With(BuenosAires((product.First, 1)), "latitude", -34.65), "longitude", -58.62))).GetProperty("id").GetInt32();
+        var id = (await Created(With(With(Delivery((product.First, 1)), "latitude", -34.65), "longitude", -58.62))).GetProperty("id").GetInt32();
 
-        var res = await PatchLocation(product.Admin, id, new { locality = "Morón", address = "Av. Siempre Viva 742", latitude = (double?)null, longitude = (double?)null });
+        var res = await PatchLocation(product.Admin, id, new { address = "Av. Siempre Viva 742", latitude = (double?)null, longitude = (double?)null });
 
         res.StatusCode.Should().Be(HttpStatusCode.OK, await res.Content.ReadAsStringAsync());
         var detail = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
@@ -838,38 +816,37 @@ public class OrderTests(ApiFactory factory)
     [Fact]
     public async Task Location_update_of_an_unknown_order_is_not_found()
     {
-        var res = await PatchLocation(AdminClient(), int.MaxValue, new { locality = "Morón", address = "Rivadavia 1" });
+        var res = await PatchLocation(AdminClient(), int.MaxValue, new { address = "Rivadavia 1" });
 
         res.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    /// <summary>Carrier orders have no locality or address: the order's own state forbids the change, hence 409.</summary>
+    /// <summary>Pickup orders have no address: the order's own state forbids the change, hence 409.</summary>
     [Fact]
-    public async Task Location_of_an_other_province_order_cannot_be_edited()
+    public async Task Location_of_a_pickup_order_cannot_be_edited()
     {
         await using var product = await CreateProduct();
-        var id = (await Created(OtherProvince((product.First, 1)))).GetProperty("id").GetInt32();
+        var id = (await Created(Pickup((product.First, 1)))).GetProperty("id").GetInt32();
 
-        var res = await PatchLocation(product.Admin, id, new { locality = "Morón", address = "Rivadavia 1" });
+        var res = await PatchLocation(product.Admin, id, new { address = "Rivadavia 1" });
 
         res.StatusCode.Should().Be(HttpStatusCode.Conflict, await res.Content.ReadAsStringAsync());
         var detail = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
-        detail.GetProperty("locality").ValueKind.Should().Be(JsonValueKind.Null);
-        detail.GetProperty("province").GetString().Should().Be("Córdoba");
+        detail.GetProperty("address").ValueKind.Should().Be(JsonValueKind.Null);
+        detail.GetProperty("fulfillment").GetString().Should().Be("pickup");
     }
 
     [Theory]
-    [InlineData("""{"address":"Rivadavia 1"}""", "Locality")]
-    [InlineData("""{"locality":"  ","address":"Rivadavia 1"}""", "Locality")]
-    [InlineData("""{"locality":"Morón"}""", "Address")]
-    [InlineData("""{"locality":"Morón","address":"Rivadavia\n1"}""", "Address")]
-    [InlineData("""{"locality":"Morón","address":"Rivadavia 1","latitude":-34.6}""", "Longitude")]
-    [InlineData("""{"locality":"Morón","address":"Rivadavia 1","latitude":91,"longitude":-58}""", "Latitude")]
-    [InlineData("""{"locality":"Morón","address":"Rivadavia 1","latitude":-34,"longitude":181}""", "Longitude")]
+    [InlineData("""{}""", "Address")]
+    [InlineData("""{"address":"  "}""", "Address")]
+    [InlineData("""{"address":"Rivadavia\n1"}""", "Address")]
+    [InlineData("""{"address":"Rivadavia 1","latitude":-34.6}""", "Longitude")]
+    [InlineData("""{"address":"Rivadavia 1","latitude":91,"longitude":-58}""", "Latitude")]
+    [InlineData("""{"address":"Rivadavia 1","latitude":-34,"longitude":181}""", "Longitude")]
     public async Task Location_update_rejects_invalid_input(string body, string field)
     {
         await using var product = await CreateProduct();
-        var id = (await Created(BuenosAires((product.First, 1)))).GetProperty("id").GetInt32();
+        var id = (await Created(Delivery((product.First, 1)))).GetProperty("id").GetInt32();
 
         var res = await product.Admin.PatchAsync($"{AdminOrdersUrl}/{id}/location", new StringContent(body, Encoding.UTF8, "application/json"));
 
@@ -901,7 +878,7 @@ public class OrderTests(ApiFactory factory)
     public async Task Orders_cannot_be_read_through_public_endpoints(string url, HttpStatusCode expected)
     {
         await using var product = await CreateProduct();
-        await Created(BuenosAires((product.First, 1)));
+        await Created(Delivery((product.First, 1)));
 
         var res = await _public.GetAsync(url);
 
@@ -916,26 +893,26 @@ public class OrderTests(ApiFactory factory)
         var before = await TotalOrders(product.Admin);
         const string name = "Robert'); DROP TABLE \"Orders\"; --";
         const string phone = "1' OR '1'='1";
-        const string locality = "x'; DELETE FROM \"OrderItems\"; --";
+        const string timeSlot = "x'; DELETE FROM \"OrderItems\"; --";
         const string address = "1 UNION SELECT \"PasswordHash\" FROM \"AdminUsers\"";
         const string comments = "\\'; UPDATE \"Orders\" SET \"Total\" = 0; --\n1; SELECT pg_sleep(5)";
-        var body = BuenosAires((product.First, 1));
+        var body = Delivery((product.First, 1));
         body["customerName"] = name;
         body["phone"] = phone;
-        body["locality"] = locality;
+        body["timeSlot"] = timeSlot;
         body["address"] = address;
         body["comments"] = comments;
 
         var id = (await Created(body)).GetProperty("id").GetInt32();
-        var carrierId = (await Created(With(OtherProvince((product.First, 1)), "carrier", name))).GetProperty("id").GetInt32();
+        var pickupId = (await Created(With(Pickup((product.First, 1)), "timeSlot", name))).GetProperty("id").GetInt32();
 
         var stored = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
         stored.GetProperty("customerName").GetString().Should().Be(name);
         stored.GetProperty("phone").GetString().Should().Be(phone);
-        stored.GetProperty("locality").GetString().Should().Be(locality);
+        stored.GetProperty("timeSlot").GetString().Should().Be(timeSlot);
         stored.GetProperty("address").GetString().Should().Be(address);
         stored.GetProperty("comments").GetString().Should().Be(comments);
-        (await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{carrierId}")).GetProperty("carrier").GetString().Should().Be(name);
+        (await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{pickupId}")).GetProperty("timeSlot").GetString().Should().Be(name);
         (await TotalOrders(product.Admin)).Should().Be(before + 2);
         (await product.Admin.GetFromJsonAsync<JsonElement>("/api/admin/products")).GetArrayLength().Should().BePositive();
     }
