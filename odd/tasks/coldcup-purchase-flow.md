@@ -26,7 +26,7 @@ Design audit approved by the user on 2026-11-23 (points 1 and 2 plus secondary i
 
 ## Tasks
 
-- [ ] T1: Remove the customer type step from checkout. Route: delegated direct (2+ non-trivial files).
+- [x] T1: Remove the customer type step from checkout. Route: delegated direct (2+ non-trivial files).
 - [ ] T2: Make the price board the single home ordering path and keep product cards on category pages. Route: delegated direct.
 - [ ] T3: Add price and action to catalog cards and address the repeated description. Route: delegated direct.
 - [ ] T4: Fix active navigation, `1 unidades`, and the phone cart row. Route: delegated direct.
@@ -46,9 +46,8 @@ From `web/`: `npm run lint`, `npm test`, `npm run build`.
 Test-first applies to pure logic (step sequence, payload, pluralization, active navigation). Layout-only changes use visual checks.
 
 ## Progress
-
-- Not started.
+- T1 done in 2b862c6. The API requires `customerType`, so the web always sends `personal`; legacy `cliente` values are stripped. The checkout form was never persisted (only the cart is). Tests changed: order, request, response, steps. lint, 146 tests and build pass; browser checks run at the end.
 
 ## Next step
 
-Start T1.
+Start T2.
