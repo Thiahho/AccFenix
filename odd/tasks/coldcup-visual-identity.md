@@ -74,7 +74,7 @@ Computed with the WCAG 2.x relative-luminance formula. Reference shades are unch
 - [x] T4: Remove remaining egg visuals where a static replacement is possible and report the rest. Route: delegated direct.
 
 - [x] T5: Fix the price board review warnings (duplicate labels keep every variant reachable, labels differing inside parentheses stay distinct, 320px layout) with tests for the extracted pure logic. Route: delegated direct.
-- [ ] T6: Remove the 3D egg intro and the crack sound, with dependencies used only by them. Route: delegated direct.
+- [x] T6: Remove the 3D egg intro and the crack sound, with dependencies used only by them. Route: delegated direct.
 
 ## Acceptance criteria
 
@@ -95,13 +95,16 @@ Test-first exception: visual styling has no meaningful deterministic RED; existi
 - T2 done: menu-card language on home and catalog; price board grouped by category with size columns. Checks: lint clean, 157/157 tests, build OK; no horizontal overflow at 375px and 1280px against a local mock catalog. Commit `50388fa`.
 - T3 done: checkout, result, not-found and footer surfaces use the menu language; footer admin link raised to AA. Checks: lint clean, 157/157 tests, build OK. Commit `c9c2b42`.
 - T4 done: original CSS/SVG iced cup replaces the hero photo, journey egg, placeholders and toast mark; header capsules made more opaque. Checks: lint clean, 157/157 tests, build OK. Home, catalog and checkout screenshotted at 375px and 1280px against a local mock catalog, with no horizontal overflow or page errors. Commits `b5c0ee7` (file rename only; it does not build alone because a failed `git add` left out the rest) and `b1eec00`, which holds the T4 changes.
-- Left in place: 3D egg intro (`web/lib/intro`), crack sound on price clicks (`web/lib/crack-sound.ts`), unused `EGG.png` and `eggy-hero.png`, unused `splitProductName`, and the footer claim "Entregamos con camión propio".
+- Left in place: unused `EGG.png` and `eggy-hero.png`, unused `splitProductName`, and the footer claim "Entregamos con camión propio".
 
 - T5 done (`050a5c0`): pure `price-board-model.ts` keeps every variant reachable, removes only the final parenthetical and keeps full labels on collisions; three-column cards stack the name in narrow containers; SVG clip id and disabled hover fixed. RED: 6 of 9 model tests failed on the extracted original logic; GREEN: 9/9. Checks: lint clean, 166/166 tests, build OK. Playwright with a local mock catalog at 320, 375 and 1280px: 16/16 prices with distinct names, no name/price overlap, no horizontal overflow, no console errors, and the repeated-label variant reaches the cart. `R3-dark-price-board-contrast` needs no change: `.dark` is never applied on the site.
+- T6 done (`cd02fcd`): removed the 3D egg intro, its inline script and CSS, the crack sound, and `three` with `@types/three`. The CSP uses `'unsafe-inline'` with no hash or nonce tied to that script. Checks: lint clean, 142/142 tests (the 24 removed tests covered only deleted code), build OK. Playwright with a local mock catalog at 320, 375 and 1280px: first visit shows the heading immediately with no splash or canvas, no console errors, and a price click still adds to the order with its toast.
+- Follow-up `18b855a`: board prices stay on one line in wider price columns; rechecked at the same widths with no price overflow.
+- Noted, outside the T6 edit surface: `web/next.config.ts` still mentions the intro gate script in a comment; the toast's "Ver pedido" label wraps at 320px.
 
 ## Next step
 
-Run T6. Still open: confirm the footer delivery wording and whether to delete the unused egg images.
+T5 and T6 are done. Still open: confirm the footer delivery wording and whether to delete the unused egg images.
 
 ## Review status
 
