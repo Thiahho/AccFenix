@@ -81,16 +81,12 @@ function productSchema(product: ProductDetail) {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  // Without settings the product still renders; only the wholesale price hint is hidden.
-  const [product, wholesaleThreshold] = await Promise.all([
-    load(slug),
-    api.settings().then((s) => s.wholesaleThreshold, () => 0),
-  ]);
+  const product = await load(slug);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <JsonLd data={productSchema(product)} />
-      <VariantPicker product={product} wholesaleThreshold={wholesaleThreshold} />
+      <VariantPicker product={product} />
     </div>
   );
 }

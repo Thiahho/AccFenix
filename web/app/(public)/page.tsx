@@ -16,7 +16,7 @@ async function loadSettings(): Promise<PublicSettings> {
   try {
     return await api.settings();
   } catch {
-    return { whatsappNumber: "", wholesaleThreshold: 0 }; // Sin API, la home se muestra sin botones de WhatsApp.
+    return { whatsappNumber: "" }; // Sin API, la home se muestra sin botones de WhatsApp.
   }
 }
 
@@ -41,8 +41,8 @@ export default async function HomePage() {
       <JsonLd data={organization(settings.whatsappNumber)} />
       <NoScriptReveal />
       <Hero phone={settings.whatsappNumber} />
-      <PriceBoard products={products} threshold={0} />
-      <OrderCatalog products={products} phone={settings.whatsappNumber} threshold={0} />
+      <PriceBoard products={products} />
+      <OrderCatalog products={products} phone={settings.whatsappNumber} />
       <HowWeWork />
       <Faq />
     </>

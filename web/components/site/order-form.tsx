@@ -3,33 +3,27 @@
 import { useMemo, useRef, useState } from "react";
 import { Controller, useForm, type FieldErrors, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRightIcon, HomeIcon, MessageCircleIcon, StoreIcon } from "lucide-react";
+import { ArrowRightIcon, HomeIcon, StoreIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckoutProgress, CheckoutStep } from "@/components/site/checkout-step";
-import { DeliveryFields, type CapturedLocation } from "@/components/site/delivery-fields";
+import { DeliveryFields } from "@/components/site/delivery-fields";
 import { Field, fieldA11y } from "@/components/site/form-field";
 import { submitOrder } from "@/app/actions/orders";
-import type { PublicSettings } from "@/lib/api";
-import type { Coords } from "@/lib/geo";
 import { orderSchema, type CustomerChoice, type OrderForm } from "@/lib/order";
 import { unavailableResult, type SubmitOrderFailure } from "@/lib/orders/response";
 import { firstOpenStep, invalidSteps, orderSteps, stepFields, stepOfField, stepStatus, type StepId } from "@/lib/orders/steps";
 import { cartTotals, formatArs } from "@/lib/pricing";
-import { buildOrderMessage, whatsappUrl } from "@/lib/whatsapp";
 import { QtyStepper } from "@/components/site/qty-stepper";
 import { MAX_QTY, totalUnits, useCart, type CartItem } from "@/stores/cart";
-
-/** A stored order: its number and the WhatsApp link with the message that names it. */
-export type PlacedOrder = { number: number; whatsappHref: string };
 
 const stepTitles: Record<StepId, string> = {
   cliente: "¿Para quién es?",
   contacto: "¿Cómo te llamás?",
-  entrega: "¿Dónde entregamos?",
+  entrega: "¿Cómo lo recibís?",
   revision: "Revisá y enviá",
 };
 
@@ -48,9 +42,9 @@ function summaryOf(step: StepId, v: Values): string {
     case "contacto":
       return text(v.nombre);
     case "entrega":
-      return v.zona === "otra-provincia"
-        ? [text(v.provincia), text(v.expreso)].filter(Boolean).join(" · ")
-        : [text(v.direccion), text(v.localidad)].filter(Boolean).join(", ");
+      return v.entrega === "envio"
+        ? [text(v.direccion), text(v.horario)].filter(Boolean).join(" · ")
+        : [text(v.entrega) && "Retiro en el local", text(v.horario)].filter(Boolean).join(" · ");
     case "revision":
       return "";
   }
@@ -61,17 +55,13 @@ function summaryOf(step: StepId, v: Values): string {
  * send. Each step validates its own fields (`trigger`) and unlocks the next; done steps collapse to an editable
  * summary. The order is stored through the server action before WhatsApp opens.
  */
-export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]; settings: PublicSettings; onPlaced: (order: PlacedOrder) => void }) {
-  const clear = useCart((s) => s.clear);
-  const [sent, setSent] = useState(false);
+export function OrderFormCard({ items }: { items: CartItem[] }) {
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [failure, setFailure] = useState<SubmitOrderFailure | null>(null);
-  // Data of the last attempt, so "Enviar igual por WhatsApp" can send it without storing the order.
-  const [lastOrder, setLastOrder] = useState<OrderForm | null>(null);
   const form = useForm<OrderForm>({
     resolver: zodResolver(orderSchema),
-    defaultValues: { zona: "buenos-aires", nombre: "", localidad: "", direccion: "", comentarios: "" },
+    defaultValues: { nombre: "", direccion: "", horario: "", comentarios: "" },
     // Errors show once a field is left, so a disabled "Continuar" never hides why.
     mode: "onTouched",
     // Collapsed steps unmount their fields; their values must survive.
@@ -79,8 +69,6 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
   });
   const { register, control, handleSubmit, watch, getValues, setValue, setError, trigger, formState } = form;
   const values = watch() as Values;
-  const [near, setNear] = useState<Coords | null>(null);
-  const [ubicacion, setUbicacion] = useState<CapturedLocation | null>(null);
 
   const [confirmed, setConfirmed] = useState<ReadonlySet<StepId>>(() => new Set());
   const [active, setActive] = useState(0);
@@ -92,7 +80,6 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
   const errors = Object.fromEntries(
     Object.entries(formState.errors as FieldErrors<Record<string, string>>).map(([k, v]) => [k, v?.message]),
   ) as Partial<Record<string, string>>;
-  const canSend = settings.whatsappNumber.length > 0;
 
   function goTo(index: number) {
     setMoved(true);
@@ -113,14 +100,13 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
     if (advance) void confirmStep(0);
   }
 
-  // The order is stored first; WhatsApp opens only with the number the server assigned.
+  // The order is stored first, then the customer goes to Mercado Pago. The owner sees it once the payment is approved.
   async function onSubmit(data: OrderForm) {
     if (savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
     setFailure(null);
-    const order = data.zona === "buenos-aires" && ubicacion ? { ...data, ubicacion: ubicacion.coords } : data;
-    setLastOrder(order);
+    const order = data;
     try {
       const result = await submitOrder(order, items.map((i) => ({ variantId: i.variantId, qty: i.qty })));
       if (!result.ok) {
@@ -131,13 +117,12 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
         setFailure(result);
         return;
       }
-      const message = buildOrderMessage(items, order, settings.wholesaleThreshold, result.order);
-      const whatsappHref = whatsappUrl(settings.whatsappNumber, message);
-      // Best effort only: after the await this is no longer a user gesture, so iOS and popup blockers may drop it.
-      // The success panel's "Abrir WhatsApp" button is the reliable path.
-      window.open(whatsappHref, "_blank", "noopener,noreferrer");
-      clear();
-      onPlaced({ number: result.order.number, whatsappHref });
+      if (!result.order.checkoutUrl) {
+        setFailure({ ok: false, reason: "unavailable", error: "El pago online no está disponible en este momento. Probá de nuevo más tarde.", fieldErrors: {} });
+        return;
+      }
+      // Mercado Pago takes over. The cart stays until the payment is in, so a rejected payment can be retried.
+      window.location.assign(result.order.checkoutUrl);
     } catch {
       setFailure(unavailableResult());
     } finally {
@@ -159,30 +144,6 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
       return;
     }
     void handleSubmit(onSubmit, onInvalid)(ev);
-  }
-
-  // Fallback when the order could not be stored: the sale still reaches WhatsApp, without an order number.
-  function sendWithoutSaving() {
-    if (!lastOrder) return;
-    const message = buildOrderMessage(items, lastOrder, settings.wholesaleThreshold);
-    window.open(whatsappUrl(settings.whatsappNumber, message), "_blank", "noopener,noreferrer");
-    setFailure(null);
-    setSent(true);
-  }
-
-  if (sent) {
-    return (
-      <aside className="h-fit rounded-xl border bg-brand-soft/50 p-6">
-        <h2 className="text-lg font-semibold">¿Se abrió WhatsApp?</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Enviá el mensaje desde WhatsApp y lo registramos al recibirlo. Si ya lo enviaste, podés vaciar el pedido.
-        </p>
-        <div className="mt-6 flex flex-col gap-2">
-          <Button onClick={clear}>Ya lo envié, vaciar pedido</Button>
-          <Button variant="outline" onClick={() => setSent(false)}>Volver a los datos</Button>
-        </div>
-      </aside>
-    );
   }
 
   const fieldProps = (name: string) => fieldA11y(name, errors[name]);
@@ -262,13 +223,13 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
     ),
     entrega: (
       <>
-        <DeliveryFields form={form} errors={errors} near={near} onNearChange={setNear} ubicacion={ubicacion} onUbicacionChange={setUbicacion} />
+        <DeliveryFields form={form} errors={errors} />
         {continueButton(2)}
       </>
     ),
     revision: (
       <>
-        <OrderRecap items={items} threshold={settings.wholesaleThreshold} />
+        <OrderRecap items={items} />
         <Field id="comentarios" label="Comentarios (opcional)" error={errors.comentarios}>
           <Textarea rows={3} {...fieldProps("comentarios")} {...register("comentarios")} />
         </Field>
@@ -276,22 +237,15 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
         {failure && (
           <div role="alert" className="space-y-3 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             <p>{failure.error}</p>
-            {failure.reason !== "invalid" && lastOrder && (
-              <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={sendWithoutSaving}>
-                Enviar igual por WhatsApp
-              </Button>
-            )}
+
           </div>
         )}
 
-        <Button type="submit" size="lg" className="w-full" disabled={!canSend || saving} aria-busy={saving || undefined}>
-          <MessageCircleIcon aria-hidden /> {saving ? "Guardando pedido…" : failure && failure.reason !== "invalid" ? "Reintentar" : "Enviar pedido por WhatsApp"}
+        <Button type="submit" size="lg" className="w-full" disabled={saving} aria-busy={saving || undefined}>
+          <ArrowRightIcon aria-hidden /> {saving ? "Guardando pedido…" : failure && failure.reason !== "invalid" ? "Reintentar" : "Confirmar y pagar"}
         </Button>
-        {!canSend && <p className="text-sm text-destructive">El envío por WhatsApp no está disponible en este momento.</p>}
         <p className="text-xs text-muted-foreground">
-          {items.some((i) => i.retailPrice != null)
-            ? "Los precios no incluyen el envío: te contactamos para confirmar el pedido y coordinar la entrega."
-            : "No calculamos precios ni envío online: te contactamos para cotizar y coordinar la entrega."}
+          Pagás con Mercado Pago. El pedido llega al local una vez acreditado el pago.
         </p>
       </>
     ),
@@ -323,10 +277,10 @@ export function OrderFormCard({ items, settings, onPlaced }: { items: CartItem[]
 }
 
 /** What is being ordered, from the cart: one line per item, units and the estimated total. */
-function OrderRecap({ items, threshold }: { items: CartItem[]; threshold: number }) {
+function OrderRecap({ items }: { items: CartItem[] }) {
   const setQty = useCart((s) => s.setQty);
   const units = totalUnits(items);
-  const totals = cartTotals(items, threshold);
+  const totals = cartTotals(items);
   return (
     <div className="rounded-lg bg-brand-soft/50 p-3 text-sm">
       <ul className="space-y-2">
@@ -350,7 +304,6 @@ function OrderRecap({ items, threshold }: { items: CartItem[]; threshold: number
       <p className="mt-2 flex justify-between gap-3 border-t border-brand/15 pt-2 font-semibold">
         <span>
           {units} {units === 1 ? "unidad" : "unidades"}
-          {totals.wholesale && <span className="ml-1.5 font-normal text-muted-foreground">(mayorista)</span>}
         </span>
         <span className="tabular-nums">
           {totals.pricedLines === 0 ? "A cotizar" : `${totals.partial ? "Parcial " : ""}${formatArs(totals.total)}`}

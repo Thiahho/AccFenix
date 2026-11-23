@@ -16,13 +16,13 @@ import { describeSelection, findVariant, initialSelection, isValueEnabled, selec
 import { buildVariantMessage, whatsappUrl } from "@/lib/whatsapp";
 import { useCart } from "@/stores/cart";
 
-type Props = { product: ProductDetail; phone: string; threshold: number };
+type Props = { product: ProductDetail; phone: string };
 
 const chip =
   "inline-flex h-11 min-w-12 items-center justify-center rounded-md border bg-background px-3 text-sm font-semibold transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none";
 
 /** One product: the visitor picks a presentation, sees its price and adds it to the order or asks by WhatsApp. */
-export function ProductCard({ product, phone, threshold }: Props) {
+export function ProductCard({ product, phone }: Props) {
   const { attributes, variants } = product;
   // Start on the first presentation so the price shows right away.
   const [selection, setSelection] = useState<Selection>(() => {
@@ -50,7 +50,6 @@ export function ProductCard({ product, phone, threshold }: Props) {
         valuesLabel: label,
         availability: variant.availability,
         retailPrice: variant.retailPrice,
-        wholesalePrice: variant.wholesalePrice,
       },
       1,
     );
@@ -115,11 +114,6 @@ export function ProductCard({ product, phone, threshold }: Props) {
                   {variant.retailPrice !== null ? formatArs(variant.retailPrice) : "Consultar"}
                 </span>
               </p>
-              {variant.wholesalePrice !== null && threshold > 0 && (
-                <p className="mt-0.5 text-right text-xs text-muted-foreground">
-                  Mayorista desde {threshold} u.: <span className="font-semibold text-foreground tabular-nums">{formatArs(variant.wholesalePrice)}</span>
-                </p>
-              )}
             </>
           ) : (
             <p className="text-sm text-muted-foreground">Elegí una presentación para ver el precio.</p>

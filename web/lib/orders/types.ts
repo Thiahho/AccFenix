@@ -2,23 +2,20 @@
 
 export type OrderStatus = "pending" | "confirmed" | "outForDelivery" | "delivered" | "cancelled";
 
-export type DeliveryZone = "buenosAires" | "otherProvince";
+export type PaymentStatus = "unpaid" | "approved" | "rejected";
 
 export type CustomerType = "personal" | "business";
 
-/** Body of `POST /api/orders`. It carries no prices: the server prices every line. Other-zone fields are left out. */
+export type Fulfillment = "delivery" | "pickup";
+
+/** Body of `POST /api/orders`. It carries no prices: the server prices every line. */
 export type CreateOrderRequest = {
-  zone: DeliveryZone;
+  fulfillment: Fulfillment;
   customerType: CustomerType;
   customerName: string;
-  /** Optional in the API; the site never sends it because the order arrives from the customer's WhatsApp. */
-  phone?: string;
-  locality?: string;
+  timeSlot: string;
+  /** Required when `fulfillment` is "delivery". */
   address?: string;
-  latitude?: number;
-  longitude?: number;
-  province?: string;
-  carrier?: string;
   comments?: string;
   items: { variantId: number; quantity: number }[];
 };
@@ -40,10 +37,19 @@ export type CreatedOrder = {
   id: number;
   number: number;
   status: OrderStatus;
+  paymentStatus: PaymentStatus;
   createdAt: string;
-  isWholesale: boolean;
   /** Sum of the priced lines only; 0 when nothing is priced. */
   total: number;
   hasUnpricedItems: boolean;
   items: OrderItem[];
+  /** Mercado Pago checkout link. Null when payments are not configured or the order has unpriced items. */
+  checkoutUrl: string | null;
+};
+
+/** Body of `GET /api/orders/{number}/payment`: only the payment state, no customer data. */
+export type OrderPayment = {
+  number: number;
+  paymentStatus: PaymentStatus;
+  paidAt: string | null;
 };

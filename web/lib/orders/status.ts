@@ -1,4 +1,4 @@
-import type { CustomerType, DeliveryZone, OrderStatus } from "@/lib/orders/types";
+import type { CustomerType, Fulfillment, OrderStatus, PaymentStatus } from "@/lib/orders/types";
 
 /** Every status in the order it usually moves through. */
 export const orderStatuses: readonly OrderStatus[] = ["pending", "confirmed", "outForDelivery", "delivered", "cancelled"];
@@ -11,9 +11,15 @@ export const orderStatusLabel: Record<OrderStatus, string> = {
   cancelled: "Cancelado",
 };
 
-export const zoneLabel: Record<DeliveryZone, string> = {
-  buenosAires: "Buenos Aires",
-  otherProvince: "Otra provincia",
+export const fulfillmentLabel: Record<Fulfillment, string> = {
+  delivery: "Envío en Moreno",
+  pickup: "Retiro en el local",
+};
+
+export const paymentStatusLabel: Record<PaymentStatus, string> = {
+  unpaid: "Sin pagar",
+  approved: "Pagado",
+  rejected: "Rechazado",
 };
 
 export const customerTypeLabel: Record<CustomerType, string> = {

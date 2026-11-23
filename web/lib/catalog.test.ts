@@ -32,7 +32,6 @@ describe("priceRows", () => {
     valueIds: [valueId],
     availability: "disponible",
     retailPrice,
-    wholesalePrice: null,
   });
 
   it("orders rows like the attribute values and labels them with the value", () => {
@@ -63,8 +62,8 @@ describe("priceRowCartItem", () => {
       },
     ],
     variants: [
-      { id: 5, sku: "H1-C", valueIds: [10], availability: "disponible", retailPrice: 60000, wholesalePrice: 55000 },
-      { id: 6, sku: "H1-M", valueIds: [12], availability: "aPedido", retailPrice: null, wholesalePrice: null },
+      { id: 5, sku: "H1-C", valueIds: [10], availability: "disponible", retailPrice: 60000},
+      { id: 6, sku: "H1-M", valueIds: [12], availability: "aPedido", retailPrice: null},
     ] satisfies Variant[],
   };
 
@@ -77,7 +76,6 @@ describe("priceRowCartItem", () => {
       valuesLabel: "Presentación Cajón",
       availability: "disponible",
       retailPrice: 60000,
-      wholesalePrice: 55000,
     });
   });
 

@@ -6,10 +6,10 @@ import type { ProductDetail } from "@/lib/api";
 import { priceRowCartItem, priceRows, splitProductName } from "@/lib/catalog";
 import { formatArs } from "@/lib/pricing";
 
-type Props = { products: ProductDetail[]; threshold: number };
+type Props = { products: ProductDetail[] };
 
 /** Dark price list after the "HUEVOS | N°1" story: one block per product, one row per presentation. */
-export function PriceBoard({ products, threshold }: Props) {
+export function PriceBoard({ products }: Props) {
   const priced = products.filter((p) => p.variants.length > 0);
 
   return (
@@ -21,8 +21,7 @@ export function PriceBoard({ products, threshold }: Props) {
             Precios de hoy
           </h2>
           <p className="mt-3 max-w-xl text-cream/80 text-pretty">
-            Precio minorista por presentación. Tocá un precio para sumarlo a tu pedido.
-            {threshold > 0 && <> Desde {threshold} unidades con precio en el mismo pedido se aplica el precio mayorista.</>}
+            Precio por presentación. Tocá un precio para sumarlo a tu pedido.
           </p>
         </Reveal>
 
@@ -80,7 +79,6 @@ function BoardBlock({ product }: { product: ProductDetail }) {
               productName={product.name}
               label={row.label}
               price={row.retailPrice !== null ? formatArs(row.retailPrice) : "Consultar"}
-              wholesale={row.wholesalePrice !== null ? formatArs(row.wholesalePrice) : null}
             />
           </StaggerItem>
         ))}

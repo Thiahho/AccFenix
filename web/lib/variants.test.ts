@@ -8,9 +8,9 @@ const attributes: ProductAttribute[] = [
   { id: 2, name: "Calibre", slug: "calibre", values: [{ id: 10, label: "N°1", colorHex: null }, { id: 11, label: "N°2", colorHex: null }] },
 ];
 const variants: Variant[] = [
-  { id: 100, sku: "a", valueIds: [1, 10], availability: "disponible", retailPrice: null, wholesalePrice: null },
-  { id: 101, sku: "b", valueIds: [1, 11], availability: "aPedido", retailPrice: null, wholesalePrice: null },
-  { id: 102, sku: "c", valueIds: [2, 10], availability: "disponible", retailPrice: null, wholesalePrice: null },
+  { id: 100, sku: "a", valueIds: [1, 10], availability: "disponible", retailPrice: null},
+  { id: 101, sku: "b", valueIds: [1, 11], availability: "aPedido", retailPrice: null},
+  { id: 102, sku: "c", valueIds: [2, 10], availability: "disponible", retailPrice: null},
 ];
 
 describe("variants", () => {

@@ -49,9 +49,9 @@ public sealed class MercadoPagoClient(HttpClient http, IOptions<MercadoPagoOptio
             ["external_reference"] = order.Number.ToString(CultureInfo.InvariantCulture),
             ["back_urls"] = new Dictionary<string, object?>
             {
-                ["success"] = $"{_options.SiteUrl}/pedido/gracias",
-                ["pending"] = $"{_options.SiteUrl}/pedido/gracias",
-                ["failure"] = $"{_options.SiteUrl}/pedido/pago-rechazado",
+                ["success"] = $"{_options.SiteUrl}/pedido/gracias?pedido={order.Number}",
+                ["pending"] = $"{_options.SiteUrl}/pedido/gracias?pedido={order.Number}",
+                ["failure"] = $"{_options.SiteUrl}/pedido/pago-rechazado?pedido={order.Number}",
             },
             ["auto_return"] = "approved",
         };

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { OrderStatusBadge } from "@/components/admin/orders/order-status-badge";
-import { OrderMapsLink, RouteBuilderProvider, RouteModeToggle, RoutePanel, RouteSelectCell, RouteSelectHead } from "@/components/admin/orders/route-builder";
 import { PageHeader } from "@/components/admin/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatOrderDate, orderTotalLabel, ordersListPath, ordersPageHref, pageCount, parseOrdersQuery } from "@/lib/admin/orders";
 import { adminFetch } from "@/lib/admin/session";
 import type { AdminOrderPage } from "@/lib/admin/types";
-import { customerTypeLabel, orderStatuses, orderStatusLabel, zoneLabel } from "@/lib/orders/status";
+import { customerTypeLabel, fulfillmentLabel, orderStatuses, orderStatusLabel, paymentStatusLabel } from "@/lib/orders/status";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Pedidos" };
@@ -20,12 +19,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const pages = pageCount(data.total, data.pageSize);
 
   return (
-    <RouteBuilderProvider>
-      <PageHeader
-        title="Pedidos"
-        description="Pedidos enviados desde el sitio, con los precios vigentes al momento de pedir."
-        actions={data.items.length > 0 ? <RouteModeToggle /> : undefined}
-      />
+    <>
+      <PageHeader title="Pedidos" description="Pedidos de la carta, con su estado de pago." />
 
       <nav aria-label="Filtrar por estado" className="mb-4 flex flex-wrap gap-2">
         {[undefined, ...orderStatuses].map((s) => {
@@ -50,10 +45,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <Table>
             <TableHeader>
               <TableRow>
-                <RouteSelectHead />
                 <TableHead>Pedido</TableHead>
                 <TableHead>Cliente</TableHead>
-                <TableHead className="hidden md:table-cell">Zona</TableHead>
+                <TableHead className="hidden md:table-cell">Entrega</TableHead>
                 <TableHead className="hidden text-right sm:table-cell">Productos</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="hidden sm:table-cell">Estado</TableHead>
@@ -62,7 +56,6 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
             <TableBody>
               {data.items.map((o) => (
                 <TableRow key={o.id} className="relative">
-                  <RouteSelectCell order={o} />
                   <TableCell>
                     <Link href={`/admin/pedidos/${o.id}`} className="font-medium tabular-nums after:absolute after:inset-0 hover:text-brand">
                       #{o.number}
@@ -74,12 +67,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                     <span className="flex flex-wrap items-center gap-1.5">
                       {o.customerName}
                       <Badge variant={o.customerType === "business" ? "default" : "outline"}>{customerTypeLabel[o.customerType]}</Badge>
-                      {o.isWholesale && <Badge variant="secondary">Mayorista</Badge>}
+                      <Badge variant={o.paymentStatus === "approved" ? "default" : "secondary"}>{paymentStatusLabel[o.paymentStatus]}</Badge>
                     </span>
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground md:table-cell">
-                    {zoneLabel[o.zone]}
-                    <OrderMapsLink order={o} />
+                    {fulfillmentLabel[o.fulfillment]}
+                    <span className="block text-xs">{o.timeSlot}</span>
                   </TableCell>
                   <TableCell className="hidden text-right tabular-nums sm:table-cell">
                     {o.itemCount} <span className="text-muted-foreground">({o.totalUnits} u.)</span>
@@ -92,8 +85,6 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           </Table>
         )}
       </div>
-
-      <RoutePanel />
 
       {pages > 1 && (
         <nav aria-label="Páginas" className="mt-4 flex items-center justify-between gap-2 text-sm">
@@ -109,6 +100,6 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           </Button>
         </nav>
       )}
-    </RouteBuilderProvider>
+    </>
   );
 }

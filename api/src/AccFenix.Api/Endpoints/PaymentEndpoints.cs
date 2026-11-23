@@ -73,5 +73,18 @@ public static class PaymentEndpoints
             log.LogInformation("Order {OrderNumber} marked as paid", number);
             return Results.Ok();
         }).WithTags("Public");
+
+        // Lets the thank-you page know whether the payment is in. Only the payment state and its date are returned,
+        // no customer data, so the order number alone is not enough to learn anything about the order.
+        app.MapGet("/api/orders/{number:int}/payment", async (int number, AppDbContext db, CancellationToken ct) =>
+        {
+            var status = await db.Orders
+                .Where(o => o.Number == number)
+                .Select(o => new OrderPaymentDto(o.Number, o.PaymentStatus, o.PaidAt))
+                .FirstOrDefaultAsync(ct);
+            return status is null ? Results.NotFound() : Results.Ok(status);
+        }).WithTags("Public");
     }
 }
+
+public record OrderPaymentDto(int Number, PaymentStatus PaymentStatus, DateTime? PaidAt);

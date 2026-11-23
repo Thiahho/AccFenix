@@ -2,11 +2,9 @@
 // Prices are whole ARS pesos (no cents); a variant without a price is quoted on request.
 
 /** The minimum a cart line needs to be priced. Missing prices mean "no price". */
-export type PricedLine = { qty: number; retailPrice?: number | null; wholesalePrice?: number | null };
+export type PricedLine = { qty: number; retailPrice?: number | null };
 
 export type CartTotals = {
-  /** Whether wholesale prices apply to the whole cart. */
-  wholesale: boolean;
   /** Sum of the priced lines only. */
   total: number;
   pricedLines: number;
@@ -19,42 +17,25 @@ export const MAX_PRICE = 99_999_999.99;
 
 const toCents = (amount: number) => Math.round(amount * 100);
 
-/**
- * Units count towards the wholesale threshold only when they can be charged: a variant with any price (retail or
- * wholesale). Units quoted on request do not count. Mirrors `OrderPricing.CountsTowardWholesale` in the API.
- */
-export function countsTowardWholesale(line: PricedLine) {
-  return line.retailPrice != null || line.wholesalePrice != null;
-}
-
-/** A cart is wholesale when its priced units reach the threshold; a threshold of 0 disables wholesale. */
-export function isWholesale(items: PricedLine[], threshold: number) {
-  if (threshold <= 0) return false;
-  return items.reduce((sum, i) => (countsTowardWholesale(i) ? sum + i.qty : sum), 0) >= threshold;
-}
-
-/** Wholesale price when the cart is wholesale and the variant has one; otherwise retail; null when unpriced. */
-export function unitPrice(line: PricedLine, wholesale: boolean): number | null {
-  if (wholesale && line.wholesalePrice != null) return line.wholesalePrice;
+export function unitPrice(line: PricedLine): number | null {
   return line.retailPrice ?? null;
 }
 
-export function lineSubtotal(line: PricedLine, wholesale: boolean): number | null {
-  const price = unitPrice(line, wholesale);
+export function lineSubtotal(line: PricedLine): number | null {
+  const price = unitPrice(line);
   return price === null ? null : (toCents(price) * line.qty) / 100;
 }
 
-export function cartTotals(items: PricedLine[], threshold: number): CartTotals {
-  const wholesale = isWholesale(items, threshold);
+export function cartTotals(items: PricedLine[]): CartTotals {
   let cents = 0;
   let pricedLines = 0;
   for (const item of items) {
-    const price = unitPrice(item, wholesale);
+    const price = unitPrice(item);
     if (price === null) continue;
     cents += toCents(price) * item.qty;
     pricedLines++;
   }
-  return { wholesale, total: cents / 100, pricedLines, partial: pricedLines < items.length };
+  return { total: cents / 100, pricedLines, partial: pricedLines < items.length };
 }
 
 // Prices are handled in whole pesos: no cents are shown or accepted. Legacy values with cents are rounded on display.

@@ -8,9 +8,9 @@ export type StepId = (typeof orderSteps)[number];
 export type StepStatus = "done" | "active" | "open" | "locked";
 
 /** The options that change which fields a step shows. */
-export type StepValues = { cliente?: string; zona?: string };
+export type StepValues = { cliente?: string; entrega?: string };
 
-/** Fields a step validates before moving on, following the chosen customer type and zone. */
+/** Fields a step validates before moving on. Delivery needs an address; pickup only a time slot. */
 export function stepFields(step: StepId, values: StepValues): string[] {
   switch (step) {
     case "cliente":
@@ -18,7 +18,7 @@ export function stepFields(step: StepId, values: StepValues): string[] {
     case "contacto":
       return ["nombre"];
     case "entrega":
-      return values.zona === "otra-provincia" ? ["zona", "provincia", "expreso"] : ["zona", "localidad", "direccion"];
+      return values.entrega === "envio" ? ["entrega", "direccion", "horario"] : ["entrega", "horario"];
     case "revision":
       return ["comentarios"];
   }
@@ -27,12 +27,9 @@ export function stepFields(step: StepId, values: StepValues): string[] {
 const stepByField: Record<string, StepId> = {
   cliente: "cliente",
   nombre: "contacto",
-  zona: "entrega",
-  localidad: "entrega",
+  entrega: "entrega",
   direccion: "entrega",
-  ubicacion: "entrega",
-  provincia: "entrega",
-  expreso: "entrega",
+  horario: "entrega",
   comentarios: "revision",
 };
 

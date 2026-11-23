@@ -15,13 +15,12 @@ import type { AdminProduct, AdminVariant, VariantPrices } from "@/lib/admin/type
 import { parsePriceInput, priceToInput } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
-type PriceField = "retailPrice" | "wholesalePrice";
+type PriceField = "retailPrice";
 /** Text typed in the price inputs and not saved yet, by variant id. */
 type Drafts = Record<number, Partial<Record<PriceField, string>>>;
 
 const priceFields: { field: PriceField; label: string }[] = [
-  { field: "retailPrice", label: "Minorista" },
-  { field: "wholesalePrice", label: "Mayorista" },
+  { field: "retailPrice", label: "Precio" },
 ];
 
 export function VariantsGrid({ product }: { product: AdminProduct }) {
@@ -31,7 +30,7 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
   const [filter, setFilter] = useState<Record<number, number | undefined>>({});
   const [showInactive, setShowInactive] = useState(false);
   const [drafts, setDrafts] = useState<Drafts>({});
-  const [fill, setFill] = useState<Record<PriceField, string>>({ retailPrice: "", wholesalePrice: "" });
+  const [fill, setFill] = useState<Record<PriceField, string>>({ retailPrice: "" });
 
   // Solo los atributos que efectivamente varían en este producto.
   const attributes = product.categoryAttributes
@@ -55,11 +54,10 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
   for (const v of variants) {
     if (!drafts[v.id]) continue;
     const retail = parsePriceInput(priceText(v, "retailPrice"));
-    const wholesale = parsePriceInput(priceText(v, "wholesalePrice"));
-    if (!retail.ok || !wholesale.ok) {
+    if (!retail.ok) {
       invalidCount++;
-    } else if (retail.value !== v.retailPrice || wholesale.value !== v.wholesalePrice) {
-      changes.push({ variantId: v.id, retailPrice: retail.value, wholesalePrice: wholesale.value });
+    } else if (retail.value !== v.retailPrice) {
+      changes.push({ variantId: v.id, retailPrice: retail.value });
     }
   }
   const hasDrafts = changes.length > 0 || invalidCount > 0;
@@ -117,7 +115,7 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
       setVariants((vs) =>
         vs.map((v) => {
           const change = saved.get(v.id);
-          return change ? { ...v, retailPrice: change.retailPrice, wholesalePrice: change.wholesalePrice } : v;
+          return change ? { ...v, retailPrice: change.retailPrice } : v;
         }),
       );
       setDrafts({});

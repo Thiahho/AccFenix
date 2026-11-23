@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { describeSelection, findVariant, initialSelection, isValueEnabled, select, type Selection } from "@/lib/variants";
 import { MAX_QTY, useCart } from "@/stores/cart";
 
-export function VariantPicker({ product, wholesaleThreshold }: { product: ProductDetail; wholesaleThreshold: number }) {
+export function VariantPicker({ product }: { product: ProductDetail }) {
   const { attributes, variants } = product;
   const [selection, setSelection] = useState<Selection>(() => initialSelection(attributes));
   const [qty, setQty] = useState(1);
@@ -34,7 +34,6 @@ export function VariantPicker({ product, wholesaleThreshold }: { product: Produc
         valuesLabel: describeSelection(attributes, selection),
         availability: variant.availability,
         retailPrice: variant.retailPrice,
-        wholesalePrice: variant.wholesalePrice,
       },
       qty,
     );
@@ -126,12 +125,6 @@ export function VariantPicker({ product, wholesaleThreshold }: { product: Produc
                   {variant.retailPrice !== null ? formatArs(variant.retailPrice) : "Consultar"}
                 </span>
               </p>
-              {variant.wholesalePrice !== null && wholesaleThreshold > 0 && (
-                <p className="mt-1 text-right text-sm text-muted-foreground">
-                  Mayorista desde {wholesaleThreshold} unidades:{" "}
-                  <span className="font-medium text-foreground tabular-nums">{formatArs(variant.wholesalePrice)}</span>
-                </p>
-              )}
             </div>
           )}
 

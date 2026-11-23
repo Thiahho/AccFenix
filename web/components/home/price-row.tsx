@@ -18,8 +18,6 @@ type Props = {
   label: string;
   /** Formatted retail price, or "Consultar". */
   price: string;
-  /** Formatted wholesale price, when known. */
-  wholesale: string | null;
 };
 
 /*
@@ -49,14 +47,14 @@ const shake: TargetAndTransition = {
   transition: { duration: 0.36, ease: "easeOut" },
 };
 
-export function PriceRow({ item, imageUrl, productName, label, price, wholesale }: Props) {
+export function PriceRow({ item, imageUrl, productName, label, price }: Props) {
   const add = useCart((s) => s.add);
   const [active, setActive] = useState(false);
   const [cracks, setCracks] = useState(0);
   const reduce = usePrefersReducedMotion();
   const state = active ? "hover" : "rest";
 
-  const name = `${item ? "Agregar al pedido: " : ""}${productName}, ${label}, ${price}${wholesale ? `, mayorista ${wholesale}` : ""}`;
+  const name = `${item ? "Agregar al pedido: " : ""}${productName}, ${label}, ${price}`;
 
   return (
     <button
@@ -118,7 +116,6 @@ export function PriceRow({ item, imageUrl, productName, label, price, wholesale 
               </m.span>
             </m.span>
           </Pop>
-          {wholesale && <span className="text-xs text-cream/75 tabular-nums sm:text-sm">Mayorista {wholesale}</span>}
         </span>
       </m.span>
     </button>

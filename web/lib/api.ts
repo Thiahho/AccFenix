@@ -29,7 +29,6 @@ export type Variant = {
   availability: Availability;
   /** ARS; null means the price is quoted on request. */
   retailPrice: number | null;
-  wholesalePrice: number | null;
 };
 
 export type Media = { id: number; type: "image" | "video"; url: string; attributeValueId: number | null };
@@ -50,10 +49,9 @@ export type VariantStatus = {
   isActive: boolean;
   availability: Availability;
   retailPrice: number | null;
-  wholesalePrice: number | null;
 };
 
-export type PublicSettings = { whatsappNumber: string; wholesaleThreshold: number };
+export type PublicSettings = { whatsappNumber: string };
 
 export const availabilityLabel: Record<Availability, string> = {
   disponible: "Disponible",

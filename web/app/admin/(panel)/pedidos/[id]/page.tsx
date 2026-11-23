@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPinIcon } from "lucide-react";
-import { OrderLocationDialog } from "@/components/admin/orders/order-location-dialog";
 import { OrderStatusBadge } from "@/components/admin/orders/order-status-badge";
 import { OrderStatusForm } from "@/components/admin/orders/order-status-form";
 import { PageHeader } from "@/components/admin/page-header";
@@ -11,8 +9,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { formatOrderDate, orderTotalLabel, whatsappChatHref } from "@/lib/admin/orders";
 import { adminFetch, AdminApiError } from "@/lib/admin/session";
 import type { AdminOrder } from "@/lib/admin/types";
-import { mapsPlaceLink } from "@/lib/maps-url";
-import { customerTypeLabel, zoneLabel } from "@/lib/orders/status";
+import { customerTypeLabel, fulfillmentLabel, paymentStatusLabel } from "@/lib/orders/status";
 import { formatArs } from "@/lib/pricing";
 
 export const metadata: Metadata = { title: "Pedido" };
@@ -35,7 +32,6 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     if (e instanceof AdminApiError && e.status === 404) notFound();
     throw e;
   });
-  const placeLink = order.zone === "buenosAires" ? mapsPlaceLink(order) : null;
   const chatHref = whatsappChatHref(order.phone);
 
   return (
@@ -47,7 +43,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         actions={
           <div className="flex items-center gap-2">
             <Badge variant={order.customerType === "business" ? "default" : "outline"}>{customerTypeLabel[order.customerType]}</Badge>
-            {order.isWholesale && <Badge variant="secondary">Mayorista</Badge>}
+            <Badge variant={order.paymentStatus === "approved" ? "default" : "secondary"}>{paymentStatusLabel[order.paymentStatus]}</Badge>
             <OrderStatusBadge status={order.status} />
           </div>
         }
@@ -78,40 +74,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </section>
 
         <section aria-labelledby="entrega" className="rounded-xl border bg-background p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="entrega" className="font-semibold">Entrega</h2>
-            {order.zone === "buenosAires" && (
-              <OrderLocationDialog
-                orderId={order.id}
-                location={{ locality: order.locality, address: order.address, latitude: order.latitude, longitude: order.longitude }}
-              />
-            )}
-          </div>
+          <h2 id="entrega" className="font-semibold">Entrega</h2>
           <dl className="mt-3 grid gap-3 text-sm">
-            <Detail label="Zona">{zoneLabel[order.zone]}</Detail>
-            {order.zone === "buenosAires" ? (
-              <>
-                <Detail label="Localidad">{order.locality}</Detail>
-                <Detail label="Dirección">
-                  {order.address}
-                  {placeLink && (
-                    <a
-                      href={placeLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-2 inline-flex items-center gap-1 font-medium text-brand hover:underline"
-                    >
-                      <MapPinIcon aria-hidden className="size-3.5" /> Ver en Maps
-                    </a>
-                  )}
-                </Detail>
-              </>
-            ) : (
-              <>
-                <Detail label="Provincia">{order.province}</Detail>
-                <Detail label="Expreso">{order.carrier}</Detail>
-              </>
-            )}
+            <Detail label="Modo">{fulfillmentLabel[order.fulfillment]}</Detail>
+            <Detail label="Horario">{order.timeSlot}</Detail>
+            {order.fulfillment === "delivery" && <Detail label="Dirección">{order.address}</Detail>}
+            <Detail label="Pago">
+              {paymentStatusLabel[order.paymentStatus]}
+              {order.paidAt && <span className="block text-xs text-muted-foreground">{formatOrderDate(order.paidAt)}</span>}
+            </Detail>
           </dl>
         </section>
       </div>
@@ -149,7 +120,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <TableFooter>
             <TableRow>
               <TableCell colSpan={2} className="font-medium whitespace-normal">
-                Total <span className="font-normal text-muted-foreground">(precios {order.isWholesale ? "mayoristas" : "minoristas"}, sin envío)</span>
+                Total <span className="font-normal text-muted-foreground">(sin envío)</span>
               </TableCell>
               <TableCell colSpan={3} className="text-right font-semibold tabular-nums whitespace-nowrap">{orderTotalLabel(order)}</TableCell>
             </TableRow>

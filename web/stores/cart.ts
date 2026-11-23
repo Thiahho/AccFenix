@@ -19,7 +19,6 @@ export type CartItem = {
    * Missing (older persisted carts) or null means the variant has no price.
    */
   retailPrice?: number | null;
-  wholesalePrice?: number | null;
   qty: number;
 };
 
@@ -44,7 +43,7 @@ export function applyStatuses(items: CartItem[], statuses: VariantStatus[]): Car
     const status = byId.get(item.variantId);
     if (!status?.isActive) return [];
     // Prices always come from the fresh data, never from what was stored when the item was added.
-    return [{ ...item, availability: status.availability, retailPrice: status.retailPrice ?? null, wholesalePrice: status.wholesalePrice ?? null }];
+    return [{ ...item, availability: status.availability, retailPrice: status.retailPrice ?? null }];
   });
 }
 
@@ -76,8 +75,8 @@ export const useCart = create<CartState>()(
       sync: (statuses) => set((s) => ({ items: applyStatuses(s.items, statuses) })),
     }),
     {
-      name: "eggy-cart",
-      version: 1,
+      name: "coldcup-cart",
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ items: s.items, savedAt: s.savedAt }),
       // Descarta carritos viejos al leerlos del navegador.

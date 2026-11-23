@@ -115,7 +115,7 @@ export async function deleteProducts(ids: number[]) {
 }
 
 /** Omitted fields stay unchanged; an explicit null price clears it. */
-export type VariantPatch = { availability?: Availability; isActive?: boolean; retailPrice?: number | null; wholesalePrice?: number | null };
+export type VariantPatch = { availability?: Availability; isActive?: boolean; retailPrice?: number | null };
 
 export async function setVariant(id: number, patch: VariantPatch) {
   if (!isId(id)) return invalidId;
@@ -167,6 +167,6 @@ export async function deleteMedia(id: number) {
 }
 
 // ---- Configuración ----
-export async function saveSettings(input: { whatsappNumber: string; wholesaleThreshold: number }) {
+export async function saveSettings(input: { whatsappNumber: string }) {
   return run(() => adminFetch("/api/admin/settings", json("PUT", input)));
 }

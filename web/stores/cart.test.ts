@@ -22,26 +22,26 @@ describe("cart", () => {
 
   it("drops inactive or unknown variants and refreshes availability", () => {
     const result = applyStatuses([item(1), item(2), item(3)], [
-      { id: 1, isActive: true, availability: "aPedido", retailPrice: null, wholesalePrice: null },
-      { id: 2, isActive: false, availability: "disponible", retailPrice: null, wholesalePrice: null },
+      { id: 1, isActive: true, availability: "aPedido", retailPrice: null},
+      { id: 2, isActive: false, availability: "disponible", retailPrice: null},
     ]);
     expect(result.map((i) => [i.variantId, i.availability])).toEqual([[1, "aPedido"]]);
   });
 
   it("refreshes prices from the current variant data, replacing stale ones", () => {
-    const stale = { ...item(1), retailPrice: 100, wholesalePrice: 80 };
+    const stale = { ...item(1), retailPrice: 100};
     const result = applyStatuses([stale, item(2)], [
-      { id: 1, isActive: true, availability: "disponible", retailPrice: 120, wholesalePrice: null },
-      { id: 2, isActive: true, availability: "disponible", retailPrice: 55.5, wholesalePrice: 50 },
+      { id: 1, isActive: true, availability: "disponible", retailPrice: 120},
+      { id: 2, isActive: true, availability: "disponible", retailPrice: 55.5},
     ]);
-    expect(result.map((i) => [i.retailPrice, i.wholesalePrice])).toEqual([[120, null], [55.5, 50]]);
+    expect(result.map((i) => i.retailPrice)).toEqual([120, 55.5]);
   });
 
   it("clears prices when the variant data has none", () => {
-    const stale = { ...item(1), retailPrice: 100, wholesalePrice: 80 };
+    const stale = { ...item(1), retailPrice: 100};
     // Simulates an older API response without price fields.
     const statuses = [{ id: 1, isActive: true, availability: "disponible" }] as unknown as VariantStatus[];
-    expect(applyStatuses([stale], statuses)[0]).toMatchObject({ retailPrice: null, wholesalePrice: null });
+    expect(applyStatuses([stale], statuses)[0]).toMatchObject({ retailPrice: null});
   });
 
   it("sums units", () => {

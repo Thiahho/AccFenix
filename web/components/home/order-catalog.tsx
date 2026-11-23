@@ -2,10 +2,10 @@ import { ProductCard } from "@/components/home/product-card";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import type { ProductDetail } from "@/lib/api";
 
-type Props = { products: ProductDetail[]; phone: string; threshold: number };
+type Props = { products: ProductDetail[]; phone: string };
 
 /** Order grid: one card per product so the visitor can build the order or ask by WhatsApp. */
-export function OrderCatalog({ products, phone, threshold }: Props) {
+export function OrderCatalog({ products, phone }: Props) {
   const orderable = products.filter((p) => p.variants.length > 0);
 
   return (
@@ -27,7 +27,7 @@ export function OrderCatalog({ products, phone, threshold }: Props) {
           <Stagger as="ul" stagger={0.1} className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {orderable.map((product) => (
               <StaggerItem as="li" key={product.id} y={24}>
-                <ProductCard product={product} phone={phone} threshold={threshold} />
+                <ProductCard product={product} phone={phone} />
               </StaggerItem>
             ))}
           </Stagger>

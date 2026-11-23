@@ -28,7 +28,6 @@ export type PriceRow = {
   label: string;
   availability: Availability;
   retailPrice: number | null;
-  wholesalePrice: number | null;
 };
 
 /** One row per variant, labelled with its value labels and ordered like the attributes and their values. */
@@ -53,7 +52,6 @@ export function priceRows(product: Pick<ProductDetail, "attributes" | "variants"
       label: picks.map((p) => p.label).filter(Boolean).join(" · ") || v.sku,
       availability: v.availability,
       retailPrice: v.retailPrice,
-      wholesalePrice: v.wholesalePrice,
     }));
 }
 
@@ -82,6 +80,5 @@ export function priceRowCartItem(
     valuesLabel,
     availability: variant.availability,
     retailPrice: variant.retailPrice,
-    wholesalePrice: variant.wholesalePrice,
   };
 }

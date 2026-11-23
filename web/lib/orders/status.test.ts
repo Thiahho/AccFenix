@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { customerTypeLabel, isOrderStatus, orderStatuses, orderStatusLabel, zoneLabel } from "@/lib/orders/status";
+import { customerTypeLabel, isOrderStatus, orderStatuses, orderStatusLabel, fulfillmentLabel, paymentStatusLabel } from "@/lib/orders/status";
 
 describe("order statuses", () => {
   it("lists the five statuses in workflow order with Spanish labels", () => {
@@ -13,9 +13,10 @@ describe("order statuses", () => {
     expect(isOrderStatus(undefined)).toBe(false);
   });
 
-  it("labels delivery zones", () => {
-    expect(zoneLabel.buenosAires).toBe("Buenos Aires");
-    expect(zoneLabel.otherProvince).toBe("Otra provincia");
+  it("labels the fulfillment and the payment state", () => {
+    expect(fulfillmentLabel.delivery).toBe("Envío en Moreno");
+    expect(fulfillmentLabel.pickup).toBe("Retiro en el local");
+    expect(paymentStatusLabel.approved).toBe("Pagado");
   });
 
   it("labels customer types", () => {

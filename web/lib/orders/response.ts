@@ -1,7 +1,7 @@
 import type { CreatedOrder } from "@/lib/orders/types";
 
 /** Form fields that can show an error coming from the API. */
-export type OrderFormField = "cliente" | "nombre" | "localidad" | "direccion" | "provincia" | "expreso" | "comentarios";
+export type OrderFormField = "cliente" | "nombre" | "entrega" | "direccion" | "horario" | "comentarios";
 
 export type OrderFieldErrors = Partial<Record<OrderFormField, string>>;
 
@@ -19,16 +19,14 @@ export type SubmitOrderResult = { ok: true; order: CreatedOrder } | SubmitOrderF
 const fieldByKey: Record<string, OrderFormField> = {
   customertype: "cliente",
   customername: "nombre",
-  locality: "localidad",
+  fulfillment: "entrega",
   address: "direccion",
-  province: "provincia",
-  carrier: "expreso",
+  timeslot: "horario",
   comments: "comentarios",
 };
 
 const INVALID_FIELDS = "Revisá los datos marcados.";
 const INVALID_GENERIC = "No pudimos procesar el pedido. Revisá los datos y probá de nuevo.";
-const INVALID_LOCATION = "La ubicación captada no es válida. Quitala y probá de nuevo.";
 const INVALID_QUANTITIES = "Revisá las cantidades de tu pedido.";
 const FIELD_FALLBACK = "Revisá este dato";
 
@@ -56,7 +54,6 @@ export function interpretOrderResponse(status: number, body: unknown): SubmitOrd
     const normalized = key.toLowerCase();
     const field = fieldByKey[normalized];
     if (field) fieldErrors[field] ??= isDefaultMessage(message) ? FIELD_FALLBACK : message;
-    else if (normalized === "latitude" || normalized === "longitude") general.push(INVALID_LOCATION);
     else if (normalized.startsWith("items[")) general.push(INVALID_QUANTITIES);
     else general.push(isDefaultMessage(message) ? INVALID_GENERIC : message);
   }

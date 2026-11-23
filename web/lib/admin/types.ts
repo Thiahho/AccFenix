@@ -1,6 +1,6 @@
 // Reflejan los DTOs de api/src/AccFenix.Api/Endpoints/AdminCatalogEndpoints.cs
 import type { Availability } from "@/lib/api";
-import type { CustomerType, DeliveryZone, OrderItem, OrderStatus } from "@/lib/orders/types";
+import type { CustomerType, Fulfillment, OrderItem, OrderStatus, PaymentStatus } from "@/lib/orders/types";
 
 export type AdminCategory = {
   id: number;
@@ -37,10 +37,9 @@ export type AdminVariant = {
   availability: Availability;
   isActive: boolean;
   retailPrice: number | null;
-  wholesalePrice: number | null;
 };
 
-export type VariantPrices = { variantId: number; retailPrice: number | null; wholesalePrice: number | null };
+export type VariantPrices = { variantId: number; retailPrice: number | null };
 
 export type AdminMedia = { id: number; type: "image" | "video"; url: string; attributeValueId: number | null; sortOrder: number };
 
@@ -58,7 +57,7 @@ export type AdminProduct = {
   media: AdminMedia[];
 };
 
-export type AdminSettings = { whatsappNumber: string; wholesaleThreshold: number };
+export type AdminSettings = { whatsappNumber: string };
 
 export type ActionResult<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 
@@ -72,13 +71,10 @@ export type AdminOrderSummary = {
   customerName: string;
   /** Null for orders placed from the site: they arrive from the customer's WhatsApp, which carries the number. */
   phone: string | null;
-  zone: DeliveryZone;
-  /** Own delivery (buenosAires) only; null for carrier orders. */
-  locality: string | null;
-  address: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  isWholesale: boolean;
+  fulfillment: Fulfillment;
+  timeSlot: string;
+  paymentStatus: PaymentStatus;
+  paidAt: string | null;
   total: number;
   hasUnpricedItems: boolean;
   itemCount: number;
@@ -87,9 +83,9 @@ export type AdminOrderSummary = {
 
 export type AdminOrderPage = { total: number; page: number; pageSize: number; items: AdminOrderSummary[] };
 
-export type AdminOrder = Omit<AdminOrderSummary, "itemCount" | "totalUnits"> & {
-  province: string | null;
-  carrier: string | null;
+export type AdminOrder = AdminOrderSummary & {
+  address: string | null;
   comments: string | null;
+  mercadoPagoPaymentId: string | null;
   items: OrderItem[];
 };

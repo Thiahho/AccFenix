@@ -1,36 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { MessageCircleIcon, Trash2Icon } from "lucide-react";
+import { Trash2Icon } from "lucide-react";
 import { AvailabilityBadge } from "@/components/site/availability-badge";
-import { OrderFormCard, type PlacedOrder } from "@/components/site/order-form";
+import { OrderFormCard } from "@/components/site/order-form";
 import { Button } from "@/components/ui/button";
 import { QtyStepper } from "@/components/site/qty-stepper";
-import { api, type PublicSettings } from "@/lib/api";
-import { usePrefersReducedMotion } from "@/components/motion/use-reduced-motion";
+import { api } from "@/lib/api";
 import { useHydrated } from "@/lib/use-hydrated";
 import { cartTotals, formatArs, lineSubtotal, unitPrice } from "@/lib/pricing";
 import { MAX_QTY, totalUnits, useCart } from "@/stores/cart";
 
-export function OrderView({ settings }: { settings: PublicSettings }) {
+export function OrderView() {
   const hydrated = useHydrated();
   const { items, setQty, remove, sync } = useCart();
   const [removedCount, setRemovedCount] = useState(0);
   const [refreshFailed, setRefreshFailed] = useState(false);
-  const [placed, setPlaced] = useState<PlacedOrder | null>(null);
-  const reduceMotion = usePrefersReducedMotion();
-  const placedPanel = useRef<HTMLDivElement>(null);
-  const whatsappButton = useRef<HTMLAnchorElement>(null);
-
-  // The form that was just submitted is gone: bring the confirmation into view and put focus on the WhatsApp
-  // button, which is how the order actually reaches the distributor when the browser blocked the automatic open.
-  useEffect(() => {
-    if (!placed) return;
-    placedPanel.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-    whatsappButton.current?.focus({ preventScroll: true });
-  }, [placed, reduceMotion]);
-
   // Al entrar, refresca disponibilidad y precios, y quita variantes que ya no existen.
   // The prices stored with the cart are only a snapshot; the ones shown and sent come from this refresh.
   useEffect(() => {
@@ -48,34 +34,11 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
   if (!hydrated) return <div className="mt-8 h-40 animate-pulse rounded-xl bg-muted" />;
 
   // The cart is already empty here: it is cleared as soon as the order is stored.
-  if (placed) {
-    return (
-      <div ref={placedPanel} role="status" className="mt-8 scroll-mt-24 rounded-xl border bg-brand-soft/50 p-6 text-center sm:p-8">
-        <p className="eyebrow text-yolk">Pedido #{placed.number}</p>
-        <h2 className="mt-2 text-xl font-semibold">¡Registramos tu pedido!</h2>
-        {/* Never claim WhatsApp opened: after the async save the browser may have blocked it. */}
-        <p className="mx-auto mt-2 max-w-md text-pretty text-muted-foreground">
-          Tocá el botón para enviarlo por WhatsApp y coordinar la entrega. Si WhatsApp ya se abrió, enviá el mensaje desde ahí.
-        </p>
-        <div className="mx-auto mt-6 flex max-w-md flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center">
-          <Button asChild size="lg" className="h-12 w-full gap-2 px-6 text-base sm:w-auto md:h-12">
-            <a ref={whatsappButton} href={placed.whatsappHref} target="_blank" rel="noopener noreferrer">
-              <MessageCircleIcon aria-hidden className="size-5" /> Abrir WhatsApp
-            </a>
-          </Button>
-          <Button asChild variant="outline" className="w-full sm:w-auto">
-            <Link href="/">Volver al catálogo</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   if (items.length === 0) {
     return (
       <div className="mt-8 rounded-xl border border-dashed p-10 text-center">
         <p className="font-medium">Tu pedido está vacío</p>
-        <p className="mt-1 text-sm text-muted-foreground">Agregá maples, medios cajones o cajones desde la lista de precios.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Agregá cafés desde la carta.</p>
         <Button asChild className="mt-6">
           <Link href="/">Ir al catálogo</Link>
         </Button>
@@ -84,8 +47,7 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
   }
 
   const units = totalUnits(items);
-  const totals = cartTotals(items, settings.wholesaleThreshold);
-  const { wholesale } = totals;
+  const totals = cartTotals(items);
   const hasPrices = totals.pricedLines > 0;
 
   return (
@@ -104,8 +66,8 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
         )}
         <ul className="divide-y rounded-xl border">
           {items.map((item) => {
-            const price = unitPrice(item, wholesale);
-            const subtotal = lineSubtotal(item, wholesale);
+            const price = unitPrice(item);
+            const subtotal = lineSubtotal(item);
             return (
             <li key={item.variantId} className="flex flex-wrap items-center gap-4 p-4">
               <div className="min-w-0 flex-1">
@@ -148,7 +110,7 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
               <span className="text-2xl font-semibold tabular-nums">{formatArs(totals.total)}</span>
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Con precios {wholesale ? "mayoristas" : "minoristas"}, sin envío.
+              Precio final, sin envío.
               {totals.partial && " Los productos sin precio se cotizan por WhatsApp."}
             </p>
           </div>
@@ -157,19 +119,10 @@ export function OrderView({ settings }: { settings: PublicSettings }) {
           <span className="text-muted-foreground">
             {items.length} {items.length === 1 ? "producto" : "productos"} · <span className="tabular-nums">{units}</span> unidades
           </span>
-          {wholesale ? (
-            <span className="rounded-full bg-brand px-3 py-1 font-medium text-brand-foreground">Pedido mayorista</span>
-          ) : (
-            settings.wholesaleThreshold > 0 && (
-              <span className="text-muted-foreground">
-                Desde {settings.wholesaleThreshold} unidades con precio el pedido es mayorista. Los productos a consultar no suman.
-              </span>
-            )
-          )}
         </div>
       </section>
 
-      <OrderFormCard items={items} settings={settings} onPlaced={setPlaced} />
+      <OrderFormCard items={items} />
     </div>
   );
 }

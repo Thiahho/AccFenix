@@ -1,57 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { orderSchema } from "@/lib/order";
 
-const ba = { cliente: "personal", zona: "buenos-aires", nombre: "Ana", localidad: "Quilmes", direccion: "Calle 123" };
-const interior = { cliente: "personal", zona: "otra-provincia", nombre: "Juan", provincia: "Córdoba", expreso: "Vía Cargo" };
-
-const ok = (input: unknown) => orderSchema.safeParse(input).success;
+const base = { cliente: "personal", nombre: "  Ana  ", horario: "Hoy de 16 a 18 h" };
 
 describe("orderSchema", () => {
-  it("accepts a complete order for each zone", () => {
-    expect(ok(ba)).toBe(true);
-    expect(ok(interior)).toBe(true);
+  it("accepts a delivery order with an address", () => {
+    const r = orderSchema.safeParse({ ...base, entrega: "envio", direccion: "Calle 123, 2B" });
+    expect(r.success).toBe(true);
   });
 
-  it("trims text and treats blank fields as missing", () => {
-    expect(orderSchema.parse({ ...ba, nombre: "  Ana  " }).nombre).toBe("Ana");
-    expect(ok({ ...ba, nombre: "   " })).toBe(false);
-    expect(ok({ ...ba, direccion: "" })).toBe(false);
-    expect(ok({ ...interior, expreso: undefined })).toBe(false);
+  it("accepts a pickup order without an address", () => {
+    expect(orderSchema.safeParse({ ...base, entrega: "retiro" }).success).toBe(true);
   });
 
-  it("rejects text longer than each field allows", () => {
-    expect(ok({ ...ba, nombre: "a".repeat(121) })).toBe(false);
-    expect(ok({ ...ba, direccion: "a".repeat(201) })).toBe(false);
-    expect(ok({ ...ba, comentarios: "a".repeat(501) })).toBe(false);
-    expect(ok({ ...ba, comentarios: "a".repeat(500) })).toBe(true);
+  it("asks for a time slot in both cases", () => {
+    const r = orderSchema.safeParse({ ...base, horario: "   ", entrega: "retiro" });
+    expect(r.success).toBe(false);
   });
 
-  it("only accepts known zones and provinces", () => {
-    expect(ok({ ...ba, zona: "exterior" })).toBe(false);
-    expect(ok({ ...interior, provincia: "Atlántida" })).toBe(false);
-    expect(ok({ ...interior, provincia: "'; DROP TABLE pedidos; --" })).toBe(false);
-  });
-
-  it("rejects coordinates outside the valid range or of the wrong type", () => {
-    expect(ok({ ...ba, ubicacion: { lat: -34.6, lng: -58.4 } })).toBe(true);
-    expect(ok({ ...ba, ubicacion: { lat: -91, lng: -58.4 } })).toBe(false);
-    expect(ok({ ...ba, ubicacion: { lat: -34.6, lng: 181 } })).toBe(false);
-    expect(ok({ ...ba, ubicacion: { lat: "-34.6", lng: "-58.4" } })).toBe(false);
-  });
-
-  it("requires choosing who the order is for", () => {
-    expect(ok({ ...ba, cliente: undefined })).toBe(false);
-    expect(ok({ ...ba, cliente: "empresa" })).toBe(false);
-  });
-
-  it("asks a business for nothing more than a personal order", () => {
-    expect(ok({ ...ba, cliente: "comercio" })).toBe(true);
-    expect(ok({ ...interior, cliente: "comercio" })).toBe(true);
-  });
-
-  it("asks for no phone: the order goes out from the customer's own WhatsApp", () => {
-    const parsed = orderSchema.parse({ ...ba, telefono: "11 5555-5555", comercio: "Almacén" });
-    expect(parsed).not.toHaveProperty("telefono");
-    expect(parsed).not.toHaveProperty("comercio");
+  it("does not accept an unknown delivery option or customer type", () => {
+    expect(orderSchema.safeParse({ ...base, entrega: "correo" }).success).toBe(false);
+    expect(orderSchema.safeParse({ ...base, cliente: "mayorista", entrega: "retiro" }).success).toBe(false);
   });
 });
