@@ -5,12 +5,11 @@ const required = (label: string, max = 120) =>
   z.string().check(z.trim(), z.minLength(1, `Completá ${label}`), z.maxLength(max, "Es demasiado largo"));
 
 /**
- * Who the order is for. No phone is asked: the customer sends the order from their own WhatsApp.
+ * The customer data of an order. No phone is asked: the customer sends the order from their own WhatsApp.
  * ColdCup takes orders from Moreno only, either for delivery (address required) or for pickup at the shop.
  */
 export const orderSchema = z
   .object({
-    cliente: z.enum(["personal", "comercio"], { error: "Elegí para quién es el pedido" }),
     nombre: required("tu nombre"),
     entrega: z.enum(["envio", "retiro"], { error: "Elegí envío o retiro" }),
     direccion: z.optional(z.string().check(z.trim(), z.maxLength(200, "Es demasiado largo"))),
@@ -24,6 +23,6 @@ export const orderSchema = z
     }),
   );
 
-export type OrderForm = z.infer<typeof orderSchema>;
-export type CustomerChoice = OrderForm["cliente"];
+/** `cliente` is the removed customer choice: a tab opened before the change may still send it, and it is ignored. */
+export type OrderForm = z.infer<typeof orderSchema> & { cliente?: unknown };
 export type Fulfillment = OrderForm["entrega"];

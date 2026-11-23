@@ -111,7 +111,7 @@ export function CheckoutStep({ index, title, status, summary, focusOnOpen, onOpe
   );
 }
 
-/** Slim 1–4 progress bar over the steps. */
+/** Slim progress bar over the steps. */
 export function CheckoutProgress({ current, total }: { current: number; total: number }) {
   return (
     <div className="space-y-1.5">

@@ -1,19 +1,17 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Controller, useForm, type FieldErrors, type FieldPath } from "react-hook-form";
+import { useForm, type FieldErrors, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRightIcon, HomeIcon, StoreIcon } from "lucide-react";
+import { ArrowRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckoutProgress, CheckoutStep } from "@/components/site/checkout-step";
 import { DeliveryFields } from "@/components/site/delivery-fields";
 import { Field, fieldA11y } from "@/components/site/form-field";
 import { submitOrder } from "@/app/actions/orders";
-import { orderSchema, type CustomerChoice, type OrderForm } from "@/lib/order";
+import { orderSchema, type OrderForm } from "@/lib/order";
 import { unavailableResult, type SubmitOrderFailure } from "@/lib/orders/response";
 import { firstOpenStep, invalidSteps, orderSteps, stepFields, stepOfField, stepStatus, type StepId } from "@/lib/orders/steps";
 import { cartTotals, formatArs } from "@/lib/pricing";
@@ -21,24 +19,16 @@ import { QtyStepper } from "@/components/site/qty-stepper";
 import { MAX_QTY, totalUnits, useCart, type CartItem } from "@/stores/cart";
 
 const stepTitles: Record<StepId, string> = {
-  cliente: "¿Para quién es?",
   contacto: "¿Cómo te llamás?",
   entrega: "¿Cómo lo recibís?",
   revision: "Revisá y enviá",
 };
-
-const customerOptions: { value: CustomerChoice; label: string; hint: string; Icon: typeof HomeIcon }[] = [
-  { value: "personal", label: "Personal", hint: "Para tu casa", Icon: HomeIcon },
-  { value: "comercio", label: "Comercio", hint: "Almacén, restaurante, etc.", Icon: StoreIcon },
-];
 
 type Values = Partial<Record<string, unknown>>;
 const text = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
 function summaryOf(step: StepId, v: Values): string {
   switch (step) {
-    case "cliente":
-      return v.cliente === "comercio" ? "Comercio" : v.cliente === "personal" ? "Personal" : "";
     case "contacto":
       return text(v.nombre);
     case "entrega":
@@ -51,8 +41,7 @@ function summaryOf(step: StepId, v: Values): string {
 }
 
 /**
- * Step-by-step checkout over one react-hook-form instance: who the order is for, contact, delivery, then review and
- * send. Each step validates its own fields (`trigger`) and unlocks the next; done steps collapse to an editable
+ * Step-by-step checkout over one react-hook-form instance: contact, delivery, then review and send. Each step validates its own fields (`trigger`) and unlocks the next; done steps collapse to an editable
  * summary. The order is stored through the server action before WhatsApp opens.
  */
 export function OrderFormCard({ items }: { items: CartItem[] }) {
@@ -67,7 +56,7 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
     // Collapsed steps unmount their fields; their values must survive.
     shouldUnregister: false,
   });
-  const { register, control, handleSubmit, watch, getValues, setValue, setError, trigger, formState } = form;
+  const { register, handleSubmit, watch, getValues, setError, trigger, formState } = form;
   const values = watch() as Values;
 
   const [confirmed, setConfirmed] = useState<ReadonlySet<StepId>>(() => new Set());
@@ -93,11 +82,6 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
     const next = new Set(confirmed).add(step);
     setConfirmed(next);
     goTo(firstOpenStep(next, invalidSteps(getValues())));
-  }
-
-  function chooseCustomer(value: CustomerChoice, advance: boolean) {
-    setValue("cliente", value, { shouldDirty: true });
-    if (advance) void confirmStep(0);
   }
 
   // The order is stored first, then the customer goes to Mercado Pago. The owner sees it once the payment is approved.
@@ -154,63 +138,12 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
   );
 
   const bodies: Record<StepId, React.ReactNode> = {
-    cliente: (
-      <>
-        <Controller
-          control={control}
-          name="cliente"
-          render={({ field }) => (
-            <RadioGroup
-              aria-label={stepTitles.cliente}
-              aria-invalid={errors.cliente ? true : undefined}
-              aria-describedby={errors.cliente ? "cliente-error" : undefined}
-              value={field.value ?? ""}
-              onValueChange={(v) => chooseCustomer(v as CustomerChoice, false)}
-              onKeyDown={(ev) => {
-                // Arrow keys only move the choice; Enter confirms it.
-                if (ev.key === "Enter" && field.value) {
-                  ev.preventDefault();
-                  void confirmStep(0);
-                }
-              }}
-              className="grid grid-cols-2 gap-3"
-            >
-              {customerOptions.map(({ value, label, hint, Icon }) => (
-                <Label
-                  key={value}
-                  htmlFor={`cliente-${value}`}
-                  // A pointer click or tap on the card picks and moves on (detail > 0); arrow keys and Space only
-                  // select, so keyboard users confirm with Enter or "Continuar".
-                  onClick={(ev) => ev.detail > 0 && chooseCustomer(value, true)}
-                  className="relative flex min-h-32 cursor-pointer flex-col items-start gap-2 rounded-xl border-2 bg-background p-4 font-normal transition-[border-color,background-color,transform] duration-200 hover:border-brand/60 active:scale-[0.98] has-data-[state=checked]:border-brand has-data-[state=checked]:bg-brand-soft"
-                >
-                  <RadioGroupItem
-                    id={`cliente-${value}`}
-                    value={value}
-                    className="absolute top-3 right-3"
-                  />
-                  <Icon aria-hidden className="size-7 text-brand" />
-                  <span className="text-base font-semibold">{label}</span>
-                  <span className="text-xs text-muted-foreground">{hint}</span>
-                </Label>
-              ))}
-            </RadioGroup>
-          )}
-        />
-        {errors.cliente && (
-          <p id="cliente-error" role="alert" className="text-sm text-destructive">
-            {errors.cliente}
-          </p>
-        )}
-        {values.cliente ? continueButton(0) : null}
-      </>
-    ),
     contacto: (
       <>
-        <Field id="nombre" label={values.cliente === "comercio" ? "Tu nombre o el del comercio" : "Nombre y apellido"} error={errors.nombre}>
+        <Field id="nombre" label="Nombre y apellido" error={errors.nombre}>
           <Input
-            autoComplete={values.cliente === "comercio" ? "organization" : "name"}
-            placeholder={values.cliente === "comercio" ? "Ej.: Almacén Don Pepe" : "Ej.: Ana Pérez"}
+            autoComplete="name"
+            placeholder="Ej.: Ana Pérez"
             maxLength={120}
             {...fieldProps("nombre")}
             {...register("nombre")}
@@ -218,13 +151,13 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
         </Field>
         {/* No phone: the order is sent from the customer's own WhatsApp, so the distributor already has the number. */}
         <p className="text-sm text-muted-foreground">Te respondemos por WhatsApp, al número desde el que nos mandes el pedido.</p>
-        {continueButton(1)}
+        {continueButton(0)}
       </>
     ),
     entrega: (
       <>
         <DeliveryFields form={form} errors={errors} />
-        {continueButton(2)}
+        {continueButton(1)}
       </>
     ),
     revision: (

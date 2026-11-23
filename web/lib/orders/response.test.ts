@@ -28,10 +28,11 @@ describe("interpretOrderResponse", () => {
     expect(result.error).toBe("Revisá los datos marcados.");
   });
 
-  it("maps customer type errors to their field", () => {
+  it("shows customer type errors as a general message, since no field asks for it", () => {
     const result = interpretOrderResponse(400, { errors: { CustomerType: ["Elegí el tipo de cliente"] } });
     if (result.ok) throw new Error("expected failure");
-    expect(result.fieldErrors).toEqual({ cliente: "Elegí el tipo de cliente" });
+    expect(result.fieldErrors).toEqual({});
+    expect(result.error).toBe("Elegí el tipo de cliente");
   });
 
   it("keeps an unknown error as a general message", () => {

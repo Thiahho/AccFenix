@@ -1,20 +1,18 @@
 import { orderSchema } from "@/lib/order";
 
-/** The checkout runs as four steps; each one unlocks the next once it is confirmed and valid. */
-export const orderSteps = ["cliente", "contacto", "entrega", "revision"] as const;
+/** The checkout runs as three steps; each one unlocks the next once it is confirmed and valid. */
+export const orderSteps = ["contacto", "entrega", "revision"] as const;
 
 export type StepId = (typeof orderSteps)[number];
 
 export type StepStatus = "done" | "active" | "open" | "locked";
 
 /** The options that change which fields a step shows. */
-export type StepValues = { cliente?: string; entrega?: string };
+export type StepValues = { entrega?: string };
 
 /** Fields a step validates before moving on. Delivery needs an address; pickup only a time slot. */
 export function stepFields(step: StepId, values: StepValues): string[] {
   switch (step) {
-    case "cliente":
-      return ["cliente"];
     case "contacto":
       return ["nombre"];
     case "entrega":
@@ -25,7 +23,6 @@ export function stepFields(step: StepId, values: StepValues): string[] {
 }
 
 const stepByField: Record<string, StepId> = {
-  cliente: "cliente",
   nombre: "contacto",
   entrega: "entrega",
   direccion: "entrega",
@@ -45,7 +42,7 @@ export function invalidSteps(values: unknown): Set<StepId> {
   if (result.success) return invalid;
   for (const issue of result.error.issues) {
     const key = issue.path[0];
-    invalid.add(typeof key === "string" ? stepOfField(key) : "cliente");
+    invalid.add(typeof key === "string" ? stepOfField(key) : orderSteps[0]);
   }
   return invalid;
 }
