@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { useForm, type FieldErrors, type FieldPath } from "react-hook-form";
+import { useForm, useWatch, type FieldErrors, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -57,8 +57,8 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
     // Collapsed steps unmount their fields; their values must survive.
     shouldUnregister: false,
   });
-  const { register, handleSubmit, watch, getValues, setError, trigger, formState } = form;
-  const values = watch() as Values;
+  const { control, register, handleSubmit, getValues, setError, trigger, formState } = form;
+  const values = useWatch({ control }) as Values;
 
   const [confirmed, setConfirmed] = useState<ReadonlySet<StepId>>(() => new Set());
   const [active, setActive] = useState(0);

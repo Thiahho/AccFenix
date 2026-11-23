@@ -1,6 +1,6 @@
 "use client";
 
-import { Controller, type UseFormReturn } from "react-hook-form";
+import { Controller, useWatch, type UseFormReturn } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -11,8 +11,8 @@ type Props = { form: UseFormReturn<OrderForm>; errors: Partial<Record<string, st
 
 /** Delivery step: envío a domicilio en Moreno o retiro en el local, con horario en ambos casos. */
 export function DeliveryFields({ form, errors: e }: Props) {
-  const { control, register, watch } = form;
-  const entrega = watch("entrega");
+  const { control, register } = form;
+  const entrega = useWatch({ control, name: "entrega" });
   const fieldProps = (name: string) => fieldA11y(name, e[name]);
 
   return (
