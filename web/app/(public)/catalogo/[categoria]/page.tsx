@@ -74,7 +74,8 @@ export default async function CategoryPage({ params }: Props) {
         <p className="px-4 py-10 text-muted-foreground sm:px-6 lg:px-8">Todavía no hay productos en este catálogo.</p>
       ) : (
         // Phones: a swipeable row of cards (the next one peeks out) instead of a long column. From `sm` up, the usual list.
-        <ul className="flex snap-x snap-proximity scroll-px-4 gap-3 overflow-x-auto px-4 py-6 sm:grid sm:snap-none sm:gap-0 sm:overflow-visible sm:px-0 sm:py-0 lg:grid-cols-2">
+        // `relative` keeps absolutely positioned descendants inside the scroller, so they cannot widen the page.
+        <ul className="relative flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain px-4 py-6 sm:grid sm:snap-none sm:gap-0 sm:overflow-visible sm:px-0 sm:py-0 lg:grid-cols-2">
           {cards.map((p) => {
             // Without its detail the row still links to the product; it just cannot state a price.
             const variants = variantsBySlug.get(p.slug);
