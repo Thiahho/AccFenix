@@ -2,9 +2,9 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
-import type { Availability, CaffeineLevel } from "@/lib/api";
+import type { Availability, CaffeineLevel, TestimonialSource } from "@/lib/api";
 import { adminFetch, AdminApiError, clearSession, login } from "@/lib/admin/session";
-import type { ActionResult, AdminProduct, AdminReviewOrder, AdminSettings, VariantPrices } from "@/lib/admin/types";
+import type { ActionResult, AdminProduct, AdminReviewOrder, AdminSettings, AdminTestimonial, VariantPrices } from "@/lib/admin/types";
 
 /** Ejecuta una llamada admin, refresca el panel y el catálogo público, y traduce errores de la API. */
 async function run<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
@@ -214,6 +214,26 @@ export async function createReview(input: ReviewInput) {
 export async function deleteReview(id: number) {
   if (!isId(id)) return invalidId;
   return run(() => adminFetch(`/api/admin/reviews/${id}`, json("DELETE")));
+}
+
+// ---- Capturas de clientes ----
+export type TestimonialInput = { url: string; publicId: string; source: TestimonialSource; caption: string | null; width: number; height: number };
+export type TestimonialPatch = { caption?: string; source?: TestimonialSource; isPublished?: boolean; sortOrder?: number };
+
+/** New screenshots start hidden; `run` refreshes the cached home page when one is published. */
+export async function addTestimonial(input: TestimonialInput) {
+  return run(() => adminFetch<AdminTestimonial>("/api/admin/testimonials", json("POST", input)));
+}
+
+/** An empty `caption` removes it. */
+export async function updateTestimonial(id: number, patch: TestimonialPatch) {
+  if (!isId(id)) return invalidId;
+  return run(() => adminFetch(`/api/admin/testimonials/${id}`, json("PATCH", patch)));
+}
+
+export async function deleteTestimonial(id: number) {
+  if (!isId(id)) return invalidId;
+  return run(() => adminFetch(`/api/admin/testimonials/${id}`, json("DELETE")));
 }
 
 // ---- Configuración ----

@@ -76,6 +76,18 @@ export type VariantStatus = {
 
 export type PublicSettings = { whatsappNumber: string; mercadoPagoAlias: string };
 
+/** Where the customer wrote; mirrors the API `TestimonialSource` enum (camelCase). */
+export type TestimonialSource = "instagram" | "whatsApp" | "other";
+
+export const testimonialSourceLabel: Record<TestimonialSource, string> = {
+  instagram: "Instagram",
+  whatsApp: "WhatsApp",
+  other: "Otro medio",
+};
+
+/** A published screenshot of a customer message, for the home gallery. */
+export type Testimonial = { id: number; url: string; source: TestimonialSource; caption: string | null; width: number; height: number };
+
 export const availabilityLabel: Record<Availability, string> = {
   disponible: "Disponible",
   aPedido: "A pedido",
@@ -102,5 +114,6 @@ export const api = {
     get<{ category: Category; products: ProductSummary[] }>(`/api/categories/${encodeURIComponent(slug)}/products`),
   product: (slug: string) => get<ProductDetail>(`/api/products/${encodeURIComponent(slug)}`),
   settings: () => get<PublicSettings>("/api/settings/public"),
+  testimonials: () => get<Testimonial[]>("/api/testimonials"),
   variantStatus: (ids: number[]) => get<VariantStatus[]>(`/api/variants?ids=${ids.join(",")}`, { cache: "no-store" }),
 };

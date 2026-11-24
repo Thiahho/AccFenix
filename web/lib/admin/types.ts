@@ -1,5 +1,5 @@
 // Reflejan los DTOs de api/src/AccFenix.Api/Endpoints/AdminCatalogEndpoints.cs
-import type { Availability, CaffeineLevel } from "@/lib/api";
+import type { Availability, CaffeineLevel, Testimonial } from "@/lib/api";
 import type { CustomerType, Fulfillment, OrderItem, OrderStatus, PaymentStatus } from "@/lib/orders/types";
 
 export type AdminCategory = {
@@ -114,3 +114,6 @@ export type AdminReviewableProduct = { productId: number; name: string; slug: st
 
 /** A paid order ready to receive reviews; `authorName` is the customer's first name. */
 export type AdminReviewOrder = { number: number; customerName: string; authorName: string; products: AdminReviewableProduct[] };
+
+// Mirrors the DTOs of api/src/AccFenix.Api/Endpoints/AdminTestimonialEndpoints.cs
+export type AdminTestimonial = Testimonial & { isPublished: boolean; sortOrder: number; createdAt: string };

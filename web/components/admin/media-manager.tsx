@@ -8,32 +8,8 @@ import { ArrowLeftIcon, ArrowRightIcon, Trash2Icon, UploadIcon } from "lucide-re
 import { addMedia, deleteMedia, getUploadSignature, updateMedia } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { uploadToCloudinary } from "@/lib/admin/cloudinary-upload";
 import type { AdminProduct } from "@/lib/admin/types";
-
-type CloudinaryUpload = { secure_url: string; public_id: string; resource_type: string; error?: { message: string } };
-
-const megabytes = (bytes: number) => Math.round(bytes / (1024 * 1024));
-
-/** Sube directo a Cloudinary con una firma emitida por la API (el secreto nunca llega al navegador). */
-async function uploadToCloudinary(file: File): Promise<CloudinaryUpload> {
-  const sig = await getUploadSignature();
-  if (!sig.ok || !sig.data) throw new Error(sig.ok ? "Sin firma" : sig.error);
-  const { cloudName, apiKey, timestamp, folder, allowedFormats, signature, maxImageBytes, maxVideoBytes } = sig.data;
-  // Cloudinary does not take a size limit as an upload parameter: the API hands out the limits and they are checked here.
-  const maxBytes = file.type.startsWith("video/") ? maxVideoBytes : maxImageBytes;
-  if (file.size > maxBytes) throw new Error(`${file.name} supera ${megabytes(maxBytes)} MB`);
-  const body = new FormData();
-  body.append("file", file);
-  body.append("api_key", apiKey);
-  body.append("timestamp", String(timestamp));
-  body.append("folder", folder);
-  body.append("allowed_formats", allowedFormats);
-  body.append("signature", signature);
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, { method: "POST", body });
-  const json = (await res.json()) as CloudinaryUpload;
-  if (!res.ok) throw new Error(json.error?.message ?? "Error al subir a Cloudinary");
-  return json;
-}
 
 export function MediaManager({ product }: { product: AdminProduct }) {
   const router = useRouter();
@@ -52,7 +28,7 @@ export function MediaManager({ product }: { product: AdminProduct }) {
     setUploading(list.length);
     for (const file of list) {
       try {
-        const up = await uploadToCloudinary(file);
+        const up = await uploadToCloudinary(file, getUploadSignature);
         const res = await addMedia(product.id, {
           url: up.secure_url,
           publicId: up.public_id,
