@@ -325,8 +325,17 @@ public class OrderTests(ApiFactory factory)
             ["delivery: blank name"] = With(delivery, "customerName", "   "),
             ["delivery: name too long"] = With(delivery, "customerName", long121),
             ["delivery: name with a line break"] = With(delivery, "customerName", "Ana\nPérez"),
-            ["delivery: phone too long"] = With(delivery, "phone", new string('1', 41)),
+            ["delivery: missing phone"] = Without(delivery, "phone"),
+            ["delivery: null phone"] = With(delivery, "phone", null),
+            ["delivery: empty phone"] = With(delivery, "phone", ""),
+            ["delivery: blank phone"] = With(delivery, "phone", "   "),
+            ["delivery: phone with letters"] = With(delivery, "phone", "abc"),
+            ["delivery: phone too short"] = With(delivery, "phone", "123"),
+            ["delivery: phone with seven digits"] = With(delivery, "phone", "(11) 555-00"),
+            ["delivery: phone too long"] = With(delivery, "phone", new string('1', 21)),
+            ["delivery: phone with a letter"] = With(delivery, "phone", "11 5555-000a"),
             ["delivery: phone with a line break"] = With(delivery, "phone", "11\n5555-0000"),
+            ["delivery: phone with quotes"] = With(delivery, "phone", "1' OR '1'='1"),
             ["delivery: missing time slot"] = Without(delivery, "timeSlot"),
             ["delivery: blank time slot"] = With(delivery, "timeSlot", "   "),
             ["delivery: time slot too long"] = With(delivery, "timeSlot", long61),
@@ -343,7 +352,8 @@ public class OrderTests(ApiFactory factory)
             ["delivery: longitude without latitude"] = With(delivery, "longitude", -58.4),
 
             ["pickup: missing name"] = Without(pickup, "customerName"),
-            ["pickup: phone too long once trimmed"] = With(pickup, "phone", $"  {new string('1', 41)}  "),
+            ["pickup: missing phone"] = Without(pickup, "phone"),
+            ["pickup: phone too long once trimmed"] = With(pickup, "phone", $"  {new string('1', 21)}  "),
             ["pickup: missing time slot"] = Without(pickup, "timeSlot"),
             ["pickup: blank time slot"] = With(pickup, "timeSlot", ""),
             ["pickup: time slot too long"] = With(pickup, "timeSlot", long61),
@@ -417,7 +427,7 @@ public class OrderTests(ApiFactory factory)
         await using var product = await CreateProduct();
         var body = Delivery((product.First, 100_000));
         body["customerName"] = $"  {new string('n', 120)}  ";
-        body["phone"] = new string('1', 40);
+        body["phone"] = $"  {new string('1', 20)}  ";
         body["timeSlot"] = $"  {new string('t', 60)}  ";
         body["address"] = new string('d', 200);
         body["comments"] = $"{new string('c', 249)}\n{new string('c', 250)}";
@@ -428,6 +438,7 @@ public class OrderTests(ApiFactory factory)
 
         var stored = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
         stored.GetProperty("customerName").GetString().Should().Be(new string('n', 120));
+        stored.GetProperty("phone").GetString().Should().Be(new string('1', 20));
         stored.GetProperty("timeSlot").GetString().Should().Be(new string('t', 60));
         stored.GetProperty("address").GetString().Should().Be(new string('d', 200));
         stored.GetProperty("comments").GetString().Should().HaveLength(500);
@@ -496,27 +507,29 @@ public class OrderTests(ApiFactory factory)
     // ---- Phone ----
 
     [Theory]
-    [InlineData("absent")]
-    [InlineData("null")]
-    [InlineData("")]
-    [InlineData("   ")]
-    public async Task Order_without_phone_is_stored_without_phone(string phone)
+    [InlineData("+54 9 (11) 4444-0000")]
+    [InlineData("11444400")]
+    [InlineData("011-4444-0000")]
+    public async Task Phone_is_accepted_in_common_formats(string phone)
     {
         await using var product = await CreateProduct();
-        // The phone is optional: blank values are stored as null.
-        var body = phone switch
-        {
-            "absent" => Without(Delivery((product.First, 1)), "phone"),
-            "null" => With(Delivery((product.First, 1)), "phone", null),
-            _ => With(Delivery((product.First, 1)), "phone", phone),
-        };
 
-        var id = (await Created(body)).GetProperty("id").GetInt32();
+        var id = (await Created(With(Delivery((product.First, 1)), "phone", phone))).GetProperty("id").GetInt32();
 
         var detail = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
-        detail.GetProperty("phone").ValueKind.Should().Be(JsonValueKind.Null);
-        var list = Items(await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}?pageSize=100"));
-        list.Single(o => o.GetProperty("id").GetInt32() == id).GetProperty("phone").ValueKind.Should().Be(JsonValueKind.Null);
+        detail.GetProperty("phone").GetString().Should().Be(phone);
+    }
+
+    [Fact]
+    public async Task Missing_phone_is_reported_on_the_phone_field()
+    {
+        await using var product = await CreateProduct();
+
+        var res = await PostOrder(Without(Pickup((product.First, 1)), "phone"));
+
+        res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var errors = (await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors");
+        errors.EnumerateObject().Select(e => e.Name).Should().Contain("Phone");
     }
 
     [Fact]
@@ -892,13 +905,12 @@ public class OrderTests(ApiFactory factory)
         await using var product = await CreateProduct();
         var before = await TotalOrders(product.Admin);
         const string name = "Robert'); DROP TABLE \"Orders\"; --";
-        const string phone = "1' OR '1'='1";
+        // The phone only accepts digits and phone punctuation, so it cannot carry a payload (see the validation cases).
         const string timeSlot = "x'; DELETE FROM \"OrderItems\"; --";
         const string address = "1 UNION SELECT \"PasswordHash\" FROM \"AdminUsers\"";
         const string comments = "\\'; UPDATE \"Orders\" SET \"Total\" = 0; --\n1; SELECT pg_sleep(5)";
         var body = Delivery((product.First, 1));
         body["customerName"] = name;
-        body["phone"] = phone;
         body["timeSlot"] = timeSlot;
         body["address"] = address;
         body["comments"] = comments;
@@ -908,7 +920,6 @@ public class OrderTests(ApiFactory factory)
 
         var stored = await product.Admin.GetFromJsonAsync<JsonElement>($"{AdminOrdersUrl}/{id}");
         stored.GetProperty("customerName").GetString().Should().Be(name);
-        stored.GetProperty("phone").GetString().Should().Be(phone);
         stored.GetProperty("timeSlot").GetString().Should().Be(timeSlot);
         stored.GetProperty("address").GetString().Should().Be(address);
         stored.GetProperty("comments").GetString().Should().Be(comments);

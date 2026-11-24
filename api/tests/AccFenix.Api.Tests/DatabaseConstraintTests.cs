@@ -117,7 +117,7 @@ public class DatabaseConstraintTests(ApiFactory factory)
         await ExpectAccepted(Save(With(DeliveryOrder(), o => { o.Latitude = 90; o.Longitude = -180; o.Items = [Item(100_000, 0m, 0m)]; })));
         await ExpectAccepted(Save(With(PickupOrder(), o => o.Items = [Item(unitPrice: null, subtotal: null)])));
         await ExpectAccepted(Save(With(DeliveryOrder(), o => o.CustomerType = CustomerType.Business)));
-        // The phone is optional: the customer writes from their own WhatsApp.
+        // The column stays nullable: orders placed before the phone was required have none.
         await ExpectAccepted(Save(With(PickupOrder(), o => o.Phone = null)));
         // An approved payment needs its date, and the date comes with it.
         await ExpectAccepted(Save(With(PickupOrder(), o => { o.PaymentStatus = PaymentStatus.Approved; o.PaidAt = DateTime.UtcNow; })));

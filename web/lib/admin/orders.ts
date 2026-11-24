@@ -94,8 +94,7 @@ export function formatOrderDate(iso: string) {
 
 /**
  * WhatsApp chat link for the phone a customer left on an order, or null when there is none. Orders placed from the site
- * no longer carry a phone (they arrive from the customer's WhatsApp); older ones may hold a local Argentine number,
- * which gets the international mobile prefix (54 9). Best effort: a "15" written after the area code is not removed.
+ * require a phone; some older ones have none. A local Argentine number gets the international mobile prefix (54 9). Best effort: a "15" written after the area code is not removed.
  */
 export function whatsappChatHref(phone: string | null): string | null {
   let digits = (phone ?? "").replace(/\D/g, "").replace(/^00/, "");

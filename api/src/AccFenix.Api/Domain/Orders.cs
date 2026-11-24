@@ -108,7 +108,13 @@ public class OrderItem
 public static class OrderLimits
 {
     public const int Name = 120;
+    /// <summary>Size of the phone column. New orders are held to the narrower <see cref="PhoneMaxLength"/>.</summary>
     public const int Phone = 40;
+    /// <summary>Length of a phone sent with an order, once trimmed. The order form uses the same rule.</summary>
+    public const int PhoneMinLength = 8;
+    public const int PhoneMaxLength = 20;
+    /// <summary>Digits a phone needs at least, so punctuation alone cannot make it valid.</summary>
+    public const int PhoneMinDigits = 8;
     public const int Address = 200;
     public const int TimeSlot = 60;
     public const int Comments = 500;

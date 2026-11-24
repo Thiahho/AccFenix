@@ -16,6 +16,7 @@ export function buildOrderRequest(form: OrderForm, lines: OrderLine[]): CreateOr
     fulfillment: delivery ? "delivery" : "pickup",
     customerType: "personal",
     customerName: form.nombre.trim(),
+    phone: form.telefono.trim(),
     timeSlot: delivery ? form.horario.trim() : pickupSlot(form.horario),
     ...(delivery ? { address: (form.direccion ?? "").trim() } : {}),
     ...(comments ? { comments } : {}),

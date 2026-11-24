@@ -14,7 +14,7 @@ export type StepValues = { entrega?: string };
 export function stepFields(step: StepId, values: StepValues): string[] {
   switch (step) {
     case "contacto":
-      return ["nombre"];
+      return ["nombre", "telefono"];
     case "entrega":
       return values.entrega === "envio" ? ["entrega", "direccion", "horario"] : ["entrega", "horario"];
     case "revision":
@@ -24,6 +24,7 @@ export function stepFields(step: StepId, values: StepValues): string[] {
 
 const stepByField: Record<string, StepId> = {
   nombre: "contacto",
+  telefono: "contacto",
   entrega: "entrega",
   direccion: "entrega",
   horario: "entrega",

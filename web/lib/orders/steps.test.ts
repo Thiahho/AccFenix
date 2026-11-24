@@ -8,6 +8,10 @@ describe("orderSteps", () => {
 });
 
 describe("stepFields", () => {
+  it("asks for the name and the phone at the contact step", () => {
+    expect(stepFields("contacto", {})).toEqual(["nombre", "telefono"]);
+  });
+
   it("asks for the address only when the order is delivered", () => {
     expect(stepFields("entrega", { entrega: "envio" })).toEqual(["entrega", "direccion", "horario"]);
     expect(stepFields("entrega", { entrega: "retiro" })).toEqual(["entrega", "horario"]);
@@ -18,21 +22,22 @@ describe("stepOfField", () => {
   it("maps each field to its step and sends unknown ones to the review", () => {
     expect(stepOfField("direccion")).toBe("entrega");
     expect(stepOfField("nombre")).toBe("contacto");
+    expect(stepOfField("telefono")).toBe("contacto");
     expect(stepOfField("cualquiera")).toBe("revision");
   });
 });
 
 describe("invalidSteps", () => {
   it("is empty for a complete order", () => {
-    expect(invalidSteps({ nombre: "Ana", entrega: "retiro", horario: "16:00" }).size).toBe(0);
+    expect(invalidSteps({ nombre: "Ana", telefono: "11 2233 4455", entrega: "retiro", horario: "16:00" }).size).toBe(0);
   });
 
   it("ignores a customer type left by an older checkout", () => {
-    expect(invalidSteps({ cliente: "comercio", nombre: "Ana", entrega: "retiro", horario: "16:00" }).size).toBe(0);
+    expect(invalidSteps({ cliente: "comercio", nombre: "Ana", telefono: "11 2233 4455", entrega: "retiro", horario: "16:00" }).size).toBe(0);
   });
 
   it("flags the step that owns the missing field", () => {
-    const invalid = invalidSteps({ nombre: "Ana", entrega: "envio", horario: "16 h" });
+    const invalid = invalidSteps({ nombre: "Ana", telefono: "11 2233 4455", entrega: "envio", horario: "16 h" });
     expect([...invalid]).toEqual(["entrega"]);
   });
 });

@@ -35,8 +35,14 @@ describe("interpretOrderResponse", () => {
     expect(result.error).toBe("Elegí el tipo de cliente");
   });
 
+  it("shows phone errors on the phone field", () => {
+    const result = interpretOrderResponse(400, { errors: { Phone: ["Ingresá un teléfono válido"] } });
+    if (result.ok) throw new Error("expected failure");
+    expect(result.fieldErrors).toEqual({ telefono: "Ingresá un teléfono válido" });
+  });
+
   it("keeps an unknown error as a general message", () => {
-    const result = interpretOrderResponse(400, { errors: { Phone: ["Hasta 40 caracteres"] } });
+    const result = interpretOrderResponse(400, { errors: { Unknown: ["Hasta 40 caracteres"] } });
     if (result.ok) throw new Error("expected failure");
     expect(result.fieldErrors).toEqual({});
     expect(result.error).toBe("Hasta 40 caracteres");

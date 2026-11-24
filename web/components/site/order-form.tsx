@@ -14,6 +14,7 @@ import { submitOrder } from "@/app/actions/orders";
 import { orderSchema, type OrderForm } from "@/lib/order";
 import { isPastPickupTime, PICKUP_PAST_MESSAGE, pickupSlot } from "@/lib/orders/pickup-time";
 import { unavailableResult, type SubmitOrderFailure } from "@/lib/orders/response";
+import { PHONE_MAX_LENGTH } from "@/lib/phone";
 import { firstOpenStep, invalidSteps, orderSteps, stepFields, stepOfField, stepStatus, type StepId } from "@/lib/orders/steps";
 import { cartTotals, formatArs } from "@/lib/pricing";
 import { unitsLabel } from "@/lib/qty";
@@ -32,7 +33,7 @@ const text = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 function summaryOf(step: StepId, v: Values): string {
   switch (step) {
     case "contacto":
-      return text(v.nombre);
+      return [text(v.nombre), text(v.telefono)].filter(Boolean).join(" · ");
     case "entrega":
       return v.entrega === "envio"
         ? [text(v.direccion), text(v.horario)].filter(Boolean).join(" · ")
@@ -52,7 +53,7 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
   const [failure, setFailure] = useState<SubmitOrderFailure | null>(null);
   const form = useForm<OrderForm>({
     resolver: zodResolver(orderSchema),
-    defaultValues: { nombre: "", direccion: "", horario: "", comentarios: "" },
+    defaultValues: { nombre: "", telefono: "", direccion: "", horario: "", comentarios: "" },
     // Errors show once a field is left, so a disabled "Continuar" never hides why.
     mode: "onTouched",
     // Collapsed steps unmount their fields; their values must survive.
@@ -160,8 +161,21 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
             {...register("nombre")}
           />
         </Field>
-        {/* No phone: the order is sent from the customer's own WhatsApp, so the distributor already has the number. */}
-        <p className="text-sm text-muted-foreground">Te respondemos por WhatsApp, al número desde el que nos mandes el pedido.</p>
+        <Field id="telefono" label="Teléfono" error={errors.telefono}>
+          <Input
+            type="tel"
+            autoComplete="tel"
+            inputMode="tel"
+            placeholder="Ej.: 11 2233 4455"
+            maxLength={PHONE_MAX_LENGTH}
+            {...fieldProps("telefono")}
+            aria-describedby={errors.telefono ? "telefono-hint telefono-error" : "telefono-hint"}
+            {...register("telefono")}
+          />
+          <p id="telefono-hint" className="text-xs text-muted-foreground">
+            Para coordinar la entrega.
+          </p>
+        </Field>
         {continueButton(0)}
       </>
     ),

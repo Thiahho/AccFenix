@@ -7,7 +7,7 @@ vi.mock("next/headers", () => ({
 
 const { submitOrder } = await import("./orders");
 
-const form: OrderForm = { cliente: "personal", nombre: "Ana", entrega: "envio", direccion: "Calle 123", horario: "Hoy 16 a 18 h" };
+const form: OrderForm = { cliente: "personal", nombre: "Ana", telefono: "11 2233 4455", entrega: "envio", direccion: "Calle 123", horario: "Hoy 16 a 18 h" };
 const lines = [{ variantId: 7, qty: 2 }];
 
 const jsonResponse = (status: number, body: unknown) =>

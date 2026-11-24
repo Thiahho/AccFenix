@@ -17,7 +17,7 @@ public record OrderLineRequest(int VariantId, int Quantity, List<int>? AddonValu
 /// <summary>
 /// An order as sent by the site. It carries no prices: the server prices every line itself.
 /// Delivery orders send an address and optionally a map point. Pickup orders send no address.
-/// Both send the time slot. The phone is optional; a blank phone is stored as null.
+/// Both send the time slot and a phone, so the shop can coordinate orders paid online that never pass through WhatsApp.
 /// </summary>
 public record CreateOrderRequest(
     Fulfillment? Fulfillment, CustomerType? CustomerType, string? CustomerName, string? Phone,
@@ -53,7 +53,9 @@ public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequest>
         RuleFor(x => x.Fulfillment).NotNull().IsInEnum();
         RuleFor(x => x.CustomerType).NotNull().IsInEnum();
         RequiredText(x => x.CustomerName!, OrderLimits.Name);
-        When(x => !string.IsNullOrWhiteSpace(x.Phone), () => RequiredText(x => x.Phone!, OrderLimits.Phone));
+        RuleFor(x => x.Phone).Cascade(CascadeMode.Stop)
+            .NotEmpty()
+            .Must(IsValidPhone).WithMessage(InvalidPhone);
         RequiredText(x => x.TimeSlot!, OrderLimits.TimeSlot);
         RuleFor(x => x.Comments)
             .Must(s => s is null || (s.Trim().Length <= OrderLimits.Comments && !s.Contains('\0')))
@@ -85,6 +87,21 @@ public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequest>
     }
 
     void RequiredText(Expression<Func<CreateOrderRequest, string>> field, int max) => RuleFor(field).RequiredText(max);
+
+    const string InvalidPhone = "Ingresá un teléfono válido, con código de área (ej.: 11 2233 4455)";
+
+    /// <summary>
+    /// A phone the shop can call: once trimmed, 8 to 20 characters of digits, spaces, "+", "-", "(" and ")",
+    /// with at least 8 digits. The order form of the site applies the same rule.
+    /// </summary>
+    internal static bool IsValidPhone(string? phone)
+    {
+        if (phone is null) return false;
+        var trimmed = phone.Trim();
+        return trimmed.Length is >= OrderLimits.PhoneMinLength and <= OrderLimits.PhoneMaxLength
+            && trimmed.All(c => char.IsAsciiDigit(c) || c is ' ' or '+' or '-' or '(' or ')')
+            && trimmed.Count(char.IsAsciiDigit) >= OrderLimits.PhoneMinDigits;
+    }
 }
 
 /// <summary>
@@ -200,7 +217,7 @@ public static class OrderEndpoints
                 PaymentStatus = PaymentStatus.Unpaid,
                 CustomerType = req.CustomerType!.Value,
                 CustomerName = req.CustomerName!.Trim(),
-                Phone = string.IsNullOrWhiteSpace(req.Phone) ? null : req.Phone.Trim(),
+                Phone = req.Phone!.Trim(),
                 Fulfillment = req.Fulfillment!.Value,
                 TimeSlot = req.TimeSlot!.Trim(),
                 Address = delivery ? req.Address!.Trim() : null,

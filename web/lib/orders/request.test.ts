@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { OrderForm } from "@/lib/order";
 import { buildOrderRequest } from "@/lib/orders/request";
 
-const base = { nombre: " Ana Pérez ", horario: " Hoy 16 a 18 h " };
+const base = { nombre: " Ana Pérez ", telefono: " 11 2233 4455 ", horario: " Hoy 16 a 18 h " };
 
 describe("buildOrderRequest", () => {
   it("sends the address for delivery and the personal customer type", () => {
@@ -11,6 +11,7 @@ describe("buildOrderRequest", () => {
       fulfillment: "delivery",
       customerType: "personal",
       customerName: "Ana Pérez",
+      phone: "11 2233 4455",
       timeSlot: "Hoy 16 a 18 h",
       address: "Calle 123",
       items: [{ variantId: 7, quantity: 2 }],

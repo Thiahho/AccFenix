@@ -13,6 +13,7 @@ export type CreateOrderRequest = {
   fulfillment: Fulfillment;
   customerType: CustomerType;
   customerName: string;
+  phone: string;
   timeSlot: string;
   /** Required when `fulfillment` is "delivery". */
   address?: string;

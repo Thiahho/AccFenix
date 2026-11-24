@@ -1,17 +1,19 @@
 // zod/mini keeps this schema tree-shakable: it ships in the client bundle of /pedido through the form resolver.
 import * as z from "zod/mini";
 import { isPickupTime } from "@/lib/orders/pickup-time";
+import { isValidPhone, PHONE_MESSAGE } from "@/lib/phone";
 
 const required = (label: string, max = 120) =>
   z.string().check(z.trim(), z.minLength(1, `Completá ${label}`), z.maxLength(max, "Es demasiado largo"));
 
 /**
- * The customer data of an order. No phone is asked: the customer sends the order from their own WhatsApp.
- * ColdCup takes orders from Moreno only, either for delivery (address required) or for pickup at the shop.
+ * The customer data of an order. The phone is required so the shop can coordinate orders paid online, which never
+ * pass through WhatsApp. ColdCup takes orders from Moreno only, either for delivery (address required) or for pickup.
  */
 export const orderSchema = z
   .object({
     nombre: required("tu nombre"),
+    telefono: z.string({ error: PHONE_MESSAGE }).check(z.trim(), z.refine(isValidPhone, { message: PHONE_MESSAGE })),
     entrega: z.enum(["envio", "retiro"], { error: "Elegí envío o retiro" }),
     direccion: z.optional(z.string().check(z.trim(), z.maxLength(200, "Es demasiado largo"))),
     horario: required("el horario", 60),
