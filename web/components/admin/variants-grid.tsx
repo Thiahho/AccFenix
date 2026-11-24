@@ -2,15 +2,19 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronRightIcon } from "lucide-react";
 import { toast } from "sonner";
 import { bulkAvailability, saveVariantPrices, setVariant } from "@/app/admin/actions";
+import { PageSizeSelect, SearchBox, SortHead, TablePager } from "@/components/admin/data-table";
 import { AvailabilityBadge } from "@/components/site/availability-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { Availability } from "@/lib/api";
+import { DEFAULT_PAGE_SIZE, matchesSearch, nextSort, paginate, sortRows, type SortDir } from "@/lib/admin/table";
 import type { AdminProduct, AdminVariant, VariantPrices } from "@/lib/admin/types";
 import { parsePriceInput, priceToInput } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
@@ -31,22 +35,65 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
   const [showInactive, setShowInactive] = useState(false);
   const [drafts, setDrafts] = useState<Drafts>({});
   const [fill, setFill] = useState<Record<PriceField, string>>({ retailPrice: "" });
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<string | undefined>();
+  const [dir, setDir] = useState<SortDir>("asc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
 
   // Solo los atributos que efectivamente varían en este producto.
   const attributes = product.categoryAttributes
+    .filter((a) => !a.isAddon)
     .map((a) => ({ ...a, values: a.values.filter((v) => product.allowedValueIds.includes(v.id)) }))
     .filter((a) => a.values.length > 0);
   const labelOf = useMemo(() => new Map(product.categoryAttributes.flatMap((a) => a.values.map((v) => [v.id, v.label] as const))), [product]);
   const filterIds = Object.values(filter).filter((v): v is number => v !== undefined);
 
+  const valueLabel = (v: AdminVariant, attr: (typeof attributes)[number]) =>
+    labelOf.get(v.valueIds.find((id) => attr.values.some((x) => x.id === id)) ?? -1) ?? "—";
   const visible = variants.filter(
     (v) => (showInactive || v.isActive) && filterIds.every((id) => v.valueIds.includes(id)),
   );
   const onRequest = visible.filter((v) => v.isActive && v.availability === "aPedido").length;
 
+  // Sorted by saved values: a row must not jump while its price is being typed.
+  const sortOrderOf = new Map(attributes.flatMap((a) => a.values.map((x) => [x.id, x.sortOrder] as const)));
+  const sortValue = (v: AdminVariant) => {
+    if (sort === "sku") return v.sku;
+    if (sort === "price") return v.retailPrice;
+    if (sort === "status") return !v.isActive ? 2 : v.availability === "disponible" ? 0 : 1;
+    const attr = attributes.find((a) => `attr-${a.id}` === sort);
+    const valueId = attr && v.valueIds.find((id) => attr.values.some((x) => x.id === id));
+    return valueId === undefined ? null : (sortOrderOf.get(valueId) ?? null);
+  };
+  const searched = visible.filter((v) => matchesSearch(search, [v.sku, ...attributes.map((a) => valueLabel(v, a))]));
+  const ordered = sort ? sortRows(searched, sortValue, dir) : searched;
+  const { rows: pageRows, page: currentPage, pages } = paginate(ordered, page, pageSize);
+  const sortOptions = [
+    ...attributes.map((a) => ({ key: `attr-${a.id}`, label: a.name })),
+    { key: "sku", label: "SKU" },
+    { key: "price", label: "Precio" },
+    { key: "status", label: "Estado" },
+  ];
+  const sortHead = (key: string, label: string, className?: string, align?: "left" | "right") => (
+    <SortHead
+      key={key}
+      label={label}
+      active={sort === key}
+      dir={dir}
+      className={className}
+      align={align}
+      onSort={() => {
+        const next = nextSort(sort, dir, key);
+        setSort(next.sort);
+        setDir(next.dir);
+        setPage(1);
+      }}
+    />
+  );
+
   const priceText = (v: AdminVariant, field: PriceField) => drafts[v.id]?.[field] ?? priceToInput(v[field]);
-  const valueLabel = (v: AdminVariant, attr: (typeof attributes)[number]) =>
-    labelOf.get(v.valueIds.find((id) => attr.values.some((x) => x.id === id)) ?? -1) ?? "—";
 
   // Rows whose typed prices differ from the stored ones, and how many of the typed values are invalid.
   const changes: VariantPrices[] = [];
@@ -141,7 +188,10 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
                   key={v.id ?? "all"}
                   type="button"
                   aria-pressed={active}
-                  onClick={() => setFilter((f) => ({ ...f, [attr.id]: v.id }))}
+                  onClick={() => {
+                    setFilter((f) => ({ ...f, [attr.id]: v.id }));
+                    setPage(1);
+                  }}
                   className={cn("rounded-full border px-3 py-2 text-sm tabular-nums md:py-1", active ? "border-brand bg-brand text-brand-foreground" : "hover:bg-muted")}
                 >
                   {v.label}
@@ -194,14 +244,79 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
         </p>
       </section>
 
-      <div className="flex items-center gap-2">
-        <Switch id="inactive" checked={showInactive} onCheckedChange={setShowInactive} />
-        <Label htmlFor="inactive" className="font-normal text-muted-foreground">Mostrar combinaciones desactivadas</Label>
+      <div className="overflow-hidden rounded-xl border bg-background">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls="variants-data"
+          onClick={() => setOpen((o) => !o)}
+          className="flex min-h-11 w-full items-center gap-2 px-4 py-2 text-left text-sm font-medium hover:bg-muted/50"
+        >
+          <ChevronRightIcon className={cn("size-4 transition-transform", open && "rotate-90")} aria-hidden />
+          Datos de variantes
+          <span className="ml-auto font-normal text-muted-foreground tabular-nums">{ordered.length}</span>
+        </button>
       </div>
+
+      {open && (
+      <div id="variants-data" className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <SearchBox
+          value={search}
+          placeholder="Buscar SKU o valor"
+          onChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+        />
+        <div className="flex items-center gap-2">
+          <Switch
+            id="inactive"
+            checked={showInactive}
+            onCheckedChange={(on) => {
+              setShowInactive(on);
+              setPage(1);
+            }}
+          />
+          <Label htmlFor="inactive" className="font-normal text-muted-foreground">Mostrar desactivadas</Label>
+        </div>
+        <div className="flex w-full gap-2 sm:ml-auto sm:w-auto">
+          {/* The table headers sort on larger screens; the cards have no headers. */}
+          <div className="min-w-0 flex-1 sm:hidden">
+            <Select
+              value={sort ? `${sort}:${dir}` : "default"}
+              onValueChange={(value) => {
+                const [key, direction] = value.split(":");
+                setSort(value === "default" ? undefined : key);
+                setDir(direction === "desc" ? "desc" : "asc");
+                setPage(1);
+              }}
+            >
+              <SelectTrigger aria-label="Ordenar variantes" className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Orden original</SelectItem>
+                {sortOptions.flatMap((o) => [
+                  <SelectItem key={`${o.key}:asc`} value={`${o.key}:asc`}>{o.label} ↑</SelectItem>,
+                  <SelectItem key={`${o.key}:desc`} value={`${o.key}:desc`}>{o.label} ↓</SelectItem>,
+                ])}
+              </SelectContent>
+            </Select>
+          </div>
+          <PageSizeSelect
+            value={pageSize}
+            onChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+          />
+        </div>
+      </div>
+
+      {ordered.length === 0 && <p className="rounded-xl border bg-background p-8 text-center text-sm text-muted-foreground">No hay variantes con estos filtros.</p>}
 
       {/* Below sm: one card per variant, bound to the same state as the table. */}
       <ul className="space-y-2 sm:hidden" aria-label="Variantes">
-        {visible.map((v) => (
+        {pageRows.map((v) => (
           <li key={v.id} className={cn("space-y-3 rounded-xl border bg-background p-3", !v.isActive && "opacity-50")}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-medium tabular-nums">{attributes.map((a) => valueLabel(v, a)).join(" · ") || v.sku}</p>
@@ -240,19 +355,19 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
         ))}
       </ul>
 
-      <div className="hidden overflow-x-auto rounded-xl border bg-background sm:block">
+      <div className={cn("hidden overflow-x-auto rounded-xl border bg-background", ordered.length > 0 && "sm:block")}>
         <Table>
           <TableHeader>
             <TableRow>
-              {attributes.map((a) => <TableHead key={a.id}>{a.name}</TableHead>)}
-              <TableHead className="hidden md:table-cell">SKU</TableHead>
-              {priceFields.map(({ field, label }) => <TableHead key={field} className="text-right">{label}</TableHead>)}
-              <TableHead>Estado</TableHead>
+              {attributes.map((a) => sortHead(`attr-${a.id}`, a.name))}
+              {sortHead("sku", "SKU", "hidden md:table-cell")}
+              {priceFields.map(({ label }) => sortHead("price", label, undefined, "right"))}
+              {sortHead("status", "Estado")}
               <TableHead className="text-right">Disponible</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {visible.map((v) => (
+            {pageRows.map((v) => (
               <TableRow key={v.id} className={cn(!v.isActive && "opacity-50")}>
                 {attributes.map((a) => (
                   <TableCell key={a.id} className="tabular-nums">
@@ -290,6 +405,9 @@ export function VariantsGrid({ product }: { product: AdminProduct }) {
           </TableBody>
         </Table>
       </div>
+      <TablePager page={currentPage} pages={pages} pageSize={pageSize} total={ordered.length} noun="variantes" onPage={setPage} />
+      </div>
+      )}
     </div>
   );
 }

@@ -78,7 +78,7 @@ export default async function CategoryPage({ params }: Props) {
             // Without its detail the row still links to the product; it just cannot state a price.
             const variants = variantsBySlug.get(p.slug);
             return (
-              <li key={p.id} className="border-b-[3px] border-espresso lg:odd:border-r-[3px]">
+              <li key={p.id} className="border-b border-border lg:odd:border-r">
                 <Link
                   href={`/producto/${p.slug}`}
                   className="poster-focus-inset group flex h-full min-h-32 items-stretch gap-4 px-4 py-5 transition-colors hover:bg-oat sm:px-6 lg:px-8"
@@ -87,7 +87,7 @@ export default async function CategoryPage({ params }: Props) {
                     <ProductImage src={p.coverUrl} alt={p.name} sizes="128px" className="w-24 shrink-0 self-center sm:w-32" />
                   )}
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <h2 className="poster-display text-3xl leading-[1.2] sm:text-4xl sm:leading-[1.2]">{p.name}</h2>
+                    <h2 className="poster-display text-2xl leading-[1.2] sm:text-3xl sm:leading-[1.2]">{p.name}</h2>
                     {p.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.description}</p>}
                     <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-1 pt-3">
                       {variants && <span className="poster-price text-2xl whitespace-nowrap">{priceFromText(variants.map((v) => v.retailPrice))}</span>}

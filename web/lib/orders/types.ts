@@ -2,7 +2,7 @@
 
 export type OrderStatus = "pending" | "confirmed" | "outForDelivery" | "delivered" | "cancelled";
 
-export type PaymentStatus = "unpaid" | "approved" | "rejected";
+export type PaymentStatus = "unpaid" | "approved" | "rejected" | "refunded";
 
 export type CustomerType = "personal" | "business";
 
@@ -17,7 +17,7 @@ export type CreateOrderRequest = {
   /** Required when `fulfillment` is "delivery". */
   address?: string;
   comments?: string;
-  items: { variantId: number; quantity: number }[];
+  items: { variantId: number; quantity: number; addonValueIds?: number[] }[];
 };
 
 export type OrderItem = {

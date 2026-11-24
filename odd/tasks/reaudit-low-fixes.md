@@ -17,7 +17,7 @@ Close the low-severity issues found by the 2026-11-15 re-audit.
 
 ### Not changed (decision recorded)
 - One DB query per admin request for the security stamp: negligible at admin traffic; caching adds staleness after a reset.
-- IP header trust: deployment is Vercel (`eggy-huevos.vercel.app`), which overwrites `x-real-ip` / `x-forwarded-for`.
+- IP header trust: deployment is Vercel (`COLDCUP-huevos.vercel.app`), which overwrites `x-real-ip` / `x-forwarded-for`.
 - A geo 429 shows "no results" like the existing 502: UI decision, unchanged.
 
 ## Tasks

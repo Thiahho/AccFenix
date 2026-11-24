@@ -32,7 +32,7 @@ export function Starburst({ className, lines = [], spikes = 16, fill = "var(--la
     <svg aria-hidden viewBox="0 0 200 200" className={cn("block", className)}>
       <polygon points={burstPoints(spikes)} fill={fill} />
       {lines.length > 0 && (
-        <text className="poster-display" fill={ink} fontSize={size} textAnchor="middle">
+        <text className="poster-hand" fill={ink} fontSize={size} textAnchor="middle">
           {lines.map((line, i) => (
             <tspan key={line} x={CENTER} y={first + i * size}>
               {line}

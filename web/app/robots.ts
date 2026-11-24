@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { site } from "@/lib/site";
 
-const disallow = ["/admin", "/pedido"];
+const disallow = ["/admin", "/pedido", "/resena"];
 
 // AI search and assistant crawlers, allowed explicitly so the catalog can be cited in AI answers.
 const aiCrawlers = [

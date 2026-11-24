@@ -2,26 +2,32 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { AddonPicker } from "@/components/site/addon-picker";
 import { AvailabilityBadge } from "@/components/site/availability-badge";
 import { notifyAdded } from "@/components/site/order-toast";
+import { ProductFacts, RatingSummary } from "@/components/site/product-facts";
 import { ProductGallery } from "@/components/site/product-gallery";
 import { Button } from "@/components/ui/button";
 import { QtyStepper } from "@/components/site/qty-stepper";
 import type { ProductDetail } from "@/lib/api";
-import { formatArs } from "@/lib/pricing";
+import { formatArs, unitPrice } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
-import { describeSelection, findVariant, initialSelection, isValueEnabled, select, type Selection } from "@/lib/variants";
+import { describeSelection, findVariant, initialSelection, isValueEnabled, select, withAddons, type Selection } from "@/lib/variants";
 import { MAX_QTY, useCart } from "@/stores/cart";
 
 export function VariantPicker({ product }: { product: ProductDetail }) {
   const { attributes, variants } = product;
   const [selection, setSelection] = useState<Selection>(() => initialSelection(attributes));
   const [qty, setQty] = useState(1);
+  const [addonIds, setAddonIds] = useState<number[]>([]);
   const add = useCart((s) => s.add);
 
   const variant = useMemo(() => findVariant(attributes, variants, selection), [attributes, variants, selection]);
   const missing = attributes.filter((a) => selection[a.id] === undefined).map((a) => a.name.toLowerCase());
   const selectedValueIds = Object.values(selection).filter((v): v is number => v !== undefined);
+  const addons = (product.addons ?? []).filter((a) => addonIds.includes(a.id));
+  const price = variant ? unitPrice({ qty, retailPrice: variant.retailPrice, addons }) : null;
+  const valuesLabel = withAddons(describeSelection(attributes, selection), addons);
 
   function handleAdd() {
     if (!variant) return;
@@ -31,9 +37,10 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
         productSlug: product.slug,
         productName: product.name,
         categoryName: product.category.name,
-        valuesLabel: describeSelection(attributes, selection),
+        valuesLabel,
         availability: variant.availability,
         retailPrice: variant.retailPrice,
+        addons,
       },
       qty,
     );
@@ -44,7 +51,7 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
     const colorHex = attributes.flatMap((a) => a.values).find((v) => v.colorHex && selectedValueIds.includes(v.id))?.colorHex;
     notifyAdded({
       title: product.name,
-      detail: `${qty} u. · ${describeSelection(attributes, selection)}`,
+      detail: `${qty} u. · ${valuesLabel}`,
       availability: variant.availability,
       imageUrl: image?.url,
       colorHex,
@@ -52,17 +59,19 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
   }
 
   return (
-    <div className="grid border-b-[3px] border-espresso md:grid-cols-2">
-      <div className="border-b-[3px] border-espresso md:border-r-[3px] md:border-b-0">
+    <div className="grid border-b border-border md:grid-cols-2">
+      <div className="border-b border-border md:border-r md:border-b-0">
         <ProductGallery media={product.media} name={product.name} selectedValueIds={selectedValueIds} />
       </div>
 
       <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
-        <p className="poster-label text-caramel-deep">
+        <p className="poster-hand text-2xl text-caramel-deep">
           <Link href={`/catalogo/${product.category.slug}`} className="inline-flex min-h-11 items-center underline-offset-4 hover:text-foreground hover:underline">{product.category.name}</Link>
         </p>
-        <h1 className="poster-display mt-1 text-5xl leading-[1.2] text-balance sm:text-6xl sm:leading-[1.2] xl:text-7xl xl:leading-[1.2]">{product.name}</h1>
+        <h1 className="poster-display mt-1 text-3xl leading-[1.2] text-balance sm:text-4xl sm:leading-[1.2] xl:text-5xl xl:leading-[1.2]">{product.name}</h1>
+        <div className="mt-2"><RatingSummary stats={product.stats} /></div>
         {product.description && <p className="mt-3 text-muted-foreground">{product.description}</p>}
+        <div className="mt-4 max-w-md"><ProductFacts product={product} /></div>
 
         <div className="mt-8 space-y-6">
           {attributes.map((attr) => (
@@ -87,8 +96,8 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
                       disabled={!enabled}
                       onClick={() => setSelection((s) => select(attributes, variants, s, attr.id, value.id))}
                       className={cn(
-                        "inline-flex min-h-12 min-w-12 items-center justify-center gap-2 border-2 border-espresso px-3 text-sm font-bold tabular-nums transition-colors",
-                        selected ? "bg-espresso text-ivory" : "hover:bg-oat",
+                        "inline-flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-full border border-border px-4 text-sm font-bold tabular-nums transition-colors",
+                        selected ? "border-primary bg-primary text-primary-foreground" : "hover:bg-oat",
                         !enabled && "cursor-not-allowed opacity-40 line-through hover:bg-transparent",
                       )}
                     >
@@ -104,7 +113,11 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
           ))}
         </div>
 
-        <div className="mt-8 border-[3px] border-espresso bg-cream p-4">
+        <div className="mt-6">
+          <AddonPicker addons={product.addons ?? []} selected={addonIds} onChange={setAddonIds} />
+        </div>
+
+        <div className="mt-6 border border-border bg-cream p-4">
           <div className="flex min-h-6 items-center justify-between gap-3 text-sm">
             {variant ? (
               <>
@@ -123,7 +136,7 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
               <p className="flex items-baseline justify-between gap-3">
                 <span className="text-sm text-muted-foreground">Precio por unidad</span>
                 <span className="poster-price text-4xl">
-                  {variant.retailPrice !== null ? formatArs(variant.retailPrice) : "Consultar"}
+                  {price !== null ? formatArs(price) : "Consultar"}
                 </span>
               </p>
             </div>

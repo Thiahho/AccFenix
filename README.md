@@ -1,4 +1,4 @@
-# Eggy
+# ColdCup
 
 Catálogo web de una distribuidora de huevos. Cada producto se vende por presentación (maple, medio cajón, cajón) con precio minorista y mayorista por variante; a partir de un umbral mayorista configurable se aplica el precio mayorista. El carrito arma el pedido y lo envía por WhatsApp o desde la web. La entrega es con camión propio: los pedidos guardan la ubicación de entrega y el panel permite armar recorridos manuales. El panel de administración (`/admin`) gestiona catálogo, precios, fotos, pedidos y configuración.
 
@@ -43,7 +43,7 @@ npm run dev
     "Key": "dev-only-trusted-web-key-0123456789abcdef"
   },
   "Admin": {
-    "Email": "admin@eggy.local",
+    "Email": "admin@coldcup.local",
     "Password": "CAMBIAR"
   },
   "Cloudinary": {

@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { site } from "@/lib/site";
 import "./globals.css";
 
-// Admin typeface. The public design loads its own fonts in components/site/poster-fonts.ts.
+// Shared typeface. The public design adds its handwritten font in components/site/poster-fonts.ts.
 const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"] });
 
 export const metadata: Metadata = {

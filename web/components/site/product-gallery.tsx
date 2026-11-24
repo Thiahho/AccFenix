@@ -4,7 +4,6 @@ import { useState } from "react";
 import Image from "next/image";
 import { IcedCup } from "@/components/home/iced-cup";
 import { ProductImage } from "@/components/site/product-image";
-import { Starburst } from "@/components/site/starburst";
 import type { Media } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -18,9 +17,9 @@ export function ProductGallery({ media, name, selectedValueIds }: { media: Media
 
   if (!active) {
     return (
-      <div className="relative grid aspect-square place-items-center overflow-hidden bg-latte">
-        <Starburst spikes={18} fill="var(--ivory)" className="absolute inset-[4%]" />
-        <IcedCup className="relative w-[34%]" />
+      <div className="poster-ink relative grid aspect-square place-items-center overflow-hidden rounded-2xl border border-border">
+        <div aria-hidden className="absolute inset-[8%] rounded-full bg-[radial-gradient(circle,color-mix(in_oklch,var(--poster-gold)_30%,transparent),transparent_68%)]" />
+        <IcedCup className="relative w-[34%] drop-shadow-[0_24px_32px_rgb(0_0_0/0.55)]" />
         <span className="sr-only">Sin foto</span>
       </div>
     );
@@ -43,7 +42,7 @@ export function ProductGallery({ media, name, selectedValueIds }: { media: Media
                 aria-label={`Ver ${m.type === "video" ? "video" : "foto"} ${i + 1} de ${name}`}
                 aria-current={m.id === active.id}
                 className={cn(
-                  "relative block aspect-square w-full overflow-hidden border-2 bg-brand-soft",
+                  "relative block aspect-square w-full overflow-hidden border bg-brand-soft",
                   m.id === active.id ? "border-brand" : "border-transparent hover:border-brand/40",
                 )}
               >

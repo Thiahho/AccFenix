@@ -28,7 +28,7 @@ export function QtyStepper({ value, onChange, max, label, id, size = "md", class
   const small = size === "sm";
 
   return (
-    <div className={cn("flex items-center border-2 border-espresso bg-background", className)}>
+    <div className={cn("flex items-center border border-border bg-background", className)}>
       <Button
         type="button"
         variant="ghost"

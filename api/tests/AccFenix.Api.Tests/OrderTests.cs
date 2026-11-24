@@ -158,7 +158,7 @@ public class OrderTests(ApiFactory factory)
     public async Task Order_uses_retail_prices()
     {
         await using var product = await CreateProduct();
-        await product.SetPrice(product.First, 100.50m);
+        await product.SetPrice(product.First, 100m);
         const int quantity = 99;
 
         var order = await Created(Delivery((product.First, quantity)));
@@ -170,7 +170,7 @@ public class OrderTests(ApiFactory factory)
         order.GetProperty("checkoutUrl").ValueKind.Should().Be(JsonValueKind.Null, "Mercado Pago is not configured in tests");
         order.TryGetProperty("isWholesale", out _).Should().BeFalse();
         order.GetProperty("hasUnpricedItems").GetBoolean().Should().BeFalse();
-        Money(order, "total").Should().Be(100.50m * quantity);
+        Money(order, "total").Should().Be(100m * quantity);
 
         var line = Items(order).Should().ContainSingle().Subject;
         line.GetProperty("variantId").GetInt32().Should().Be(product.First);
@@ -178,8 +178,8 @@ public class OrderTests(ApiFactory factory)
         line.GetProperty("sku").GetString().Should().Be(await product.Sku(product.First));
         line.GetProperty("variantLabel").GetString().Should().Be($"{product.AttributeName} First");
         line.GetProperty("quantity").GetInt32().Should().Be(quantity);
-        Money(line, "unitPrice").Should().Be(100.50m);
-        Money(line, "subtotal").Should().Be(100.50m * quantity);
+        Money(line, "unitPrice").Should().Be(100m);
+        Money(line, "subtotal").Should().Be(100m * quantity);
 
         // The public response never echoes the customer's personal data.
         order.TryGetProperty("phone", out _).Should().BeFalse();
@@ -404,7 +404,7 @@ public class OrderTests(ApiFactory factory)
     public async Task Order_whose_total_does_not_fit_the_money_column_is_rejected()
     {
         await using var product = await CreateProduct();
-        await product.SetPrice(product.First, 99_999_999.99m);
+        await product.SetPrice(product.First, 99_999_999m);
 
         var res = await PostOrder(Delivery((product.First, 100_000)));
 

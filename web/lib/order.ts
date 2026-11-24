@@ -1,5 +1,6 @@
 // zod/mini keeps this schema tree-shakable: it ships in the client bundle of /pedido through the form resolver.
 import * as z from "zod/mini";
+import { isPickupTime } from "@/lib/orders/pickup-time";
 
 const required = (label: string, max = 120) =>
   z.string().check(z.trim(), z.minLength(1, `Completá ${label}`), z.maxLength(max, "Es demasiado largo"));
@@ -20,6 +21,10 @@ export const orderSchema = z
     z.refine((o) => o.entrega !== "envio" || (o.direccion ?? "").trim().length > 0, {
       message: "Completá la dirección",
       path: ["direccion"],
+    }),
+    z.refine((o) => o.entrega !== "retiro" || o.horario.trim() === "" || isPickupTime(o.horario), {
+      message: "Elegí una hora válida",
+      path: ["horario"],
     }),
   );
 

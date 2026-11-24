@@ -15,7 +15,7 @@ Fix the "soon" findings from the 2026-11-15 system audit.
 - [x] T1 Intro: a tap or any key skips it; guard late callbacks. Route: delegated writer (with T2–T5).
 - [x] T2 Hero entrance with CSS keyframes (works before/without JS, honours reduced motion); `<noscript>` fallback for scroll reveals.
 - [x] T3 `generateStaticParams` for catalog and product pages; confirm ISR in build output.
-- [x] T4 Root README rewritten for Eggy; config documented inline (no dependency on the deleted example file).
+- [x] T4 Root README rewritten for COLDCUP; config documented inline (no dependency on the deleted example file).
 - [x] T5 GitHub Actions CI: web (lint, tsc, test, build) and api (build, test with Postgres service).
 - [x] T6 CSP: user chose a static policy (keeps static rendering; allows inline scripts). Written in `web/next.config.ts` with HSTS in production; browser check pending. Route: inline (one file).
 

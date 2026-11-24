@@ -12,7 +12,7 @@ import { useCart } from "@/stores/cart";
 type Props = { categories: { id: number; name: string; slug: string }[] };
 
 const rowClass =
-  "poster-display poster-focus-inset flex min-h-14 items-center justify-between gap-3 border-b-2 border-espresso px-4 text-2xl transition-colors";
+  "poster-display poster-focus-inset flex min-h-14 items-center justify-between gap-3 border-b-2 border-border px-4 text-lg transition-colors";
 
 /** Botón burger + panel desplegable para mobile. Se cierra al elegir un enlace, cambiar de ruta, con Escape, tocando fuera o al pasar a desktop. */
 export function MobileMenu({ categories }: Props) {
@@ -78,7 +78,7 @@ export function MobileMenu({ categories }: Props) {
         ref={buttonRef}
         type="button"
         variant="ghost"
-        className="poster-focus-inset h-full w-14 rounded-none border-y-0 border-r-0 border-l-[3px] border-l-espresso hover:bg-oat aria-expanded:bg-oat"
+        className="poster-focus-inset size-11 rounded-full border-0 hover:bg-oat aria-expanded:bg-oat"
         size="icon"
         aria-label={open ? "Cerrar menú" : "Abrir menú"}
         aria-expanded={open}
@@ -95,12 +95,12 @@ export function MobileMenu({ categories }: Props) {
 
       {open && (
         <>
-          <button type="button" tabIndex={-1} aria-hidden onClick={close} className="absolute inset-x-0 top-full h-dvh cursor-default bg-roast/60" />
+          <button type="button" tabIndex={-1} aria-hidden onClick={close} className="absolute inset-x-0 top-full h-dvh cursor-default bg-black/60" />
           <nav
             ref={navRef}
             id="menu-movil"
             aria-label="Menú"
-            className="absolute inset-x-0 top-full max-h-[calc(100dvh-4rem-3px)] overflow-y-auto border-b-[3px] border-espresso bg-ivory"
+            className="absolute inset-x-0 top-full max-h-[calc(100dvh-4rem-3px)] overflow-y-auto border-b border-border bg-ivory"
           >
             <ul>
               {sectionLinks.map((s) => (

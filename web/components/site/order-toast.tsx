@@ -54,7 +54,7 @@ function OrderToast({ id, item }: { id: string | number; item: AddedItem }) {
 
   return (
     <div data-order-toast className="group relative w-[var(--width)] text-cream max-[600px]:w-full">
-      <div className="poster-ink relative overflow-hidden border-[3px] border-ivory">
+      <div className="poster-ink relative overflow-hidden border border-ivory">
         <div className="flex items-center gap-4 py-4 pr-14 pl-4">
           <div className="relative size-17 shrink-0">
             <div className="relative grid size-full place-items-center overflow-hidden bg-cream">
@@ -64,14 +64,14 @@ function OrderToast({ id, item }: { id: string | number; item: AddedItem }) {
                 <CupSodaIcon aria-hidden className="size-8 text-espresso" />
               )}
             </div>
-            <span className="absolute -right-1.5 -bottom-1.5 grid size-6.5 place-items-center border-[3px] border-espresso bg-status-ok-strong text-white">
+            <span className="absolute -right-1.5 -bottom-1.5 grid size-6.5 place-items-center border border-border bg-status-ok-strong text-white">
               <CheckIcon aria-hidden className="size-3" strokeWidth={3.5} />
             </span>
           </div>
 
           <div className="flex min-w-0 flex-col gap-1">
             <p className="text-[11px] font-semibold tracking-[0.22em] text-latte">SUMADO A TU PEDIDO</p>
-            <p className="poster-display text-3xl leading-[1.2]">{item.title}</p>
+            <p className="poster-display text-xl leading-[1.2]">{item.title}</p>
             <p className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-cream/80">
               {item.colorHex && <span aria-hidden className="size-3 border border-cream/50" style={{ backgroundColor: item.colorHex }} />}
               <span>{item.detail}</span>
@@ -101,7 +101,7 @@ function OrderToast({ id, item }: { id: string | number; item: AddedItem }) {
           <button
             type="button"
             onClick={close}
-            className="h-12 flex-1 border-2 border-cream text-[15px] font-bold transition-colors hover:bg-roast"
+            className="h-12 flex-1 border border-cream text-[15px] font-bold transition-colors hover:bg-roast"
           >
             Seguir eligiendo
           </button>

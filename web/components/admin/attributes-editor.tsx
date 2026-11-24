@@ -8,7 +8,10 @@ import { deleteAttribute, deleteValue, saveAttribute, saveValue } from "@/app/ad
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import type { AdminAttribute, AdminValue } from "@/lib/admin/types";
+import { parsePriceInput, priceToInput } from "@/lib/pricing";
 
 function useAction() {
   const router = useRouter();
@@ -24,17 +27,31 @@ function useAction() {
   return { pending, run };
 }
 
-function ValueRow({ attributeId, value }: { attributeId: number; value: AdminValue }) {
+function ValueRow({ attributeId, isAddon, value }: { attributeId: number; isAddon: boolean; value: AdminValue }) {
   const { pending, run } = useAction();
   const [label, setLabel] = useState(value.label);
   const [colorHex, setColorHex] = useState(value.colorHex ?? "");
   const [sortOrder, setSortOrder] = useState(value.sortOrder);
-  const dirty = label !== value.label || colorHex !== (value.colorHex ?? "") || sortOrder !== value.sortOrder;
+  const [priceText, setPriceText] = useState(priceToInput(value.addonPrice));
+  const price = parsePriceInput(priceText);
+  const priceChanged = price.ok && price.value !== value.addonPrice;
+  const dirty = label !== value.label || colorHex !== (value.colorHex ?? "") || sortOrder !== value.sortOrder || priceChanged || !price.ok;
 
   return (
     <li className="flex flex-wrap items-center gap-2">
       <Input aria-label="Orden" type="number" className="w-14 md:w-16" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value) || 0)} />
       <Input aria-label="Valor" className="min-w-0 flex-1 md:min-w-36" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={80} />
+      {isAddon && (
+        <Input
+          aria-label={`Precio del extra ${value.label}`}
+          aria-invalid={!price.ok}
+          inputMode="numeric"
+          placeholder="Precio $"
+          className="w-24 text-right tabular-nums"
+          value={priceText}
+          onChange={(e) => setPriceText(e.target.value)}
+        />
+      )}
       <label className="relative grid size-11 shrink-0 cursor-pointer md:size-9 place-items-center rounded-md border" title="Color de muestra (opcional)">
         <span className="size-5 rounded-full border" style={{ backgroundColor: colorHex || "transparent" }} />
         <input type="color" aria-label="Color de muestra" className="absolute inset-0 cursor-pointer opacity-0" value={colorHex || "#ffffff"} onChange={(e) => setColorHex(e.target.value)} />
@@ -43,8 +60,8 @@ function ValueRow({ attributeId, value }: { attributeId: number; value: AdminVal
         size="icon"
         variant={dirty ? "default" : "ghost"}
         aria-label="Guardar valor"
-        disabled={!dirty || pending || !label.trim()}
-        onClick={() => run(() => saveValue(attributeId, value.id, { label, sortOrder, colorHex: colorHex || null }), "Valor guardado")}
+        disabled={!dirty || pending || !label.trim() || !price.ok}
+        onClick={() => run(() => saveValue(attributeId, value.id, { label, sortOrder, colorHex: colorHex || null, addonPrice: price.ok ? price.value : null }), "Valor guardado")}
       >
         <CheckIcon />
       </Button>
@@ -75,8 +92,17 @@ function AttributeCard({ attribute }: { attribute: AdminAttribute }) {
           <Trash2Icon />
         </ConfirmButton>
       </div>
+      <div className="mt-3 flex items-center gap-2">
+        <Switch
+          id={`addon-${attribute.id}`}
+          checked={attribute.isAddon}
+          disabled={pending}
+          onCheckedChange={(isAddon) => run(() => saveAttribute(attribute.id, { name: attribute.name, sortOrder: attribute.sortOrder, isAddon }), "Atributo actualizado")}
+        />
+        <Label htmlFor={`addon-${attribute.id}`} className="font-normal">Extra opcional con precio propio</Label>
+      </div>
       <ul className="mt-4 space-y-2">
-        {attribute.values.map((v) => <ValueRow key={`${v.id}-${v.label}-${v.colorHex}-${v.sortOrder}`} attributeId={attribute.id} value={v} />)}
+        {attribute.values.map((v) => <ValueRow key={`${v.id}-${v.label}-${v.colorHex}-${v.sortOrder}-${v.addonPrice}`} attributeId={attribute.id} isAddon={attribute.isAddon} value={v} />)}
       </ul>
       <form
         className="mt-3 flex gap-2"

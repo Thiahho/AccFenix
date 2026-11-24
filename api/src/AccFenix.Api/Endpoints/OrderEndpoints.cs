@@ -8,7 +8,11 @@ using Microsoft.EntityFrameworkCore;
 namespace AccFenix.Api.Endpoints;
 
 // ---- Requests ----
-public record OrderLineRequest(int VariantId, int Quantity);
+public record OrderLineRequest(int VariantId, int Quantity, List<int>? AddonValueIds = null)
+{
+    /// <summary>Identifies the line: the same variant may appear again with different extras.</summary>
+    public string Key => $"{VariantId}:{string.Join('-', (AddonValueIds ?? []).Order())}";
+}
 
 /// <summary>
 /// An order as sent by the site. It carries no prices: the server prices every line itself.
@@ -68,12 +72,15 @@ public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequest>
             .NotEmpty()
             .Must(items => items!.Count <= OrderLimits.MaxLines).WithMessage($"Hasta {OrderLimits.MaxLines} productos por pedido")
             .Must(items => items!.All(i => i is not null)).WithMessage("Hay elementos vacíos")
-            .Must(items => items!.Select(i => i.VariantId).Distinct().Count() == items!.Count)
-            .WithMessage("Cada variante puede aparecer una sola vez");
+            .Must(items => items!.Select(i => i.Key).Distinct().Count() == items!.Count)
+            .WithMessage("Cada variante con sus extras puede aparecer una sola vez");
         RuleForEach(x => x.Items).Where(i => i is not null).ChildRules(item =>
         {
             item.RuleFor(i => i.VariantId).GreaterThan(0);
             item.RuleFor(i => i.Quantity).InclusiveBetween(1, OrderLimits.MaxQuantity);
+            item.RuleFor(i => i.AddonValueIds)
+                .Must(ids => ids is null || (ids.Count <= OrderLimits.MaxAddons && ids.All(id => id > 0) && ids.Distinct().Count() == ids.Count))
+                .WithMessage($"Hasta {OrderLimits.MaxAddons} extras distintos por producto");
         });
     }
 
@@ -122,7 +129,7 @@ public static class OrderEndpoints
         app.MapPost("/api/orders", async (CreateOrderRequest req, AppDbContext db, ILoggerFactory loggers, MercadoPagoClient mercadoPago, CancellationToken ct) =>
         {
             var lines = req.Items!;
-            var ids = lines.Select(l => l.VariantId).ToList();
+            var ids = lines.Select(l => l.VariantId).Distinct().ToList();
 
             // Same visibility rule as the public catalog: variant, product and category must be active.
             var variants = await db.Variants.AsNoTracking()
@@ -130,6 +137,7 @@ public static class OrderEndpoints
                 .Select(v => new
                 {
                     v.Id,
+                    v.ProductId,
                     v.Sku,
                     v.RetailPrice,
                     ProductName = v.Product.Name,
@@ -145,12 +153,30 @@ public static class OrderEndpoints
                 .ToDictionaryAsync(v => v.Id, ct);
             if (variants.Count != ids.Count) return ItemsProblem("Hay productos que ya no están disponibles");
 
+            // Extras are priced here, and only count when this product offers them with a current price.
+            var addonIds = lines.SelectMany(l => l.AddonValueIds ?? []).Distinct().ToList();
+            var productIds = variants.Values.Select(v => v.ProductId).Distinct().ToList();
+            var offered = addonIds.Count == 0
+                ? []
+                : await db.ProductAllowedValues.AsNoTracking()
+                    .Where(a => productIds.Contains(a.ProductId) && addonIds.Contains(a.AttributeValueId)
+                        && a.AttributeValue.Attribute.IsAddon && a.AttributeValue.AddonPrice != null)
+                    .Select(a => new { a.ProductId, a.AttributeValueId, a.AttributeValue.Label, Price = a.AttributeValue.AddonPrice!.Value, a.AttributeValue.SortOrder })
+                    .ToListAsync(ct);
+            var addonsOf = offered.ToDictionary(a => (a.ProductId, a.AttributeValueId));
+            if (lines.Any(l => (l.AddonValueIds ?? []).Any(id => !addonsOf.ContainsKey((variants[l.VariantId].ProductId, id)))))
+            {
+                return ItemsProblem("Hay extras que ya no están disponibles");
+            }
+
             var items = lines.Select(line =>
             {
                 var variant = variants[line.VariantId];
-                var unitPrice = OrderPricing.UnitPrice(variant.RetailPrice);
-                // Same wording the site shows in the cart: "Tamaño Grande (700 cc)".
-                var label = string.Join(" · ", variant.Values.OrderBy(x => x.SortOrder ?? int.MaxValue).ThenBy(x => x.AttributeName).Select(x => $"{x.AttributeName} {x.Label}"));
+                var addons = (line.AddonValueIds ?? []).Select(id => addonsOf[(variant.ProductId, id)]).OrderBy(a => a.SortOrder).ToList();
+                var unitPrice = OrderPricing.UnitPrice(variant.RetailPrice, addons.Sum(a => a.Price));
+                // Same wording the site shows in the cart: "Tamaño Grande (700 cc) · Extra Leche de Almendras".
+                var label = string.Join(" · ", variant.Values.OrderBy(x => x.SortOrder ?? int.MaxValue).ThenBy(x => x.AttributeName).Select(x => $"{x.AttributeName} {x.Label}")
+                    .Concat(addons.Select(a => $"Extra {a.Label}")));
                 return new OrderItem
                 {
                     VariantId = variant.Id,
@@ -192,10 +218,19 @@ public static class OrderEndpoints
             string? checkoutUrl = null;
             if (!order.HasUnpricedItems && mercadoPago.IsConfigured)
             {
-                var preference = await mercadoPago.CreatePreferenceAsync(order, ct);
-                order.MercadoPagoPreferenceId = preference.Id;
-                await db.SaveChangesAsync(ct);
-                checkoutUrl = preference.InitPoint;
+                try
+                {
+                    var preference = await mercadoPago.CreatePreferenceAsync(order, ct);
+                    order.MercadoPagoPreferenceId = preference.Id;
+                    await db.SaveChangesAsync(ct);
+                    checkoutUrl = preference.InitPoint;
+                }
+                catch (Exception e) when (e is HttpRequestException or InvalidOperationException or System.Text.Json.JsonException
+                    or TaskCanceledException { CancellationToken.IsCancellationRequested: false })
+                {
+                    // The order stays unpaid and the site tells the customer that online payment is unavailable.
+                    loggers.CreateLogger(LogCategory).LogError(e, "Could not create the checkout of order {OrderNumber}", order.Number);
+                }
             }
 
             // No personal data in the log: only what identifies the order and its amount.

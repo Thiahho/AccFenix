@@ -6,6 +6,8 @@ import type { Availability, VariantStatus } from "@/lib/api";
 
 export const CART_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 días
 
+export type CartAddon = { id: number; label: string; price: number };
+
 export type CartItem = {
   variantId: number;
   productSlug: string;
@@ -19,15 +21,22 @@ export type CartItem = {
    * Missing (older persisted carts) or null means the variant has no price.
    */
   retailPrice?: number | null;
+  /** Chosen extras; their prices are refreshed by `sync` too. */
+  addons?: CartAddon[];
   qty: number;
 };
+
+/** The same variant with different extras is a different line. */
+export function cartLineKey(item: Pick<CartItem, "variantId" | "addons">) {
+  return `${item.variantId}:${(item.addons ?? []).map((a) => a.id).sort((a, b) => a - b).join("-")}`;
+}
 
 type CartState = {
   items: CartItem[];
   savedAt: number;
   add: (item: Omit<CartItem, "qty">, qty: number) => void;
-  setQty: (variantId: number, qty: number) => void;
-  remove: (variantId: number) => void;
+  setQty: (lineKey: string, qty: number) => void;
+  remove: (lineKey: string) => void;
   clear: () => void;
   /** Aplica el estado actual de las variantes: quita las inactivas o inexistentes y refresca disponibilidad y precios. */
   sync: (statuses: VariantStatus[]) => void;
@@ -42,8 +51,11 @@ export function applyStatuses(items: CartItem[], statuses: VariantStatus[]): Car
   return items.flatMap((item) => {
     const status = byId.get(item.variantId);
     if (!status?.isActive) return [];
+    // A line whose extra is no longer offered leaves the cart rather than silently changing what was ordered.
+    const addons = item.addons?.map((addon) => ({ ...addon, price: status.addons?.find((a) => a.id === addon.id)?.price ?? -1 }));
+    if (addons?.some((a) => a.price < 0)) return [];
     // Prices always come from the fresh data, never from what was stored when the item was added.
-    return [{ ...item, availability: status.availability, retailPrice: status.retailPrice ?? null }];
+    return [{ ...item, ...(addons ? { addons } : {}), availability: status.availability, retailPrice: status.retailPrice ?? null }];
   });
 }
 
@@ -58,19 +70,20 @@ export const useCart = create<CartState>()(
       savedAt: 0,
       add: (item, qty) =>
         set((s) => {
-          const existing = s.items.find((i) => i.variantId === item.variantId);
+          const key = cartLineKey(item);
+          const existing = s.items.find((i) => cartLineKey(i) === key);
           const items = existing
-            ? s.items.map((i) => (i.variantId === item.variantId ? { ...i, ...item, qty: clampQty(i.qty + qty) } : i))
+            ? s.items.map((i) => (cartLineKey(i) === key ? { ...i, ...item, qty: clampQty(i.qty + qty) } : i))
             : [...s.items, { ...item, qty: clampQty(qty) }];
           return { items, savedAt: Date.now() };
         }),
-      setQty: (variantId, qty) =>
+      setQty: (lineKey, qty) =>
         set((s) => ({
-          items: s.items.map((i) => (i.variantId === variantId ? { ...i, qty: clampQty(qty) } : i)),
+          items: s.items.map((i) => (cartLineKey(i) === lineKey ? { ...i, qty: clampQty(qty) } : i)),
           savedAt: Date.now(),
         })),
-      remove: (variantId) =>
-        set((s) => ({ items: s.items.filter((i) => i.variantId !== variantId), savedAt: Date.now() })),
+      remove: (lineKey) =>
+        set((s) => ({ items: s.items.filter((i) => cartLineKey(i) !== lineKey), savedAt: Date.now() })),
       clear: () => set({ items: [], savedAt: 0 }),
       sync: (statuses) => set((s) => ({ items: applyStatuses(s.items, statuses) })),
     }),

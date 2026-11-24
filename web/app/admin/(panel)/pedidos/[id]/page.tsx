@@ -11,6 +11,7 @@ import { adminFetch, AdminApiError } from "@/lib/admin/session";
 import type { AdminOrder } from "@/lib/admin/types";
 import { customerTypeLabel, fulfillmentLabel, paymentStatusLabel } from "@/lib/orders/status";
 import { formatArs } from "@/lib/pricing";
+import { site } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Pedido" };
 
@@ -43,7 +44,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         actions={
           <div className="flex items-center gap-2">
             <Badge variant={order.customerType === "business" ? "default" : "outline"}>{customerTypeLabel[order.customerType]}</Badge>
-            <Badge variant={order.paymentStatus === "approved" ? "default" : "secondary"}>{paymentStatusLabel[order.paymentStatus]}</Badge>
+            <Badge variant={order.paymentStatus === "approved" ? "default" : order.paymentStatus === "refunded" ? "destructive" : "secondary"}>{paymentStatusLabel[order.paymentStatus]}</Badge>
             <OrderStatusBadge status={order.status} />
           </div>
         }
@@ -83,6 +84,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               {paymentStatusLabel[order.paymentStatus]}
               {order.paidAt && <span className="block text-xs text-muted-foreground">{formatOrderDate(order.paidAt)}</span>}
             </Detail>
+            {order.paymentStatus === "approved" && order.status !== "cancelled" && (
+              <Detail label="Enlace de reseña para el cliente">
+                <a href={`${site.url}/resena?token=${order.reviewToken}`} target="_blank" rel="noreferrer" className="break-all font-medium text-brand underline-offset-2 hover:underline">
+                  {`${site.url}/resena?token=${order.reviewToken}`}
+                </a>
+              </Detail>
+            )}
           </dl>
         </section>
       </div>

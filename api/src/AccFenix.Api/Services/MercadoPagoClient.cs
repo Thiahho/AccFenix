@@ -16,6 +16,9 @@ public class MercadoPagoOptions
     public string NotificationUrl { get; set; } = "";
     /// <summary>Public URL of the site, where Mercado Pago sends the customer back after paying.</summary>
     public string SiteUrl { get; set; } = "";
+    /// <summary>Secret of the webhook, from "Tus integraciones". With it, unsigned notifications are rejected.</summary>
+    public string WebhookSecret { get; set; } = "";
+    public string ApiBaseUrl { get; set; } = "https://api.mercadopago.com/";
 }
 
 /// <summary>A checkout preference created in Mercado Pago: where the customer pays.</summary>
@@ -34,9 +37,15 @@ public sealed class MercadoPagoClient(HttpClient http, IOptions<MercadoPagoOptio
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_options.AccessToken) && !string.IsNullOrWhiteSpace(_options.SiteUrl);
 
+    public string WebhookSecret => _options.WebhookSecret;
+
+    /// <summary>Mercado Pago rejects automatic return to a local or non-HTTPS address.</summary>
+    bool CanAutoReturn => Uri.TryCreate(_options.SiteUrl, UriKind.Absolute, out var site) && site.Scheme == Uri.UriSchemeHttps && !site.IsLoopback;
+
     /// <summary>Creates a checkout preference for a confirmed order. The order number is the external reference.</summary>
     public async Task<CheckoutPreference> CreatePreferenceAsync(Order order, CancellationToken ct)
     {
+        var siteUrl = _options.SiteUrl.TrimEnd('/');
         var body = new Dictionary<string, object?>
         {
             ["items"] = order.Items.Select(i => new Dictionary<string, object?>
@@ -49,12 +58,12 @@ public sealed class MercadoPagoClient(HttpClient http, IOptions<MercadoPagoOptio
             ["external_reference"] = order.Number.ToString(CultureInfo.InvariantCulture),
             ["back_urls"] = new Dictionary<string, object?>
             {
-                ["success"] = $"{_options.SiteUrl}/pedido/gracias?pedido={order.Number}",
-                ["pending"] = $"{_options.SiteUrl}/pedido/gracias?pedido={order.Number}",
-                ["failure"] = $"{_options.SiteUrl}/pedido/pago-rechazado?pedido={order.Number}",
+                ["success"] = $"{siteUrl}/pedido/gracias?pedido={order.Number}&resena={order.ReviewToken}",
+                ["pending"] = $"{siteUrl}/pedido/gracias?pedido={order.Number}&resena={order.ReviewToken}",
+                ["failure"] = $"{siteUrl}/pedido/pago-rechazado?pedido={order.Number}",
             },
-            ["auto_return"] = "approved",
         };
+        if (CanAutoReturn) body["auto_return"] = "approved";
         if (!string.IsNullOrWhiteSpace(_options.NotificationUrl)) body["notification_url"] = _options.NotificationUrl;
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "checkout/preferences") { Content = JsonContent.Create(body) };
@@ -68,7 +77,9 @@ public sealed class MercadoPagoClient(HttpClient http, IOptions<MercadoPagoOptio
 
         var dto = await response.Content.ReadFromJsonAsync<PreferenceResponse>(ct)
             ?? throw new InvalidOperationException("Respuesta vacía de Mercado Pago");
-        return new CheckoutPreference(dto.Id, dto.InitPoint);
+        // A TEST- token only pays in the sandbox checkout.
+        var checkoutUrl = _options.AccessToken.StartsWith("TEST-", StringComparison.Ordinal) ? dto.SandboxInitPoint ?? dto.InitPoint : dto.InitPoint;
+        return new CheckoutPreference(dto.Id, checkoutUrl);
     }
 
     /// <summary>Reads a payment from Mercado Pago. Null when Mercado Pago does not know that id.</summary>
@@ -97,7 +108,8 @@ public sealed class MercadoPagoClient(HttpClient http, IOptions<MercadoPagoOptio
 
     record PreferenceResponse(
         [property: JsonPropertyName("id")] string Id,
-        [property: JsonPropertyName("init_point")] string InitPoint);
+        [property: JsonPropertyName("init_point")] string InitPoint,
+        [property: JsonPropertyName("sandbox_init_point")] string? SandboxInitPoint);
 
     record PaymentResponse(
         [property: JsonPropertyName("id")] long Id,

@@ -2,15 +2,15 @@
 
 ## Objective
 
-Give the public site its own poster-style design that no longer resembles Eggy, while keeping the ColdCup palette.
+Give the public site its own poster-style design that no longer resembles COLDCUP, while keeping the ColdCup palette.
 
 ## Problem
 
-The palette changed, but the structure is still Eggy: capsule header, pill labels, Montserrat uppercase titles, and rounded cards.
+The palette changed, but the structure is still COLDCUP: capsule header, pill labels, Montserrat uppercase titles, and rounded cards.
 
 ## Why
 
-The user asked for a new design unlike Eggy and chose the "Poster cafe" direction on 2026-11-23. Reference: the `APERTURA 2x1` post in `docs/img/img1.png`.
+The user asked for a new design unlike COLDCUP and chose the "Poster cafe" direction on 2026-11-23. Reference: the `APERTURA 2x1` post in `docs/img/img1.png`.
 
 ## Scope
 

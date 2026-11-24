@@ -2,7 +2,7 @@
 // Prices are whole ARS pesos (no cents); a variant without a price is quoted on request.
 
 /** The minimum a cart line needs to be priced. Missing prices mean "no price". */
-export type PricedLine = { qty: number; retailPrice?: number | null };
+export type PricedLine = { qty: number; retailPrice?: number | null; addons?: { price: number }[] };
 
 export type CartTotals = {
   /** Sum of the priced lines only. */
@@ -12,33 +12,32 @@ export type CartTotals = {
   partial: boolean;
 };
 
-/** Same upper bound the API enforces (numeric(12,2) capped at 8 integer digits). */
-export const MAX_PRICE = 99_999_999.99;
-
-const toCents = (amount: number) => Math.round(amount * 100);
+/** Same upper bound the API enforces, in whole pesos. */
+export const MAX_PRICE = 99_999_999;
 
 export function unitPrice(line: PricedLine): number | null {
-  return line.retailPrice ?? null;
+  if (line.retailPrice == null) return null;
+  return line.retailPrice + (line.addons ?? []).reduce((sum, addon) => sum + addon.price, 0);
 }
 
 export function lineSubtotal(line: PricedLine): number | null {
   const price = unitPrice(line);
-  return price === null ? null : (toCents(price) * line.qty) / 100;
+  return price === null ? null : price * line.qty;
 }
 
 export function cartTotals(items: PricedLine[]): CartTotals {
-  let cents = 0;
+  let total = 0;
   let pricedLines = 0;
   for (const item of items) {
     const price = unitPrice(item);
     if (price === null) continue;
-    cents += toCents(price) * item.qty;
+    total += price * item.qty;
     pricedLines++;
   }
-  return { total: cents / 100, pricedLines, partial: pricedLines < items.length };
+  return { total, pricedLines, partial: pricedLines < items.length };
 }
 
-// Prices are handled in whole pesos: no cents are shown or accepted. Legacy values with cents are rounded on display.
+// Prices are whole pesos: no cents are shown or accepted.
 const arsNumber = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0, useGrouping: "always" });
 
 /** "$ 60.000". Uses a plain space so the text is safe to paste into a WhatsApp message. */

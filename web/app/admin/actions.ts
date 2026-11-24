@@ -2,9 +2,9 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
-import type { Availability } from "@/lib/api";
+import type { Availability, CaffeineLevel } from "@/lib/api";
 import { adminFetch, AdminApiError, clearSession, login } from "@/lib/admin/session";
-import type { ActionResult, VariantPrices } from "@/lib/admin/types";
+import type { ActionResult, AdminProduct, VariantPrices } from "@/lib/admin/types";
 
 /** Ejecuta una llamada admin, refresca el panel y el catálogo público, y traduce errores de la API. */
 async function run<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
@@ -54,8 +54,8 @@ export async function deleteCategory(id: number) {
 }
 
 // ---- Atributos ----
-export type AttributeInput = { name: string; slug?: string; sortOrder: number };
-export type ValueInput = { label: string; sortOrder: number; colorHex?: string | null };
+export type AttributeInput = { name: string; slug?: string; sortOrder: number; isAddon?: boolean };
+export type ValueInput = { label: string; sortOrder: number; colorHex?: string | null; addonPrice?: number | null };
 
 export async function saveAttribute(id: number | null, input: AttributeInput) {
   if (id !== null && !isId(id)) return invalidId;
@@ -90,6 +90,10 @@ export type ProductInput = {
   sortOrder: number;
   isActive: boolean;
   allowedValueIds: number[];
+  intensity: number | null;
+  caffeine: CaffeineLevel | null;
+  sweetness: number | null;
+  flavorNotes: string | null;
 };
 
 export async function createProduct(input: ProductInput) {
@@ -112,6 +116,31 @@ export async function deleteProduct(id: number) {
 export async function deleteProducts(ids: number[]) {
   if (!areIds(ids)) return invalidId;
   return run(() => adminFetch<{ deleted: number }>("/api/admin/products/bulk-delete", json("POST", { ids })));
+}
+
+export type VariantSummary = { id: number; sku: string; label: string; availability: Availability; isActive: boolean; retailPrice: number | null };
+
+/** Read only: loads the variants of one row of the products table when it is expanded. */
+export async function getProductVariants(id: number): Promise<ActionResult<VariantSummary[]>> {
+  if (!isId(id)) return invalidId;
+  try {
+    const product = await adminFetch<AdminProduct>(`/api/admin/products/${id}`);
+    const attributes = product.categoryAttributes.filter((a) => !a.isAddon);
+    const data = product.variants.map((v) => ({
+      id: v.id,
+      sku: v.sku,
+      label: attributes.flatMap((a) => a.values.filter((x) => v.valueIds.includes(x.id)).map((x) => x.label)).join(" · ") || v.sku,
+      availability: v.availability,
+      isActive: v.isActive,
+      retailPrice: v.retailPrice,
+    }));
+    return { ok: true, data };
+  } catch (e) {
+    unstable_rethrow(e);
+    if (e instanceof AdminApiError) return { ok: false, error: e.message };
+    console.error(e);
+    return { ok: false, error: "No se pudo conectar con la API" };
+  }
 }
 
 /** Omitted fields stay unchanged; an explicit null price clears it. */

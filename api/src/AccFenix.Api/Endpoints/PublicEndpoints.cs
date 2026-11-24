@@ -22,16 +22,30 @@ public record MediaDto(int Id, MediaType Type, string Url, int? AttributeValueId
 
 public record ProductDetailDto(
     int Id, string Name, string Slug, string? Description,
-    CategoryRefDto Category, List<AttributeDto> Attributes, List<VariantDto> Variants, List<MediaDto> Media);
+    CategoryRefDto Category, List<AttributeDto> Attributes, List<VariantDto> Variants, List<MediaDto> Media,
+    int? Intensity, CaffeineLevel? Caffeine, int? Sweetness, string? FlavorNotes,
+    ProductStatsDto Stats, List<PublicReviewDto> Reviews, List<AddonDto> Addons);
+
+/// <summary>An optional extra offered for a product; its price is added to the unit price.</summary>
+public record AddonDto(int Id, string Label, decimal Price);
+
+public record AddonPriceDto(int Id, decimal Price);
+
+/// <summary>TimesOrdered counts paid, non-cancelled orders that include the product.</summary>
+public record ProductStatsDto(double? AverageRating, int ReviewCount, int TimesOrdered);
+
+public record PublicReviewDto(int Id, string AuthorName, int Rating, string? Comment, DateTime CreatedAt);
 
 public record CategoryRefDto(string Name, string Slug);
 
-public record VariantStatusDto(int Id, bool IsActive, Availability Availability, decimal? RetailPrice);
+public record VariantStatusDto(int Id, bool IsActive, Availability Availability, decimal? RetailPrice, List<AddonPriceDto> Addons);
 
 public record PublicSettingsDto(string WhatsappNumber);
 
 public static class PublicEndpoints
 {
+    const int LatestReviews = 6;
+
     public static void MapPublicEndpoints(this IEndpointRouteBuilder app)
     {
         var api = app.MapGroup("/api").WithTags("Public");
@@ -77,7 +91,21 @@ public static class PublicEndpoints
                 .FirstOrDefaultAsync(p => p.Slug == slug && p.IsActive && p.Category.IsActive, ct);
             if (product is null) return Results.NotFound();
 
-            return Results.Ok(ToDetail(product));
+            var reviews = db.Reviews.AsNoTracking().Where(r => r.ProductId == product.Id);
+            var reviewCount = await reviews.CountAsync(ct);
+            double? average = reviewCount == 0 ? null : Math.Round(await reviews.AverageAsync(r => (double)r.Rating, ct), 1);
+            var timesOrdered = await db.OrderItems
+                .Where(i => i.Variant!.ProductId == product.Id && i.Order.PaymentStatus == PaymentStatus.Approved && i.Order.Status != OrderStatus.Cancelled)
+                .Select(i => i.OrderId)
+                .Distinct()
+                .CountAsync(ct);
+            var latest = await reviews
+                .OrderByDescending(r => r.CreatedAt).ThenByDescending(r => r.Id)
+                .Take(LatestReviews)
+                .Select(r => new PublicReviewDto(r.Id, r.AuthorName, r.Rating, r.Comment, r.CreatedAt))
+                .ToListAsync(ct);
+
+            return Results.Ok(ToDetail(product, new ProductStatsDto(average, reviewCount, timesOrdered), latest));
         });
 
         // Usado por el carrito para descartar variantes que ya no existen y refrescar disponibilidad y precios.
@@ -89,11 +117,21 @@ public static class PublicEndpoints
 
             // A variant that is not publicly visible keeps its status (the cart shows it as unavailable)
             // but never exposes its prices.
-            return await db.Variants
+            var rows = await db.Variants
                 .Where(v => idList.Contains(v.Id))
-                .Select(v => new { v.Id, Visible = v.IsActive && v.Product.IsActive && v.Product.Category.IsActive, v.Availability, v.RetailPrice })
-                .Select(v => new VariantStatusDto(v.Id, v.Visible, v.Availability, v.Visible ? v.RetailPrice : null))
+                .Select(v => new
+                {
+                    v.Id,
+                    Visible = v.IsActive && v.Product.IsActive && v.Product.Category.IsActive,
+                    v.Availability,
+                    v.RetailPrice,
+                    Addons = v.Product.AllowedValues
+                        .Where(a => a.AttributeValue.Attribute.IsAddon && a.AttributeValue.AddonPrice != null)
+                        .Select(a => new AddonPriceDto(a.AttributeValueId, a.AttributeValue.AddonPrice!.Value))
+                        .ToList(),
+                })
                 .ToListAsync(ct);
+            return rows.Select(v => new VariantStatusDto(v.Id, v.Visible, v.Availability, v.Visible ? v.RetailPrice : null, v.Visible ? v.Addons : [])).ToList();
         });
 
         api.MapGet("/settings/public", async (AppDbContext db, CancellationToken ct) =>
@@ -103,10 +141,17 @@ public static class PublicEndpoints
         });
     }
 
-    static ProductDetailDto ToDetail(Product p)
+    static ProductDetailDto ToDetail(Product p, ProductStatsDto stats, List<PublicReviewDto> reviews)
     {
         var allowed = p.AllowedValues.Select(a => a.AttributeValue).ToList();
+        var addons = p.Category.Attributes
+            .Where(ca => ca.Attribute.IsAddon)
+            .OrderBy(ca => ca.SortOrder)
+            .SelectMany(ca => allowed.Where(v => v.AttributeId == ca.AttributeId && v.AddonPrice != null).OrderBy(v => v.SortOrder))
+            .Select(v => new AddonDto(v.Id, v.Label, v.AddonPrice!.Value))
+            .ToList();
         var attributes = p.Category.Attributes
+            .Where(ca => !ca.Attribute.IsAddon)
             .OrderBy(ca => ca.SortOrder)
             .Select(ca => new AttributeDto(ca.Attribute.Id, ca.Attribute.Name, ca.Attribute.Slug,
                 allowed.Where(v => v.AttributeId == ca.AttributeId)
@@ -125,6 +170,7 @@ public static class PublicEndpoints
                 .ToList(),
             p.Media.OrderBy(m => m.SortOrder)
                 .Select(m => new MediaDto(m.Id, m.Type, m.Url, m.AttributeValueId))
-                .ToList());
+                .ToList(),
+            p.Intensity, p.Caffeine, p.Sweetness, p.FlavorNotes, stats, reviews, addons);
     }
 }

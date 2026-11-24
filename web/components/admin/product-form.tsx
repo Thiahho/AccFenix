@@ -12,12 +12,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { AdminAttribute, AdminCategory, AdminProduct } from "@/lib/admin/types";
+import { caffeineLabel, type CaffeineLevel } from "@/lib/api";
+import { formatArs } from "@/lib/pricing";
 
 type Props = {
   categories: AdminCategory[];
   attributes: AdminAttribute[];
   product?: AdminProduct;
 };
+
+/** Radix Select does not accept an empty value, so "not set" has its own. */
+const NONE = "none";
+
+function ScaleField({ id, label, value, onChange }: { id: string; label: string; value: number | null; onChange: (value: number | null) => void }) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Select value={value === null ? NONE : String(value)} onValueChange={(v) => onChange(v === NONE ? null : Number(v))}>
+        <SelectTrigger id={id} className="w-full"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NONE}>Sin definir</SelectItem>
+          {[1, 2, 3, 4, 5].map((n) => <SelectItem key={n} value={String(n)}>{n} de 5</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 export function ProductForm({ categories, attributes, product }: Props) {
   const router = useRouter();
@@ -29,6 +49,10 @@ export function ProductForm({ categories, attributes, product }: Props) {
   const [sortOrder, setSortOrder] = useState(product?.sortOrder ?? 0);
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [allowed, setAllowed] = useState<Set<number>>(new Set(product?.allowedValueIds ?? []));
+  const [intensity, setIntensity] = useState<number | null>(product?.intensity ?? null);
+  const [caffeine, setCaffeine] = useState<CaffeineLevel | null>(product?.caffeine ?? null);
+  const [sweetness, setSweetness] = useState<number | null>(product?.sweetness ?? null);
+  const [flavorNotes, setFlavorNotes] = useState(product?.flavorNotes ?? "");
 
   const category = categories.find((c) => c.id === categoryId);
   const categoryAttributes = useMemo(
@@ -36,6 +60,7 @@ export function ProductForm({ categories, attributes, product }: Props) {
     [category, attributes],
   );
   const combinations = categoryAttributes
+    .filter((a) => !a.isAddon)
     .map((a) => a.values.filter((v) => allowed.has(v.id)).length)
     .filter((n) => n > 0)
     .reduce((acc, n) => acc * n, 1);
@@ -59,6 +84,10 @@ export function ProductForm({ categories, attributes, product }: Props) {
       sortOrder,
       isActive,
       allowedValueIds: [...allowed].filter((id) => validIds.has(id)),
+      intensity,
+      caffeine,
+      sweetness,
+      flavorNotes: flavorNotes.trim() || null,
     };
     startTransition(async () => {
       if (product) {
@@ -110,6 +139,32 @@ export function ProductForm({ categories, attributes, product }: Props) {
       </section>
 
       <section className="rounded-xl border bg-background p-5">
+        <h2 className="font-semibold">Características</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Se muestran en la tarjeta del producto. Lo que dejes sin definir no aparece.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <ScaleField id="intensity" label="Intensidad" value={intensity} onChange={setIntensity} />
+          <div className="space-y-1.5">
+            <Label htmlFor="caffeine">Cafeína</Label>
+            <Select value={caffeine ?? NONE} onValueChange={(v) => setCaffeine(v === NONE ? null : (v as CaffeineLevel))}>
+              <SelectTrigger id="caffeine" className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE}>Sin definir</SelectItem>
+                {(Object.keys(caffeineLabel) as CaffeineLevel[]).map((level) => (
+                  <SelectItem key={level} value={level}>{caffeineLabel[level]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <ScaleField id="sweetness" label="Dulzor" value={sweetness} onChange={setSweetness} />
+          <div className="space-y-1.5 sm:col-span-3">
+            <Label htmlFor="flavorNotes">Notas de sabor</Label>
+            <Input id="flavorNotes" value={flavorNotes} onChange={(e) => setFlavorNotes(e.target.value)} placeholder="Caramelo, cacao" maxLength={160} />
+            <p className="text-xs text-muted-foreground">Separalas con comas.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-xl border bg-background p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="font-semibold">Valores habilitados</h2>
           <p className="text-sm text-muted-foreground">
@@ -126,7 +181,7 @@ export function ProductForm({ categories, attributes, product }: Props) {
               return (
                 <fieldset key={attr.id}>
                   <div className="mb-2 flex items-center gap-3">
-                    <legend className="text-sm font-medium">{attr.name}</legend>
+                    <legend className="text-sm font-medium">{attr.name}{attr.isAddon && " (extra opcional)"}</legend>
                     <button type="button" className="-mx-2 -my-3.5 px-2 py-3.5 text-xs text-brand hover:underline md:m-0 md:p-0" onClick={() => toggle(ids, !all)}>
                       {all ? "Ninguno" : "Todos"}
                     </button>
@@ -140,6 +195,7 @@ export function ProductForm({ categories, attributes, product }: Props) {
                         <Checkbox checked={allowed.has(v.id)} onCheckedChange={(c) => toggle([v.id], c === true)} />
                         {v.colorHex && <span aria-hidden className="size-3 rounded-full border" style={{ backgroundColor: v.colorHex }} />}
                         {v.label}
+                        {attr.isAddon && <span className="text-muted-foreground">{v.addonPrice !== null ? `+ ${formatArs(v.addonPrice)}` : "sin precio"}</span>}
                       </Label>
                     ))}
                   </div>

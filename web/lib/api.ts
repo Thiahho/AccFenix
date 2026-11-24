@@ -42,13 +42,36 @@ export type ProductDetail = {
   attributes: ProductAttribute[];
   variants: Variant[];
   media: Media[];
+  intensity: number | null;
+  caffeine: CaffeineLevel | null;
+  sweetness: number | null;
+  /** Comma-separated, e.g. "Caramelo, cacao". */
+  flavorNotes: string | null;
+  stats: ProductStats;
+  /** The latest reviews; `stats.reviewCount` holds the total. */
+  reviews: PublicReview[];
+  /** Optional extras with a price, added to the unit price. */
+  addons: Addon[];
 };
+
+export type Addon = { id: number; label: string; price: number };
+
+export type CaffeineLevel = "baja" | "media" | "alta";
+
+/** `timesOrdered` counts paid, non-cancelled orders that include the product. */
+export type ProductStats = { averageRating: number | null; reviewCount: number; timesOrdered: number };
+
+export type PublicReview = { id: number; authorName: string; rating: number; comment: string | null; createdAt: string };
+
+export const caffeineLabel: Record<CaffeineLevel, string> = { baja: "Baja", media: "Media", alta: "Alta" };
 
 export type VariantStatus = {
   id: number;
   isActive: boolean;
   availability: Availability;
   retailPrice: number | null;
+  /** Extras the product offers now, with their current price. */
+  addons?: { id: number; price: number }[];
 };
 
 export type PublicSettings = { whatsappNumber: string };

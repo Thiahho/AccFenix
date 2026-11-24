@@ -18,8 +18,9 @@ describe("buildOrderRequest", () => {
   });
 
   it("leaves the address out for pickup and skips empty comments", () => {
-    const form: OrderForm = { ...base, entrega: "retiro", comentarios: "   " };
+    const form: OrderForm = { ...base, horario: "16:30", entrega: "retiro", comentarios: "   " };
     const body = buildOrderRequest(form, [{ variantId: 1, qty: 1 }]);
+    expect(body.timeSlot).toBe("Hoy 16:30 h");
     expect(body).not.toHaveProperty("address");
     expect(body).not.toHaveProperty("comments");
     expect(body.fulfillment).toBe("pickup");

@@ -60,6 +60,10 @@ namespace AccFenix.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal?>("AddonPrice")
+                        .HasPrecision(12)
+                        .HasColumnType("numeric(12,0)");
+
                     b.Property<int>("AttributeId")
                         .HasColumnType("integer");
 
@@ -80,7 +84,10 @@ namespace AccFenix.Api.Migrations
                     b.HasIndex("AttributeId", "Label")
                         .IsUnique();
 
-                    b.ToTable("AttributeValues");
+                    b.ToTable("AttributeValues", t =>
+                        {
+                            t.HasCheckConstraint("CK_AttributeValues_AddonPrice", "\"AddonPrice\" IS NULL OR \"AddonPrice\" BETWEEN 0 AND 99999999");
+                        });
                 });
 
             modelBuilder.Entity("AccFenix.Api.Domain.CatalogAttribute", b =>
@@ -90,6 +97,9 @@ namespace AccFenix.Api.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsAddon")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -266,6 +276,13 @@ namespace AccFenix.Api.Migrations
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)");
 
+                    b.Property<string>("ReviewToken")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValueSql("replace(gen_random_uuid()::text, '-', '')");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -275,14 +292,17 @@ namespace AccFenix.Api.Migrations
                         .HasColumnType("character varying(60)");
 
                     b.Property<decimal>("Total")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
+                        .HasPrecision(12)
+                        .HasColumnType("numeric(12,0)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedAt");
 
                     b.HasIndex("Number")
+                        .IsUnique();
+
+                    b.HasIndex("ReviewToken")
                         .IsUnique();
 
                     b.HasIndex("Status", "CreatedAt");
@@ -303,9 +323,9 @@ namespace AccFenix.Api.Migrations
 
                             t.HasCheckConstraint("CK_Orders_Number", "\"Number\" > 0");
 
-                            t.HasCheckConstraint("CK_Orders_PaidAt", "(\"PaymentStatus\" = 1) = (\"PaidAt\" IS NOT NULL)");
+                            t.HasCheckConstraint("CK_Orders_PaidAt", "(\"PaymentStatus\" IN (1, 3)) = (\"PaidAt\" IS NOT NULL)");
 
-                            t.HasCheckConstraint("CK_Orders_PaymentStatus", "\"PaymentStatus\" IN (0, 1, 2)");
+                            t.HasCheckConstraint("CK_Orders_PaymentStatus", "\"PaymentStatus\" IN (0, 1, 2, 3)");
 
                             t.HasCheckConstraint("CK_Orders_Status", "\"Status\" IN (0, 1, 2, 3, 4)");
 
@@ -338,12 +358,12 @@ namespace AccFenix.Api.Migrations
                         .HasColumnType("character varying(120)");
 
                     b.Property<decimal?>("Subtotal")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
+                        .HasPrecision(12)
+                        .HasColumnType("numeric(12,0)");
 
                     b.Property<decimal?>("UnitPrice")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
+                        .HasPrecision(12)
+                        .HasColumnType("numeric(12,0)");
 
                     b.Property<int?>("VariantId")
                         .HasColumnType("integer");
@@ -377,11 +397,21 @@ namespace AccFenix.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("Caffeine")
+                        .HasColumnType("integer");
+
                     b.Property<int>("CategoryId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
+
+                    b.Property<string>("FlavorNotes")
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.Property<int?>("Intensity")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -399,6 +429,9 @@ namespace AccFenix.Api.Migrations
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("Sweetness")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
@@ -406,7 +439,14 @@ namespace AccFenix.Api.Migrations
                     b.HasIndex("Slug")
                         .IsUnique();
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", t =>
+                        {
+                            t.HasCheckConstraint("CK_Products_Caffeine", "\"Caffeine\" IS NULL OR \"Caffeine\" IN (0, 1, 2)");
+
+                            t.HasCheckConstraint("CK_Products_Intensity", "\"Intensity\" IS NULL OR \"Intensity\" BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("CK_Products_Sweetness", "\"Sweetness\" IS NULL OR \"Sweetness\" BETWEEN 1 AND 5");
+                        });
                 });
 
             modelBuilder.Entity("AccFenix.Api.Domain.ProductAllowedValue", b =>
@@ -422,6 +462,48 @@ namespace AccFenix.Api.Migrations
                     b.HasIndex("AttributeValueId");
 
                     b.ToTable("ProductAllowedValues");
+                });
+
+            modelBuilder.Entity("AccFenix.Api.Domain.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId", "ProductId")
+                        .IsUnique();
+
+                    b.HasIndex("ProductId", "CreatedAt");
+
+                    b.ToTable("Reviews", t =>
+                        {
+                            t.HasCheckConstraint("CK_Reviews_Rating", "\"Rating\" BETWEEN 1 AND 5");
+                        });
                 });
 
             modelBuilder.Entity("AccFenix.Api.Domain.Setting", b =>
@@ -463,8 +545,8 @@ namespace AccFenix.Api.Migrations
                         .HasColumnType("integer");
 
                     b.Property<decimal?>("RetailPrice")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
+                        .HasPrecision(12)
+                        .HasColumnType("numeric(12,0)");
 
                     b.Property<string>("Sku")
                         .IsRequired()
@@ -481,7 +563,7 @@ namespace AccFenix.Api.Migrations
 
                     b.ToTable("Variants", t =>
                         {
-                            t.HasCheckConstraint("CK_Variants_RetailPrice", "\"RetailPrice\" IS NULL OR \"RetailPrice\" BETWEEN 0 AND 99999999.99");
+                            t.HasCheckConstraint("CK_Variants_RetailPrice", "\"RetailPrice\" IS NULL OR \"RetailPrice\" BETWEEN 0 AND 99999999");
                         });
                 });
 
@@ -596,6 +678,25 @@ namespace AccFenix.Api.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("AccFenix.Api.Domain.Review", b =>
+                {
+                    b.HasOne("AccFenix.Api.Domain.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AccFenix.Api.Domain.Product", "Product")
+                        .WithMany("Reviews")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("AccFenix.Api.Domain.Variant", b =>
                 {
                     b.HasOne("AccFenix.Api.Domain.Product", "Product")
@@ -648,6 +749,8 @@ namespace AccFenix.Api.Migrations
                     b.Navigation("AllowedValues");
 
                     b.Navigation("Media");
+
+                    b.Navigation("Reviews");
 
                     b.Navigation("Variants");
                 });

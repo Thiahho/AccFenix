@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/seo/json-ld";
 import { baseOpenGraph } from "@/components/seo/open-graph";
+import { ProductReviews } from "@/components/site/product-reviews";
 import { VariantPicker } from "@/components/site/variant-picker";
 import { api, NotFoundError, type ProductDetail } from "@/lib/api";
 import { site } from "@/lib/site";
@@ -87,6 +88,7 @@ export default async function ProductPage({ params }: Props) {
     <div>
       <JsonLd data={productSchema(product)} />
       <VariantPicker product={product} />
+      <ProductReviews product={product} />
     </div>
   );
 }

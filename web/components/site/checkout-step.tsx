@@ -52,7 +52,7 @@ export function CheckoutStep({ index, title, status, summary, focusOnOpen, onOpe
         aria-disabled={locked || undefined}
         aria-labelledby={headingId}
         className={cn(
-          "border-2 border-espresso transition-[background-color,opacity] duration-200",
+          "border border-border transition-[background-color,opacity] duration-200",
           active ? "bg-background" : "bg-oat",
           locked && "opacity-55",
         )}
@@ -62,7 +62,7 @@ export function CheckoutStep({ index, title, status, summary, focusOnOpen, onOpe
             aria-hidden
             className={cn(
               "grid size-7 shrink-0 place-items-center text-xs font-extrabold tabular-nums transition-colors duration-200",
-              status === "done" ? "bg-brand text-brand-foreground" : active ? "bg-espresso text-cream" : "border-2 bg-background text-espresso",
+              status === "done" ? "bg-brand text-brand-foreground" : active ? "bg-espresso text-cream" : "border bg-background text-espresso",
             )}
           >
             {status === "done" ? <CheckIcon className="size-4" /> : index + 1}
@@ -76,7 +76,7 @@ export function CheckoutStep({ index, title, status, summary, focusOnOpen, onOpe
               type="button"
               onClick={onOpen}
               aria-label={`Editar: ${title}${summary ? ` (${summary})` : ""}`}
-              className="ml-auto inline-flex min-h-11 max-w-[55%] min-w-0 items-center gap-1.5 border-2 border-espresso bg-background px-3 text-sm text-foreground transition-colors hover:bg-latte"
+              className="ml-auto inline-flex min-h-11 max-w-[55%] min-w-0 items-center gap-1.5 border border-border bg-background px-3 text-sm text-foreground transition-colors hover:bg-latte"
             >
               <span className="truncate">{summary || "Completar"}</span>
               <PencilIcon aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />

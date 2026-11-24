@@ -1,11 +1,11 @@
-# eggy-rebrand
+# COLDCUP-rebrand
 
-Branch: `EGG-main`. Engram mirror: `odd/eggy-rebrand/tasks`. Follows the rebranding backlog item of `egg-wholesale-ordering`.
+Branch: `EGG-main`. Engram mirror: `odd/COLDCUP-rebrand/tasks`. Follows the rebranding backlog item of `egg-wholesale-ordering`.
 
 ## Objective
 
-Replace every curtain-rod ("barrales", "cortinas") reference and the neutral shadcn look with the "Eggy" egg
-distributor brand, using `docs/img/image1.png` (price board story) and `docs/img/image2.png` ("Somos Eggy") as
+Replace every curtain-rod ("barrales", "cortinas") reference and the neutral shadcn look with the "COLDCUP" egg
+distributor brand, using `docs/img/image1.png` (price board story) and `docs/img/image2.png` ("Somos COLDCUP") as
 temporary references.
 
 ## Scope
@@ -17,7 +17,7 @@ Out of scope: final client photography and logo, icon/favicon redesign, new busi
 ## Visual direction (from references)
 
 - Egg red primary (~`#B3121B`), cream/eggshell background, warm charcoal dark sections, warm orange-brown accents.
-- Bold uppercase geometric sans for headings (Montserrat 800/900); script wordmark "Eggy" in red (Yellowtail).
+- Bold uppercase geometric sans for headings (Montserrat 800/900); script wordmark "COLDCUP" in red (Yellowtail).
 - Price board: dark section, "HUEVOS | N°1" headings, rows Cajón / Medio cajón / Maple, prices in red tags.
 
 ## Tasks

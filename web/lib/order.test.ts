@@ -10,7 +10,7 @@ describe("orderSchema", () => {
   });
 
   it("accepts a pickup order without an address", () => {
-    expect(orderSchema.safeParse({ ...base, entrega: "retiro" }).success).toBe(true);
+    expect(orderSchema.safeParse({ ...base, horario: "16:30", entrega: "retiro" }).success).toBe(true);
   });
 
   it("asks for a time slot in both cases", () => {
@@ -18,12 +18,16 @@ describe("orderSchema", () => {
     expect(r.success).toBe(false);
   });
 
+  it("asks pickup for an hour, not free text", () => {
+    expect(orderSchema.safeParse({ ...base, entrega: "retiro" }).success).toBe(false);
+  });
+
   it("does not accept an unknown delivery option", () => {
     expect(orderSchema.safeParse({ ...base, entrega: "correo" }).success).toBe(false);
   });
 
   it("drops a customer type sent by an older checkout", () => {
-    const r = orderSchema.safeParse({ ...base, cliente: "mayorista", entrega: "retiro" });
+    const r = orderSchema.safeParse({ ...base, horario: "16:30", cliente: "mayorista", entrega: "retiro" });
     expect(r.success).toBe(true);
     expect(r.data).not.toHaveProperty("cliente");
   });

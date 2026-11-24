@@ -1,5 +1,5 @@
 // Reflejan los DTOs de api/src/AccFenix.Api/Endpoints/AdminCatalogEndpoints.cs
-import type { Availability } from "@/lib/api";
+import type { Availability, CaffeineLevel } from "@/lib/api";
 import type { CustomerType, Fulfillment, OrderItem, OrderStatus, PaymentStatus } from "@/lib/orders/types";
 
 export type AdminCategory = {
@@ -13,9 +13,9 @@ export type AdminCategory = {
   productCount: number;
 };
 
-export type AdminValue = { id: number; label: string; sortOrder: number; colorHex: string | null };
+export type AdminValue = { id: number; label: string; sortOrder: number; colorHex: string | null; addonPrice: number | null };
 
-export type AdminAttribute = { id: number; name: string; slug: string; sortOrder: number; values: AdminValue[] };
+export type AdminAttribute = { id: number; name: string; slug: string; sortOrder: number; isAddon: boolean; values: AdminValue[] };
 
 export type AdminProductSummary = {
   id: number;
@@ -55,6 +55,10 @@ export type AdminProduct = {
   categoryAttributes: AdminAttribute[];
   variants: AdminVariant[];
   media: AdminMedia[];
+  intensity: number | null;
+  caffeine: CaffeineLevel | null;
+  sweetness: number | null;
+  flavorNotes: string | null;
 };
 
 export type AdminSettings = { whatsappNumber: string };
@@ -88,4 +92,6 @@ export type AdminOrder = AdminOrderSummary & {
   comments: string | null;
   mercadoPagoPaymentId: string | null;
   items: OrderItem[];
+  /** Secret of the customer's review link; it works once the order is paid. */
+  reviewToken: string;
 };

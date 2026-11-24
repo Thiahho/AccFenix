@@ -20,13 +20,15 @@ public class VariantGenerator(AppDbContext db)
     public virtual async Task<GenerateResult> GenerateAsync(int productId, CancellationToken ct = default)
     {
         var product = await db.Products
-            .Include(p => p.Category).ThenInclude(c => c.Attributes)
+            .Include(p => p.Category).ThenInclude(c => c.Attributes).ThenInclude(ca => ca.Attribute)
             .Include(p => p.AllowedValues).ThenInclude(a => a.AttributeValue)
             .Include(p => p.Variants)
             .FirstOrDefaultAsync(p => p.Id == productId, ct)
             ?? throw new KeyNotFoundException($"Producto {productId} no existe");
 
+        // Add-ons are priced on their own and chosen per order line, so they never multiply the variants.
         var groups = product.Category.Attributes
+            .Where(ca => !ca.Attribute.IsAddon)
             .OrderBy(ca => ca.SortOrder)
             .Select(ca => product.AllowedValues
                 .Select(a => a.AttributeValue)

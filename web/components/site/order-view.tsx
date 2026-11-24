@@ -11,7 +11,7 @@ import { api } from "@/lib/api";
 import { useHydrated } from "@/lib/use-hydrated";
 import { cartTotals, formatArs, lineSubtotal, unitPrice } from "@/lib/pricing";
 import { unitsLabel } from "@/lib/qty";
-import { MAX_QTY, totalUnits, useCart } from "@/stores/cart";
+import { cartLineKey, MAX_QTY, totalUnits, useCart } from "@/stores/cart";
 
 export function OrderView() {
   const hydrated = useHydrated();
@@ -37,8 +37,8 @@ export function OrderView() {
   // The cart is already empty here: it is cleared as soon as the order is stored.
   if (items.length === 0) {
     return (
-      <div className="mt-8 border-[3px] border-espresso p-8 text-center sm:p-10">
-        <p className="poster-display text-4xl">Tu pedido está vacío</p>
+      <div className="mt-8 border border-border p-8 text-center sm:p-10">
+        <p className="poster-display text-2xl sm:text-3xl">Tu pedido está vacío</p>
         <p className="mt-1 text-sm text-muted-foreground">Agregá cafés desde la carta.</p>
         <Button asChild className="mt-6">
           <Link href="/#precios">Ver la carta</Link>
@@ -56,24 +56,24 @@ export function OrderView() {
       <section aria-labelledby="productos">
         <h2 id="productos" className="sr-only">Productos</h2>
         {removedCount > 0 && (
-          <p role="status" className="mb-4 border-2 border-amber-900 bg-amber-50 p-3 text-sm text-amber-900">
+          <p role="status" className="mb-4 border border-amber-900 bg-amber-50 p-3 text-sm text-amber-900">
             Quitamos {removedCount} {removedCount === 1 ? "producto que ya no está" : "productos que ya no están"} en el catálogo.
           </p>
         )}
         {refreshFailed && hasPrices && (
-          <p role="status" className="mb-4 border-2 border-amber-900 bg-amber-50 p-3 text-sm text-amber-900">
+          <p role="status" className="mb-4 border border-amber-900 bg-amber-50 p-3 text-sm text-amber-900">
             No pudimos actualizar los precios. Los confirmamos por WhatsApp al recibir tu pedido.
           </p>
         )}
-        <ul className="divide-y-2 divide-espresso border-y-[3px] border-espresso">
+        <ul className="divide-y divide-border border-y border-border">
           {items.map((item) => {
             const price = unitPrice(item);
             const subtotal = lineSubtotal(item);
             return (
-            <li key={item.variantId} className="flex flex-wrap items-center gap-x-4 gap-y-3 py-4">
+            <li key={cartLineKey(item)} className="flex flex-wrap items-center gap-x-4 gap-y-3 py-4">
               {/* Full width on phones, so the size stays on one line above the controls. */}
               <div className="w-full min-w-0 sm:w-auto sm:flex-1">
-                <Link href={`/producto/${item.productSlug}`} className="poster-display inline-flex min-h-11 items-center text-2xl leading-[1.2] underline-offset-4 hover:underline">
+                <Link href={`/producto/${item.productSlug}`} className="poster-display inline-flex min-h-11 items-center text-lg leading-[1.2] underline-offset-4 hover:underline">
                   {item.productName}
                 </Link>
                 <p className="text-sm text-muted-foreground">{item.valuesLabel}</p>
@@ -81,13 +81,13 @@ export function OrderView() {
               </div>
               <div className="flex items-center gap-2">
                 <QtyStepper
-                  id={`qty-${item.variantId}`}
+                  id={`qty-${cartLineKey(item)}`}
                   label={`Cantidad de ${item.productName}`}
                   value={item.qty}
                   max={MAX_QTY}
-                  onChange={(qty) => setQty(item.variantId, qty)}
+                  onChange={(qty) => setQty(cartLineKey(item), qty)}
                 />
-                <Button variant="ghost" size="icon" aria-label={`Quitar ${item.productName}`} onClick={() => remove(item.variantId)}>
+                <Button variant="ghost" size="icon" aria-label={`Quitar ${item.productName}`} onClick={() => remove(cartLineKey(item))}>
                   <Trash2Icon />
                 </Button>
               </div>

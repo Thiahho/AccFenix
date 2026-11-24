@@ -9,9 +9,15 @@ namespace AccFenix.Api.Endpoints;
 
 // ---- Requests ----
 public record CategoryRequest(string Name, string? Slug, string? Description, int SortOrder, bool IsActive, List<int> AttributeIds);
-public record AttributeRequest(string Name, string? Slug, int SortOrder);
-public record AttributeValueRequest(string Label, int SortOrder, string? ColorHex);
-public record ProductRequest(int CategoryId, string Name, string? Slug, string? Description, int SortOrder, bool IsActive, List<int> AllowedValueIds);
+/// <summary>An omitted IsAddon keeps the current value.</summary>
+public record AttributeRequest(string Name, string? Slug, int SortOrder, bool? IsAddon = null);
+public record AttributeValueRequest(string Label, int SortOrder, string? ColorHex, decimal? AddonPrice = null);
+public record ProductRequest(
+    int CategoryId, string Name, string? Slug, string? Description, int SortOrder, bool IsActive, List<int> AllowedValueIds,
+    int? Intensity = null, CaffeineLevel? Caffeine = null, int? Sweetness = null, string? FlavorNotes = null)
+{
+    public string? NormalizedFlavorNotes => string.IsNullOrWhiteSpace(FlavorNotes) ? null : FlavorNotes.Trim();
+}
 /// <summary>
 /// Partial update. Prices follow JSON presence: an omitted price stays as it is, an explicit null clears it.
 /// The serializer only calls a property setter when the field is present, which is what the flags record.
@@ -33,14 +39,15 @@ public record SettingsRequest(string WhatsappNumber);
 
 // ---- Responses ----
 public record AdminCategoryDto(int Id, string Name, string Slug, string? Description, int SortOrder, bool IsActive, List<int> AttributeIds, int ProductCount);
-public record AdminValueDto(int Id, string Label, int SortOrder, string? ColorHex);
-public record AdminAttributeDto(int Id, string Name, string Slug, int SortOrder, List<AdminValueDto> Values);
+public record AdminValueDto(int Id, string Label, int SortOrder, string? ColorHex, decimal? AddonPrice);
+public record AdminAttributeDto(int Id, string Name, string Slug, int SortOrder, bool IsAddon, List<AdminValueDto> Values);
 public record AdminProductSummaryDto(int Id, int CategoryId, string CategoryName, string Name, string Slug, bool IsActive, int SortOrder, int ActiveVariants, int OnRequestVariants, string? CoverUrl);
 public record AdminVariantDto(int Id, string Sku, List<int> ValueIds, Availability Availability, bool IsActive, decimal? RetailPrice);
 public record AdminMediaDto(int Id, MediaType Type, string Url, int? AttributeValueId, int SortOrder);
 public record AdminProductDto(
     int Id, int CategoryId, string Name, string Slug, string? Description, int SortOrder, bool IsActive,
-    List<int> AllowedValueIds, List<AdminAttributeDto> CategoryAttributes, List<AdminVariantDto> Variants, List<AdminMediaDto> Media);
+    List<int> AllowedValueIds, List<AdminAttributeDto> CategoryAttributes, List<AdminVariantDto> Variants, List<AdminMediaDto> Media,
+    int? Intensity, CaffeineLevel? Caffeine, int? Sweetness, string? FlavorNotes);
 public record AdminSettingsDto(string WhatsappNumber);
 
 // ---- Validators ----
@@ -74,6 +81,7 @@ public class AttributeValueRequestValidator : AbstractValidator<AttributeValueRe
         RuleFor(x => x.SortOrder).ValidSortOrder();
         RuleFor(x => x.ColorHex).Matches("^#[0-9A-Fa-f]{6}$").When(x => !string.IsNullOrEmpty(x.ColorHex))
             .WithMessage("Usá el formato #RRGGBB");
+        RuleFor(x => x.AddonPrice).ValidPrice();
     }
 }
 
@@ -87,6 +95,10 @@ public class ProductRequestValidator : AbstractValidator<ProductRequest>
         RuleFor(x => x.Description).FreeText(2000);
         RuleFor(x => x.SortOrder).ValidSortOrder();
         RuleFor(x => x.AllowedValueIds).IdList(500);
+        RuleFor(x => x.Intensity).InclusiveBetween(1, CatalogLimits.MaxTasteScale);
+        RuleFor(x => x.Sweetness).InclusiveBetween(1, CatalogLimits.MaxTasteScale);
+        RuleFor(x => x.Caffeine).IsInEnum();
+        RuleFor(x => x.FlavorNotes!).MaximumLength(CatalogLimits.FlavorNotes).SingleLine().When(x => x.FlavorNotes is not null);
     }
 }
 
@@ -231,8 +243,8 @@ public static class AdminCatalogEndpoints
         admin.MapGet("/attributes", async (AppDbContext db, CancellationToken ct) =>
             await db.Attributes
                 .OrderBy(a => a.SortOrder).ThenBy(a => a.Name)
-                .Select(a => new AdminAttributeDto(a.Id, a.Name, a.Slug, a.SortOrder,
-                    a.Values.OrderBy(v => v.SortOrder).Select(v => new AdminValueDto(v.Id, v.Label, v.SortOrder, v.ColorHex)).ToList()))
+                .Select(a => new AdminAttributeDto(a.Id, a.Name, a.Slug, a.SortOrder, a.IsAddon,
+                    a.Values.OrderBy(v => v.SortOrder).Select(v => new AdminValueDto(v.Id, v.Label, v.SortOrder, v.ColorHex, v.AddonPrice)).ToList()))
                 .ToListAsync(ct));
 
         admin.MapPost("/attributes", async (AttributeRequest req, AppDbContext db, CancellationToken ct) =>
@@ -245,7 +257,7 @@ public static class AdminCatalogEndpoints
             return Results.Created($"/api/admin/attributes/{attr.Id}", new { attr.Id, attr.Slug });
         }).Validate<AttributeRequest>();
 
-        admin.MapPut("/attributes/{id:int}", async (int id, AttributeRequest req, AppDbContext db, CancellationToken ct) =>
+        admin.MapPut("/attributes/{id:int}", async (int id, AttributeRequest req, AppDbContext db, VariantGenerator generator, CancellationToken ct) =>
         {
             var attr = await db.Attributes.FindAsync([id], ct);
             if (attr is null) return Results.NotFound();
@@ -254,7 +266,20 @@ public static class AdminCatalogEndpoints
             attr.Name = req.Name.Trim();
             attr.Slug = slug;
             attr.SortOrder = req.SortOrder;
+            var addonChanged = req.IsAddon is { } isAddon && isAddon != attr.IsAddon;
+            attr.IsAddon = req.IsAddon ?? attr.IsAddon;
+
+            // Turning an attribute into an add-on (or back) changes which variants each product needs.
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
             await db.SaveChangesAsync(ct);
+            if (addonChanged)
+            {
+                var productIds = await db.ProductAllowedValues
+                    .Where(a => a.AttributeValue.AttributeId == id)
+                    .Select(a => a.ProductId).Distinct().ToListAsync(ct);
+                foreach (var productId in productIds) await generator.GenerateAsync(productId, ct);
+            }
+            await tx.CommitAsync(ct);
             return Results.NoContent();
         }).Validate<AttributeRequest>();
 
@@ -275,7 +300,7 @@ public static class AdminCatalogEndpoints
             if (!await db.Attributes.AnyAsync(a => a.Id == id, ct)) return Results.NotFound();
             var label = req.Label.Trim();
             if (await db.AttributeValues.AnyAsync(v => v.AttributeId == id && v.Label == label, ct)) return ValidationExtensions.Conflict($"El valor '{label}' ya existe");
-            var value = new AttributeValue { AttributeId = id, Label = label, SortOrder = req.SortOrder, ColorHex = NullIfEmpty(req.ColorHex) };
+            var value = new AttributeValue { AttributeId = id, Label = label, SortOrder = req.SortOrder, ColorHex = NullIfEmpty(req.ColorHex), AddonPrice = req.AddonPrice };
             db.AttributeValues.Add(value);
             await db.SaveChangesAsync(ct);
             return Results.Created($"/api/admin/attribute-values/{value.Id}", new { value.Id });
@@ -290,6 +315,7 @@ public static class AdminCatalogEndpoints
             value.Label = label;
             value.SortOrder = req.SortOrder;
             value.ColorHex = NullIfEmpty(req.ColorHex);
+            value.AddonPrice = req.AddonPrice;
             await db.SaveChangesAsync(ct);
             return Results.NoContent();
         }).Validate<AttributeValueRequest>();
@@ -332,13 +358,14 @@ public static class AdminCatalogEndpoints
                 p.Id, p.CategoryId, p.Name, p.Slug, p.Description, p.SortOrder, p.IsActive,
                 p.AllowedValues.Select(a => a.AttributeValueId).Order().ToList(),
                 p.Category.Attributes.OrderBy(ca => ca.SortOrder)
-                    .Select(ca => new AdminAttributeDto(ca.Attribute.Id, ca.Attribute.Name, ca.Attribute.Slug, ca.SortOrder,
-                        ca.Attribute.Values.OrderBy(v => v.SortOrder).Select(v => new AdminValueDto(v.Id, v.Label, v.SortOrder, v.ColorHex)).ToList()))
+                    .Select(ca => new AdminAttributeDto(ca.Attribute.Id, ca.Attribute.Name, ca.Attribute.Slug, ca.SortOrder, ca.Attribute.IsAddon,
+                        ca.Attribute.Values.OrderBy(v => v.SortOrder).Select(v => new AdminValueDto(v.Id, v.Label, v.SortOrder, v.ColorHex, v.AddonPrice)).ToList()))
                     .ToList(),
                 p.Variants.OrderBy(v => v.Id)
                     .Select(v => new AdminVariantDto(v.Id, v.Sku, v.Values.Select(x => x.AttributeValueId).Order().ToList(), v.Availability, v.IsActive, v.RetailPrice))
                     .ToList(),
-                p.Media.OrderBy(m => m.SortOrder).Select(m => new AdminMediaDto(m.Id, m.Type, m.Url, m.AttributeValueId, m.SortOrder)).ToList()));
+                p.Media.OrderBy(m => m.SortOrder).Select(m => new AdminMediaDto(m.Id, m.Type, m.Url, m.AttributeValueId, m.SortOrder)).ToList(),
+                p.Intensity, p.Caffeine, p.Sweetness, p.FlavorNotes));
         });
 
         admin.MapPost("/products", async (ProductRequest req, AppDbContext db, VariantGenerator generator, CancellationToken ct) =>
@@ -352,7 +379,8 @@ public static class AdminCatalogEndpoints
             {
                 CategoryId = req.CategoryId, Name = req.Name.Trim(), Slug = slug, Description = req.Description,
                 SortOrder = req.SortOrder, IsActive = req.IsActive,
-                AllowedValues = req.AllowedValueIds.Distinct().Select(v => new ProductAllowedValue { AttributeValueId = v }).ToList(),
+                Intensity = req.Intensity, Caffeine = req.Caffeine, Sweetness = req.Sweetness, FlavorNotes = req.NormalizedFlavorNotes,
+                AllowedValues =req.AllowedValueIds.Distinct().Select(v => new ProductAllowedValue { AttributeValueId = v }).ToList(),
             };
             // The product is saved first (its id goes into the SKUs); the transaction keeps it from
             // surviving a failed variant generation.
@@ -381,6 +409,10 @@ public static class AdminCatalogEndpoints
             product.Description = req.Description;
             product.SortOrder = req.SortOrder;
             product.IsActive = req.IsActive;
+            product.Intensity = req.Intensity;
+            product.Caffeine = req.Caffeine;
+            product.Sweetness = req.Sweetness;
+            product.FlavorNotes = req.NormalizedFlavorNotes;
             var wanted = req.AllowedValueIds.ToHashSet();
             product.AllowedValues.RemoveAll(a => !wanted.Contains(a.AttributeValueId));
             foreach (var valueId in wanted.Where(v => product.AllowedValues.All(a => a.AttributeValueId != v)))

@@ -105,7 +105,7 @@ public class DatabaseConstraintTests(ApiFactory factory)
     public async Task Variant_prices_within_range_or_missing_are_accepted()
     {
         await ExpectAccepted(SetVariantPrice(0m));
-        await ExpectAccepted(SetVariantPrice(99_999_999.99m));
+        await ExpectAccepted(SetVariantPrice(99_999_999m));
         await ExpectAccepted(SetVariantPrice(null));
     }
 
@@ -133,7 +133,7 @@ public class DatabaseConstraintTests(ApiFactory factory)
         { "CK_Orders_PaymentStatus", () => With(PickupOrder(), o => o.PaymentStatus = (PaymentStatus)3) },
         { "CK_Orders_PaidAt", () => With(PickupOrder(), o => o.PaymentStatus = PaymentStatus.Approved) },
         { "CK_Orders_PaidAt", () => With(PickupOrder(), o => o.PaidAt = DateTime.UtcNow) },
-        { "CK_Orders_Total", () => With(DeliveryOrder(), o => o.Total = -0.01m) },
+        { "CK_Orders_Total", () => With(DeliveryOrder(), o => o.Total = -1m) },
         { "CK_Orders_Coordinates", () => With(DeliveryOrder(), o => o.Latitude = 10) },
         { "CK_Orders_Coordinates", () => With(DeliveryOrder(), o => o.Longitude = 10) },
         { "CK_Orders_Latitude", () => With(DeliveryOrder(), o => { o.Latitude = 90.5; o.Longitude = 0; }) },

@@ -109,19 +109,19 @@ public class VariantPriceTests(ApiFactory factory)
         await using var product = await CreateProduct();
         var variantId = (await product.VariantIds())[0];
 
-        var patch = await product.Admin.PatchAsJsonAsync($"/api/admin/variants/{variantId}", new { retailPrice = 1500.50m });
+        var patch = await product.Admin.PatchAsJsonAsync($"/api/admin/variants/{variantId}", new { retailPrice = 1500m });
         patch.StatusCode.Should().Be(HttpStatusCode.OK, await patch.Content.ReadAsStringAsync());
         var patched = await patch.Content.ReadFromJsonAsync<JsonElement>();
-        Price(patched, "retailPrice").Should().Be(1500.50m);
+        Price(patched, "retailPrice").Should().Be(1500m);
 
         var stored = (await product.AdminVariants()).Single(v => v.GetProperty("id").GetInt32() == variantId);
-        Price(stored, "retailPrice").Should().Be(1500.50m);
+        Price(stored, "retailPrice").Should().Be(1500m);
 
         // Omitted price fields leave the stored prices unchanged.
         (await product.Admin.PatchAsJsonAsync($"/api/admin/variants/{variantId}", new { availability = "aPedido" })).EnsureSuccessStatusCode();
         stored = (await product.AdminVariants()).Single(v => v.GetProperty("id").GetInt32() == variantId);
         stored.GetProperty("availability").GetString().Should().Be("aPedido");
-        Price(stored, "retailPrice").Should().Be(1500.50m);
+        Price(stored, "retailPrice").Should().Be(1500m);
 
         // An explicit null clears the price.
         (await product.Admin.PatchAsJsonAsync($"/api/admin/variants/{variantId}", new { retailPrice = (decimal?)null })).EnsureSuccessStatusCode();
@@ -136,13 +136,13 @@ public class VariantPriceTests(ApiFactory factory)
         var ids = await product.VariantIds();
 
         var res = await product.SetPrices(
-            new { variantId = ids[0], retailPrice = (decimal?)99999999.99m },
+            new { variantId = ids[0], retailPrice = (decimal?)99999999m },
             new { variantId = ids[1], retailPrice = (decimal?)250m });
 
         res.StatusCode.Should().Be(HttpStatusCode.OK, await res.Content.ReadAsStringAsync());
         (await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("updated").GetInt32().Should().Be(2);
         var variants = (await product.AdminVariants()).ToDictionary(v => v.GetProperty("id").GetInt32());
-        Price(variants[ids[0]], "retailPrice").Should().Be(99999999.99m);
+        Price(variants[ids[0]], "retailPrice").Should().Be(99999999m);
         Price(variants[ids[1]], "retailPrice").Should().Be(250m);
     }
 
@@ -182,6 +182,7 @@ public class VariantPriceTests(ApiFactory factory)
 
     [Theory]
     [InlineData("-0.01")]
+    [InlineData("10.5")]
     [InlineData("10.999")]
     [InlineData("100000000")]
     public async Task Invalid_prices_are_rejected(string price)
@@ -203,7 +204,7 @@ public class VariantPriceTests(ApiFactory factory)
     {
         await using var product = await CreateProduct();
         var ids = await product.VariantIds();
-        (await product.SetPrices(new { variantId = ids[0], retailPrice = 320.5m })).EnsureSuccessStatusCode();
+        (await product.SetPrices(new { variantId = ids[0], retailPrice = 320m })).EnsureSuccessStatusCode();
 
         var detail = await _public.GetFromJsonAsync<JsonElement>($"/api/products/{product.Slug}");
         var status = await _public.GetFromJsonAsync<JsonElement>($"/api/variants?ids={ids[0]},{ids[1]}");
@@ -211,7 +212,7 @@ public class VariantPriceTests(ApiFactory factory)
         foreach (var variants in new[] { detail.GetProperty("variants"), status })
         {
             var byId = variants.EnumerateArray().ToDictionary(v => v.GetProperty("id").GetInt32());
-            Price(byId[ids[0]], "retailPrice").Should().Be(320.5m);
+            Price(byId[ids[0]], "retailPrice").Should().Be(320m);
             byId[ids[0]].TryGetProperty("wholesalePrice", out _).Should().BeFalse();
             Price(byId[ids[1]], "retailPrice").Should().BeNull();
             byId[ids[1]].TryGetProperty("wholesalePrice", out _).Should().BeFalse();

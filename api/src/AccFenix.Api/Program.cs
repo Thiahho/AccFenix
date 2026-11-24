@@ -25,7 +25,8 @@ builder.Services.AddSingleton<IMediaStorage, CloudinaryMediaStorage>();
 
 // Mercado Pago (Checkout Pro). Sin token configurado, los pedidos se crean pero no abren el pago.
 builder.Services.Configure<MercadoPagoOptions>(config.GetSection("MercadoPago"));
-builder.Services.AddHttpClient<MercadoPagoClient>(c => c.BaseAddress = new Uri("https://api.mercadopago.com/"));
+builder.Services.AddHttpClient<MercadoPagoClient>(c =>
+    c.BaseAddress = new Uri(config["MercadoPago:ApiBaseUrl"] is { Length: > 0 } url ? url : new MercadoPagoOptions().ApiBaseUrl));
 
 // ---- Auth (JWT para el panel admin) ----
 builder.Services.AddOptions<JwtOptions>()
@@ -71,6 +72,15 @@ builder.Services.AddRateLimiter(o =>
     o.AddPolicy(OrderEndpoints.CreateRateLimit, ctx => RateLimitPartition.GetFixedWindowLimiter(
         Visitor(ctx),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = OrderEndpoints.CreatePermitLimit, Window = OrderEndpoints.CreateWindow }));
+    // Review links are secret tokens: the quota also slows down anyone trying to guess one.
+    o.AddPolicy(ReviewEndpoints.RateLimit, ctx => RateLimitPartition.GetFixedWindowLimiter(
+        Visitor(ctx),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = ReviewEndpoints.PermitLimit, Window = ReviewEndpoints.Window }));
+
+    // Each confirmation asks Mercado Pago for the payment, so one visitor cannot trigger them without limit.
+    o.AddPolicy(PaymentEndpoints.ConfirmRateLimit, ctx => RateLimitPartition.GetFixedWindowLimiter(
+        Visitor(ctx),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(10) }));
 
     static string Visitor(HttpContext ctx) =>
         ClientIp.PartitionKey(ctx, ctx.RequestServices.GetRequiredService<IConfiguration>()["TrustedWeb:Key"] ?? "");
@@ -120,6 +130,7 @@ app.MapPublicEndpoints();
 app.MapOrderEndpoints();
 app.MapPaymentEndpoints();
 app.MapAuthEndpoints();
+app.MapReviewEndpoints();
 app.MapGroup("/api/admin")
     .RequireAuthorization()
     .AddEndpointFilter<UniqueViolationFilter>()
@@ -127,6 +138,11 @@ app.MapGroup("/api/admin")
     .MapAdminCatalogEndpoints()
     .MapAdminMediaEndpoints()
     .MapAdminOrderEndpoints();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapDevEndpoints();
+}
 
 app.Run();
 

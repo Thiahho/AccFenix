@@ -13,16 +13,16 @@ export function FaqItem({ question, answer }: { question: string; answer: string
 
   return (
     <details className="faq-item" onToggle={(e) => setOpen(e.currentTarget.open)}>
-      <summary className="poster-focus-inset flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 text-lg font-bold transition-colors hover:bg-oat [&::-webkit-details-marker]:hidden">
+      <summary className="poster-focus-inset flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 text-base font-semibold transition-colors hover:text-caramel-deep sm:text-lg [&::-webkit-details-marker]:hidden">
         {question}
         <m.span
           aria-hidden
-          className="inline-flex shrink-0 text-espresso"
+          className="inline-flex shrink-0 text-caramel-deep"
           initial={false}
           animate={{ rotate: open ? 45 : 0 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
         >
-          <PlusIcon className="size-6" strokeWidth={3} />
+          <PlusIcon className="size-5" strokeWidth={2} />
         </m.span>
       </summary>
       {/* Remounts on each opening so it slides in; closed it renders fully visible, so no-JS readers lose nothing. */}

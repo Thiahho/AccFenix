@@ -1,6 +1,6 @@
-# Eggy — web
+# ColdCup — web
 
-Public site and admin panel for **Eggy**, an egg distributor (retail and wholesale, own delivery truck, orders by
+Public site and admin panel for **ColdCup**, an egg distributor (retail and wholesale, own delivery truck, orders by
 WhatsApp). Built with Next.js 15 (App Router), React 19, Tailwind CSS v4, shadcn/ui and Zustand.
 
 ## Getting started

@@ -1,6 +1,6 @@
-# Eggy
+# ColdCup
 
-> Eggy es una distribuidora de huevos en Argentina. Vende huevos frescos por maple, medio cajón y cajón, para hogares y comercios, con precios minoristas y mayoristas. Los pedidos se arman en el sitio y se envían por WhatsApp; la entrega se hace con camión propio.
+> ColdCup es una distribuidora de huevos en Argentina. Vende huevos frescos por maple, medio cajón y cajón, para hogares y comercios, con precios minoristas y mayoristas. Los pedidos se arman en el sitio y se envían por WhatsApp; la entrega se hace con camión propio.
 
 Los precios están en pesos argentinos (ARS). El precio mayorista se aplica a partir de una cantidad mínima configurada por la distribuidora; algunos productos se cotizan a pedido.
 

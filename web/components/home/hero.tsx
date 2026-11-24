@@ -15,19 +15,19 @@ export function Hero() {
         <div className="relative mx-auto max-w-7xl px-4 pt-5 pb-7 sm:px-6 lg:grid lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-x-10 lg:px-8 lg:pt-10 lg:pb-12">
           <h1 id="hero-titulo" className="poster-display poster-hero-title relative z-10">
             <span className="block">Café</span>
-            <span className="poster-hero-accented block">Frío.</span>
-            <span className="block text-latte">Moreno.</span>
+            <span className="block text-latte">Frío.</span>
+            <span className="block">Moreno.</span>
           </h1>
 
-          <div className="absolute top-1 -right-5 w-[52vw] max-w-88 sm:right-2 lg:relative lg:top-auto lg:right-auto lg:row-span-2 lg:w-full lg:max-w-136 lg:self-center lg:justify-self-center">
-            <Starburst spikes={18} fill="var(--cream)" className="w-full" />
-            <IcedCup label={heroCupLabel} className="absolute top-1/2 left-1/2 w-[38%] -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute top-4 -right-2 aspect-square w-[42vw] max-w-72 sm:right-6 lg:relative lg:top-auto lg:right-auto lg:row-span-2 lg:w-full lg:max-w-120 lg:self-center lg:justify-self-center">
+            <div aria-hidden className="absolute inset-0 rounded-full bg-[radial-gradient(circle,color-mix(in_oklch,var(--poster-gold)_34%,transparent),transparent_68%)]" />
+            <IcedCup label={heroCupLabel} className="absolute top-1/2 left-1/2 w-[48%] -translate-x-1/2 -translate-y-1/2 rotate-6 drop-shadow-[0_24px_32px_rgb(0_0_0/0.55)]" />
             <Starburst
               lines={["Iced", "coffee", "to go"]}
               spikes={14}
-              fill="var(--caramel-deep)"
-              ink="var(--ivory)"
-              className="absolute right-[12%] -bottom-[3%] w-[42%] -rotate-12 lg:right-0 lg:bottom-[2%] lg:w-[34%]"
+              fill="var(--poster-gold)"
+              ink="var(--poster-on-gold)"
+              className="absolute right-[2%] bottom-[4%] w-[34%] -rotate-12"
             />
           </div>
 
@@ -35,15 +35,15 @@ export function Hero() {
             <p className="max-w-md text-base leading-snug text-pretty text-cream lg:text-lg">
               Cafés fríos con leche, sabores y tamaños a elegir. Pedí desde la web, pagá con Mercado Pago y retirá o recibí en Moreno.
             </p>
-            <Link href="#precios" className="poster-cta w-full bg-cream text-espresso hover:bg-latte sm:w-fit">
+            <Link href="#precios" className="poster-cta w-full sm:w-fit">
               Ver precios <ArrowDownIcon aria-hidden className="size-5" />
             </Link>
           </div>
         </div>
       </section>
 
-      <div aria-hidden className="overflow-hidden border-b-[3px] border-espresso bg-latte py-2 text-espresso">
-        <p className="poster-display text-xl whitespace-pre sm:text-2xl">
+      <div aria-hidden className="overflow-hidden border-y border-border bg-card py-2.5 text-caramel-deep">
+        <p className="poster-hand text-xl leading-none whitespace-pre">
           {Array.from({ length: STRIP_REPEATS }, () => posterPhrases.join("  /  ")).join("  /  ")}
         </p>
       </div>

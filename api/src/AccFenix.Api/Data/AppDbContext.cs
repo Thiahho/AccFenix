@@ -20,6 +20,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -42,8 +43,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.Property(x => x.Label).HasMaxLength(80);
             e.Property(x => x.ColorHex).HasMaxLength(7);
+            e.Property(x => x.AddonPrice).HasPrecision(12, 0);
             e.HasIndex(x => new { x.AttributeId, x.Label }).IsUnique();
             e.HasOne(x => x.Attribute).WithMany(a => a.Values).HasForeignKey(x => x.AttributeId);
+            e.ToTable(t => t.HasCheckConstraint("CK_AttributeValues_AddonPrice", OptionalPriceRule("AddonPrice")));
         });
 
         b.Entity<CategoryAttribute>(e =>
@@ -58,7 +61,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Name).HasMaxLength(160);
             e.Property(x => x.Slug).HasMaxLength(180);
             e.HasIndex(x => x.Slug).IsUnique();
+            e.Property(x => x.FlavorNotes).HasMaxLength(CatalogLimits.FlavorNotes);
             e.HasOne(x => x.Category).WithMany(c => c.Products).HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Restrict);
+            e.ToTable(t =>
+            {
+                t.HasCheckConstraint("CK_Products_Intensity", TasteScaleRule("Intensity"));
+                t.HasCheckConstraint("CK_Products_Sweetness", TasteScaleRule("Sweetness"));
+                t.HasCheckConstraint("CK_Products_Caffeine", $"\"Caffeine\" IS NULL OR \"Caffeine\" IN ({EnumValues<CaffeineLevel>()})");
+            });
+        });
+
+        b.Entity<Review>(e =>
+        {
+            e.Property(x => x.Comment).HasMaxLength(Review.CommentMaxLength);
+            e.Property(x => x.AuthorName).HasMaxLength(Review.AuthorMaxLength);
+            e.HasIndex(x => new { x.OrderId, x.ProductId }).IsUnique();
+            e.HasIndex(x => new { x.ProductId, x.CreatedAt });
+            e.HasOne(x => x.Product).WithMany(p => p.Reviews).HasForeignKey(x => x.ProductId);
+            e.HasOne(x => x.Order).WithMany().HasForeignKey(x => x.OrderId);
+            e.ToTable(t => t.HasCheckConstraint("CK_Reviews_Rating", Invariant($"\"Rating\" BETWEEN {Review.MinRating} AND {Review.MaxRating}")));
         });
 
         b.Entity<ProductAllowedValue>(e =>
@@ -72,7 +93,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.Property(x => x.Sku).HasMaxLength(Variant.SkuMaxLength);
             e.Property(x => x.CombinationKey).HasMaxLength(200);
-            e.Property(x => x.RetailPrice).HasPrecision(12, 2);
+            e.Property(x => x.RetailPrice).HasPrecision(12, 0);
             e.HasIndex(x => x.Sku).IsUnique();
             e.HasIndex(x => new { x.ProductId, x.CombinationKey }).IsUnique();
             e.HasOne(x => x.Product).WithMany(p => p.Variants).HasForeignKey(x => x.ProductId);
@@ -122,9 +143,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.TimeSlot).HasMaxLength(OrderLimits.TimeSlot);
             e.Property(x => x.Address).HasMaxLength(OrderLimits.Address);
             e.Property(x => x.Comments).HasMaxLength(OrderLimits.Comments);
-            e.Property(x => x.Total).HasPrecision(12, 2);
+            e.Property(x => x.Total).HasPrecision(12, 0);
             e.Property(x => x.MercadoPagoPreferenceId).HasMaxLength(OrderLimits.MercadoPagoId);
             e.Property(x => x.MercadoPagoPaymentId).HasMaxLength(OrderLimits.MercadoPagoId);
+            // The database default also gives every existing order its own random token when the column is added.
+            e.Property(x => x.ReviewToken).HasMaxLength(Order.ReviewTokenLength).HasDefaultValueSql("replace(gen_random_uuid()::text, '-', '')");
+            e.HasIndex(x => x.ReviewToken).IsUnique();
             // The admin list is read newest first, optionally by status.
             e.HasIndex(x => x.CreatedAt);
             e.HasIndex(x => new { x.Status, x.CreatedAt });
@@ -135,7 +159,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 t.HasCheckConstraint("CK_Orders_CustomerType", $"\"CustomerType\" IN ({EnumValues<CustomerType>()})");
                 t.HasCheckConstraint("CK_Orders_Fulfillment", $"\"Fulfillment\" IN ({EnumValues<Fulfillment>()})");
                 t.HasCheckConstraint("CK_Orders_PaymentStatus", $"\"PaymentStatus\" IN ({EnumValues<PaymentStatus>()})");
-                t.HasCheckConstraint("CK_Orders_PaidAt", "(\"PaymentStatus\" = 1) = (\"PaidAt\" IS NOT NULL)");
+                t.HasCheckConstraint("CK_Orders_PaidAt", "(\"PaymentStatus\" IN (1, 3)) = (\"PaidAt\" IS NOT NULL)");
                 t.HasCheckConstraint("CK_Orders_Number", "\"Number\" > 0");
                 t.HasCheckConstraint("CK_Orders_Total", "\"Total\" >= 0");
                 // Each fulfillment carries only its own fields: delivery has an address, pickup has none.
@@ -153,8 +177,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.ProductName).HasMaxLength(160);
             e.Property(x => x.Sku).HasMaxLength(Variant.SkuMaxLength);
             e.Property(x => x.VariantLabel).HasMaxLength(OrderLimits.VariantLabel);
-            e.Property(x => x.UnitPrice).HasPrecision(12, 2);
-            e.Property(x => x.Subtotal).HasPrecision(12, 2);
+            e.Property(x => x.UnitPrice).HasPrecision(12, 0);
+            e.Property(x => x.Subtotal).HasPrecision(12, 0);
             e.HasOne(x => x.Order).WithMany(o => o.Items).HasForeignKey(x => x.OrderId);
             // Removing a variant from the catalog keeps the order line and its snapshot.
             e.HasOne(x => x.Variant).WithMany().HasForeignKey(x => x.VariantId).OnDelete(DeleteBehavior.SetNull);
@@ -169,6 +193,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     static string OptionalPriceRule(string column) =>
         Invariant($"\"{column}\" IS NULL OR \"{column}\" BETWEEN 0 AND {CatalogLimits.MaxPrice}");
+
+    static string TasteScaleRule(string column) =>
+        Invariant($"\"{column}\" IS NULL OR \"{column}\" BETWEEN 1 AND {CatalogLimits.MaxTasteScale}");
 
     static string EnumValues<TEnum>() where TEnum : struct, Enum =>
         string.Join(", ", Enum.GetValues<TEnum>().Select(v => Convert.ToInt32(v, CultureInfo.InvariantCulture)));

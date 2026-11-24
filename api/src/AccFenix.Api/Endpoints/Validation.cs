@@ -68,10 +68,10 @@ public static class ValidationExtensions
     public static IRuleBuilderOptions<T, int> ValidSortOrder<T>(this IRuleBuilder<T, int> rule) =>
         rule.InclusiveBetween(-MaxSortOrder, MaxSortOrder);
 
-    /// <summary>Optional price: when present it must be between 0 and <see cref="MaxPrice"/> with at most 2 decimals.</summary>
+    /// <summary>Optional price: when present it must be a whole number of pesos between 0 and <see cref="MaxPrice"/>.</summary>
     public static IRuleBuilderOptions<T, decimal?> ValidPrice<T>(this IRuleBuilder<T, decimal?> rule) =>
-        rule.Must(price => price is null || (price >= 0 && price <= MaxPrice && decimal.Round(price.Value, 2) == price))
-            .WithMessage("El precio debe estar entre 0 y 99.999.999,99 y tener hasta 2 decimales");
+        rule.Must(price => price is null || (price >= 0 && price <= MaxPrice && decimal.Truncate(price.Value) == price))
+            .WithMessage("El precio debe ser un número entero entre 0 y 99.999.999, sin decimales");
 
     /// <summary>Lista de ids obligatoria, acotada y solo con ids positivos.</summary>
     public static IRuleBuilderOptions<T, List<int>> IdList<T>(this IRuleBuilder<T, List<int>> rule, int max) =>

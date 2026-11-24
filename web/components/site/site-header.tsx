@@ -14,22 +14,22 @@ type Category = { id: number; name: string; slug: string };
 const desktopSections = sectionLinks.slice(1);
 
 const linkClass =
-  "poster-focus-inset flex h-full items-center px-2 text-xs font-bold tracking-wide whitespace-nowrap uppercase transition-colors hover:bg-oat lg:px-3 lg:text-[13px] aria-[current]:bg-espresso aria-[current]:text-ivory";
+  "poster-focus-inset flex h-full items-center border-b-2 border-transparent px-2 text-xs font-semibold tracking-[0.08em] whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground lg:px-3 lg:text-[13px] aria-[current]:border-caramel-deep aria-[current]:text-foreground";
 
-/** Flat full-width bar closed by a hard rule. The mobile menu panel hangs from it, so the header is its containing block. */
+/** Translucent full-width bar. The mobile menu panel hangs from it, so the header is its containing block. */
 export function SiteHeader({ categories }: { categories: Category[] }) {
   const pathname = usePathname();
   const active = useActiveSection(pathname);
 
   return (
-    <header className="sticky top-0 z-40 border-b-[3px] border-espresso bg-ivory text-espresso">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/90 text-foreground backdrop-blur-md">
       <div className="flex h-16 items-stretch">
         <Link
           href="/"
           aria-label={`${site.name} — inicio`}
-          className="poster-focus-inset flex shrink-0 items-center border-r-[3px] border-espresso px-4 transition-colors hover:bg-oat lg:px-8"
+          className="poster-focus-inset flex shrink-0 items-center px-4 transition-opacity hover:opacity-80 lg:px-8"
         >
-          <Wordmark className="text-3xl" />
+          <Wordmark className="text-2xl" />
         </Link>
 
         <nav aria-label="Secciones" className="hidden min-w-0 flex-1 md:block">
@@ -54,7 +54,7 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
           </ul>
         </nav>
 
-        <div className="ml-auto flex items-stretch">
+        <div className="ml-auto flex items-center gap-1 pr-2 lg:pr-8">
           <CartButton />
           <MobileMenu categories={categories} />
         </div>

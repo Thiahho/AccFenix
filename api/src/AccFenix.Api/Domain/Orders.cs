@@ -24,6 +24,8 @@ public enum PaymentStatus
     Unpaid = 0,
     Approved = 1,
     Rejected = 2,
+    /// <summary>It was paid and the money went back (refund or chargeback). PaidAt keeps the original date.</summary>
+    Refunded = 3,
 }
 
 /// <summary>Who places the order: a person ("Personal") or a business ("Comercio").</summary>
@@ -71,7 +73,15 @@ public class Order
     public string? MercadoPagoPaymentId { get; set; }
     public DateTime? PaidAt { get; set; }
 
+    /// <summary>Secret of the order's review link. Never returned by a public endpoint.</summary>
+    public string ReviewToken { get; set; } = NewReviewToken();
+
     public List<OrderItem> Items { get; set; } = [];
+
+    public const int ReviewTokenLength = 32;
+
+    public static string NewReviewToken() =>
+        Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(ReviewTokenLength / 2)).ToLowerInvariant();
 }
 
 public class OrderItem
@@ -107,6 +117,7 @@ public static class OrderLimits
 
     public const int MaxLines = 100;
     public const int MaxQuantity = 100_000;
-    /// <summary>Largest amount the numeric(12,2) money columns of an order can hold.</summary>
-    public const decimal MaxAmount = 9_999_999_999.99m;
+    public const int MaxAddons = 20;
+    /// <summary>Largest amount, in whole pesos, accepted for an order; it fits the numeric(12,0) money columns.</summary>
+    public const decimal MaxAmount = 9_999_999_999m;
 }

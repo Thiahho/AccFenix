@@ -12,12 +12,13 @@ import { DeliveryFields } from "@/components/site/delivery-fields";
 import { Field, fieldA11y } from "@/components/site/form-field";
 import { submitOrder } from "@/app/actions/orders";
 import { orderSchema, type OrderForm } from "@/lib/order";
+import { isPastPickupTime, PICKUP_PAST_MESSAGE, pickupSlot } from "@/lib/orders/pickup-time";
 import { unavailableResult, type SubmitOrderFailure } from "@/lib/orders/response";
 import { firstOpenStep, invalidSteps, orderSteps, stepFields, stepOfField, stepStatus, type StepId } from "@/lib/orders/steps";
 import { cartTotals, formatArs } from "@/lib/pricing";
 import { unitsLabel } from "@/lib/qty";
 import { QtyStepper } from "@/components/site/qty-stepper";
-import { MAX_QTY, totalUnits, useCart, type CartItem } from "@/stores/cart";
+import { cartLineKey, MAX_QTY, totalUnits, useCart, type CartItem } from "@/stores/cart";
 
 const stepTitles: Record<StepId, string> = {
   contacto: "¿Cómo te llamás?",
@@ -35,7 +36,7 @@ function summaryOf(step: StepId, v: Values): string {
     case "entrega":
       return v.entrega === "envio"
         ? [text(v.direccion), text(v.horario)].filter(Boolean).join(" · ")
-        : [text(v.entrega) && "Retiro en el local", text(v.horario)].filter(Boolean).join(" · ");
+        : [text(v.entrega) && "Retiro en el local", pickupSlot(text(v.horario))].filter(Boolean).join(" · ");
     case "revision":
       return "";
   }
@@ -76,10 +77,17 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
     setActive(index);
   }
 
+  function rejectPastPickup() {
+    const { entrega, horario } = getValues();
+    if (entrega !== "retiro" || !isPastPickupTime(horario, new Date())) return false;
+    setError("horario", { type: "manual", message: PICKUP_PAST_MESSAGE }, { shouldFocus: true });
+    return true;
+  }
+
   async function confirmStep(index: number) {
     const step = orderSteps[index];
     const ok = await trigger(stepFields(step, getValues() as Values) as FieldPath<OrderForm>[], { shouldFocus: true });
-    if (!ok) return;
+    if (!ok || (step === "entrega" && rejectPastPickup())) return;
     const next = new Set(confirmed).add(step);
     setConfirmed(next);
     goTo(firstOpenStep(next, invalidSteps(getValues())));
@@ -88,12 +96,14 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
   // The order is stored first, then the customer goes to Mercado Pago. The owner sees it once the payment is approved.
   async function onSubmit(data: OrderForm) {
     if (savingRef.current) return;
+    // The page may have stayed open past the chosen time.
+    if (rejectPastPickup()) return goTo(orderSteps.indexOf("entrega"));
     savingRef.current = true;
     setSaving(true);
     setFailure(null);
     const order = data;
     try {
-      const result = await submitOrder(order, items.map((i) => ({ variantId: i.variantId, qty: i.qty })));
+      const result = await submitOrder(order, items.map((i) => ({ variantId: i.variantId, qty: i.qty, addonValueIds: i.addons?.map((a) => a.id) })));
       if (!result.ok) {
         const fields = Object.entries(result.fieldErrors);
         for (const [field, message] of fields) setError(field as FieldPath<OrderForm>, { type: "server", message });
@@ -169,7 +179,7 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
         </Field>
 
         {failure && (
-          <div role="alert" className="space-y-3 border-2 border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+          <div role="alert" className="space-y-3 border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
             <p>{failure.error}</p>
 
           </div>
@@ -186,8 +196,8 @@ export function OrderFormCard({ items }: { items: CartItem[] }) {
   };
 
   return (
-    <aside className="h-fit space-y-4 border-[3px] border-espresso bg-cream p-4 sm:p-6 lg:sticky lg:top-24">
-      <h2 className="poster-display text-4xl">Tus datos</h2>
+    <aside className="h-fit space-y-4 border border-border bg-cream p-4 sm:p-6 lg:sticky lg:top-24">
+      <h2 className="poster-display text-2xl sm:text-3xl">Tus datos</h2>
       <CheckoutProgress current={active} total={orderSteps.length} />
       <form onSubmit={onFormSubmit} noValidate>
         <ol className="space-y-2">
@@ -216,11 +226,11 @@ function OrderRecap({ items }: { items: CartItem[] }) {
   const units = totalUnits(items);
   const totals = cartTotals(items);
   return (
-    <div className="border-2 border-espresso bg-ivory p-3 text-sm">
+    <div className="border border-border bg-ivory p-3 text-sm">
       <ul className="space-y-2">
         {items.map((i) => (
           // Name over the stepper on phones (two lines at most), side by side from `sm` up.
-          <li key={i.variantId} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <li key={cartLineKey(i)} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <span className="line-clamp-2 min-w-0">
               {i.productName} <span className="text-muted-foreground">— {i.valuesLabel}</span>
             </span>
@@ -230,12 +240,12 @@ function OrderRecap({ items }: { items: CartItem[] }) {
               label={`Cantidad de ${i.productName}`}
               value={i.qty}
               max={MAX_QTY}
-              onChange={(qty) => setQty(i.variantId, qty)}
+              onChange={(qty) => setQty(cartLineKey(i), qty)}
             />
           </li>
         ))}
       </ul>
-      <p className="mt-2 flex justify-between gap-3 border-t-2 border-espresso pt-2 font-bold">
+      <p className="mt-2 flex justify-between gap-3 border-t-2 border-border pt-2 font-bold">
         <span>{unitsLabel(units)}</span>
         <span className="tabular-nums">
           {totals.pricedLines === 0 ? "A cotizar" : `${totals.partial ? "Parcial " : ""}${formatArs(totals.total)}`}

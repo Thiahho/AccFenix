@@ -25,7 +25,7 @@ public record AdminOrderDto(
     string CustomerName, string? Phone, Fulfillment Fulfillment, string TimeSlot,
     string? Address, double? Latitude, double? Longitude, string? Comments,
     PaymentStatus PaymentStatus, string? MercadoPagoPaymentId, DateTime? PaidAt,
-    decimal Total, bool HasUnpricedItems, List<OrderItemDto> Items);
+    decimal Total, bool HasUnpricedItems, List<OrderItemDto> Items, string ReviewToken);
 
 public record AdminOrderStatusDto(int Id, int Number, OrderStatus Status);
 
@@ -51,35 +51,69 @@ public static class AdminOrderEndpoints
 {
     public const int DefaultPageSize = 20;
     public const int MaxPageSize = 100;
+    const int MaxSearchLength = 100;
+    static readonly HashSet<string> SortKeys = ["date", "customer", "units", "total", "status"];
+
+    /// <summary>Names only: Enum.TryParse would also accept numbers.</summary>
+    static T? ParseEnumName<T>(string? value, string key, string error, Dictionary<string, string[]> errors) where T : struct, Enum
+    {
+        if (string.IsNullOrEmpty(value)) return null;
+        var name = Enum.GetNames<T>().FirstOrDefault(n => n.Equals(value, StringComparison.OrdinalIgnoreCase));
+        if (name is null)
+        {
+            errors[key] = [error];
+            return null;
+        }
+        return Enum.Parse<T>(name);
+    }
+
+    /// <summary>The id breaks ties, so a row never repeats or disappears between pages.</summary>
+    static IOrderedQueryable<Order> ApplySort(IQueryable<Order> query, string sort, bool descending) => sort switch
+    {
+        "customer" => descending ? query.OrderByDescending(o => o.CustomerName).ThenByDescending(o => o.Id) : query.OrderBy(o => o.CustomerName).ThenBy(o => o.Id),
+        "units" => descending ? query.OrderByDescending(o => o.Items.Sum(i => i.Quantity)).ThenByDescending(o => o.Id) : query.OrderBy(o => o.Items.Sum(i => i.Quantity)).ThenBy(o => o.Id),
+        "total" => descending ? query.OrderByDescending(o => o.Total).ThenByDescending(o => o.Id) : query.OrderBy(o => o.Total).ThenBy(o => o.Id),
+        "status" => descending ? query.OrderByDescending(o => o.Status).ThenByDescending(o => o.Id) : query.OrderBy(o => o.Status).ThenBy(o => o.Id),
+        _ => descending ? query.OrderByDescending(o => o.CreatedAt).ThenByDescending(o => o.Id) : query.OrderBy(o => o.CreatedAt).ThenBy(o => o.Id),
+    };
 
     public static RouteGroupBuilder MapAdminOrderEndpoints(this RouteGroupBuilder admin)
     {
         // Newest first. "status" takes the same names the JSON uses (pending, outForDelivery...).
         // "paid=true" lists only orders whose payment was approved: the ones the owner has to prepare.
-        admin.MapGet("/orders", async (int? page, int? pageSize, string? status, bool? paid, AppDbContext db, CancellationToken ct) =>
+        // "q" searches the customer name or the exact order number. "sort" is date, customer, units, total or status.
+        admin.MapGet("/orders", async (int? page, int? pageSize, string? status, bool? paid, string? q, string? payment, string? fulfillment, string? sort, string? dir, AppDbContext db, CancellationToken ct) =>
         {
             var pageNumber = page ?? 1;
             var size = pageSize ?? DefaultPageSize;
             var errors = new Dictionary<string, string[]>();
             if (pageNumber < 1) errors["page"] = ["Debe ser 1 o mayor"];
             if (size is < 1 or > MaxPageSize) errors["pageSize"] = [$"Debe estar entre 1 y {MaxPageSize}"];
-            OrderStatus? filter = null;
-            if (!string.IsNullOrEmpty(status))
-            {
-                // Names only: Enum.TryParse would also accept numbers.
-                var name = Enum.GetNames<OrderStatus>().FirstOrDefault(n => n.Equals(status, StringComparison.OrdinalIgnoreCase));
-                if (name is null) errors["status"] = ["Estado desconocido"];
-                else filter = Enum.Parse<OrderStatus>(name);
-            }
+            var filter = ParseEnumName<OrderStatus>(status, "status", "Estado desconocido", errors);
+            var paymentFilter = ParseEnumName<PaymentStatus>(payment, "payment", "Estado de pago desconocido", errors);
+            var fulfillmentFilter = ParseEnumName<Fulfillment>(fulfillment, "fulfillment", "Tipo de entrega desconocido", errors);
+            var search = q?.Trim() ?? "";
+            if (search.Length > MaxSearchLength) errors["q"] = [$"Debe tener hasta {MaxSearchLength} caracteres"];
+            var sortKey = string.IsNullOrEmpty(sort) ? "date" : sort.ToLowerInvariant();
+            if (!SortKeys.Contains(sortKey)) errors["sort"] = ["Orden desconocido"];
+            var direction = string.IsNullOrEmpty(dir) ? "desc" : dir.ToLowerInvariant();
+            if (direction is not ("asc" or "desc")) errors["dir"] = ["Debe ser asc o desc"];
             if (errors.Count > 0) return Results.ValidationProblem(errors);
 
             var onlyPaid = paid == true;
             var query = db.Orders.AsNoTracking()
                 .Where(o => filter == null || o.Status == filter)
-                .Where(o => !onlyPaid || o.PaymentStatus == PaymentStatus.Approved);
+                .Where(o => paymentFilter == null || o.PaymentStatus == paymentFilter)
+                .Where(o => fulfillmentFilter == null || o.Fulfillment == fulfillmentFilter)
+                .Where(o => !onlyPaid || o.PaymentStatus == PaymentStatus.Approved || o.PaymentStatus == PaymentStatus.Refunded);
+            if (search.Length > 0)
+            {
+                var term = search.ToLower();
+                int? number = int.TryParse(search.TrimStart('#'), out var parsed) ? parsed : null;
+                query = query.Where(o => o.CustomerName.ToLower().Contains(term) || (number != null && o.Number == number));
+            }
             var total = await query.CountAsync(ct);
-            var items = await query
-                .OrderByDescending(o => o.CreatedAt).ThenByDescending(o => o.Id)
+            var items = await ApplySort(query, sortKey, direction == "desc")
                 // long arithmetic: a huge page number must not overflow the offset.
                 .Skip((int)Math.Min((long)(pageNumber - 1) * size, int.MaxValue)).Take(size)
                 .Select(o => new AdminOrderSummaryDto(
@@ -130,5 +164,5 @@ public static class AdminOrderEndpoints
         o.Fulfillment, o.TimeSlot, o.Address, o.Latitude, o.Longitude, o.Comments,
         o.PaymentStatus, o.MercadoPagoPaymentId, o.PaidAt,
         o.Total, o.HasUnpricedItems,
-        o.Items.OrderBy(i => i.Id).Select(OrderEndpoints.ToDto).ToList());
+        o.Items.OrderBy(i => i.Id).Select(OrderEndpoints.ToDto).ToList(), o.ReviewToken);
 }

@@ -24,11 +24,11 @@ describe("stepOfField", () => {
 
 describe("invalidSteps", () => {
   it("is empty for a complete order", () => {
-    expect(invalidSteps({ nombre: "Ana", entrega: "retiro", horario: "16 h" }).size).toBe(0);
+    expect(invalidSteps({ nombre: "Ana", entrega: "retiro", horario: "16:00" }).size).toBe(0);
   });
 
   it("ignores a customer type left by an older checkout", () => {
-    expect(invalidSteps({ cliente: "comercio", nombre: "Ana", entrega: "retiro", horario: "16 h" }).size).toBe(0);
+    expect(invalidSteps({ cliente: "comercio", nombre: "Ana", entrega: "retiro", horario: "16:00" }).size).toBe(0);
   });
 
   it("flags the step that owns the missing field", () => {

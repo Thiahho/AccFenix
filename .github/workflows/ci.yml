@@ -22,7 +22,7 @@ jobs:
       API_URL: http://localhost:5080
       NEXT_PUBLIC_API_URL: http://localhost:5080
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
-      NEXT_PUBLIC_BRAND_NAME: Eggy
+      NEXT_PUBLIC_BRAND_NAME: ColdCup
       API_TRUSTED_KEY: ci-placeholder-trusted-web-key-0123456789
       NEXT_TELEMETRY_DISABLED: "1"
     steps:

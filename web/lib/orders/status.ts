@@ -20,6 +20,7 @@ export const paymentStatusLabel: Record<PaymentStatus, string> = {
   unpaid: "Sin pagar",
   approved: "Pagado",
   rejected: "Rechazado",
+  refunded: "Devuelto",
 };
 
 export const customerTypeLabel: Record<CustomerType, string> = {

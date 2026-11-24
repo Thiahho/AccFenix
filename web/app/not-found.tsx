@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Página no encontrada", robots: { in
 export default function RootNotFound() {
   return (
     <main className={`${posterClass} flex min-h-dvh flex-col`}>
-      <Link href="/" className="poster-focus-inset flex h-16 items-center border-b-[3px] border-espresso px-4 sm:px-6 lg:px-8">
+      <Link href="/" className="poster-focus-inset flex h-16 items-center border-b border-border px-4 sm:px-6 lg:px-8">
         <Wordmark className="text-3xl" />
       </Link>
       <PosterHead label="404" title="No encontramos esta página">

@@ -39,6 +39,11 @@ export function initialSelection(attributes: ProductAttribute[]): Selection {
   return Object.fromEntries(attributes.filter((a) => a.values.length === 1).map((a) => [a.id, a.values[0].id]));
 }
 
+/** "Tamaño Chico · Extra Leche de Almendras" */
+export function withAddons(valuesLabel: string, addons: { label: string }[]) {
+  return [valuesLabel, ...addons.map((a) => `Extra ${a.label}`)].filter(Boolean).join(" · ");
+}
+
 /** "Calibre N°1 · Presentación Cajón" */
 export function describeSelection(attributes: ProductAttribute[], selection: Selection) {
   return attributes
