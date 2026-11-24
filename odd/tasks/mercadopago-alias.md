@@ -16,9 +16,9 @@ Customers who do not use Checkout Pro have no way to know where to transfer; the
 - The public page must keep its current rendering mode.
 
 ## Tasks
-- [ ] T1 API setting + tests. Route: delegated writer (2+ non-trivial files across API and web).
-- [ ] T2 Web settings form, types, action, thank-you page + tests. Route: same delegated writer.
-- [ ] T3 Parent spot check and work-unit commit.
+- [x] T1 API setting + tests. Route: delegated writer (2+ non-trivial files across API and web).
+- [x] T2 Web settings form, types, action, thank-you page + tests. Route: same delegated writer.
+- [x] T3 Parent spot check and work-unit commits (caa8da8, 52e3723).
 
 ## Acceptance criteria
 - Admin saves an alias; it round-trips through GET settings; invalid aliases are rejected with a Spanish message.
@@ -31,8 +31,9 @@ Customers who do not use Checkout Pro have no way to know where to transfer; the
 
 ## Verification evidence
 - Web: tsc clean (parent rerun after fallback fix); eslint clean; vitest 174/174 (writer).
-- API: compiles. 6 new tests written but NOT run: Docker daemon down (Testcontainers), and a running API process locks bin/Debug. No RED/GREEN observed.
+- API: first run had 6 failures. One was caused by this feature: the new tests pushed AdminEndpointsTests past the login quota (10 per visitor per 5 min) and returned 429. Fixed in 52e3723 by giving each test login its own trusted visitor IP. After the fix: 272/277 pass.
+- The other 5 failures (4 DatabaseConstraintTests and Migrations_script_contains_every_migration, missing 20261123235257_ProductGridReviews) also fail at 2141397, before this feature, so they predate it. Out of scope.
 - No web component test: vitest has no DOM environment.
 
 ## Progress
-T1–T2 committed in caa8da8 at the user's request; API tests still pending a run with Docker up.
+All tasks done. The 5 failures that predate this feature remain open.
