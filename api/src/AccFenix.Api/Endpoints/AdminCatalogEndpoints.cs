@@ -35,7 +35,8 @@ public record VariantPriceItem(int VariantId, decimal? RetailPrice);
 public record VariantPricesRequest(List<VariantPriceItem> Prices);
 public record ProductBulkDeleteRequest(List<int> Ids);
 public record VariantBulkRequest(int ProductId, List<int> ValueIds, Availability Availability);
-public record SettingsRequest(string WhatsappNumber);
+/// <summary>An omitted MercadoPagoAlias keeps the current value; an empty one clears it.</summary>
+public record SettingsRequest(string WhatsappNumber, string? MercadoPagoAlias = null);
 
 // ---- Responses ----
 public record AdminCategoryDto(int Id, string Name, string Slug, string? Description, int SortOrder, bool IsActive, List<int> AttributeIds, int ProductCount);
@@ -48,7 +49,7 @@ public record AdminProductDto(
     int Id, int CategoryId, string Name, string Slug, string? Description, int SortOrder, bool IsActive,
     List<int> AllowedValueIds, List<AdminAttributeDto> CategoryAttributes, List<AdminVariantDto> Variants, List<AdminMediaDto> Media,
     int? Intensity, CaffeineLevel? Caffeine, int? Sweetness, string? FlavorNotes);
-public record AdminSettingsDto(string WhatsappNumber);
+public record AdminSettingsDto(string WhatsappNumber, string MercadoPagoAlias = "");
 
 // ---- Validators ----
 public class CategoryRequestValidator : AbstractValidator<CategoryRequest>
@@ -157,6 +158,10 @@ public class SettingsRequestValidator : AbstractValidator<SettingsRequest>
     {
         RuleFor(x => x.WhatsappNumber).NotEmpty().Matches(@"^\+?[0-9 \-]{8,20}$")
             .WithMessage("Número con código de país, p. ej. 5491122334455");
+        RuleFor(x => x.MercadoPagoAlias!.Trim()).Matches(@"^[A-Za-z0-9.\-]{6,20}$")
+            .OverridePropertyName(nameof(SettingsRequest.MercadoPagoAlias))
+            .WithMessage("El alias debe tener entre 6 y 20 caracteres: letras, números, puntos o guiones.")
+            .When(x => !string.IsNullOrWhiteSpace(x.MercadoPagoAlias));
     }
 }
 
@@ -516,12 +521,16 @@ public static class AdminCatalogEndpoints
         admin.MapGet("/settings", async (AppDbContext db, CancellationToken ct) =>
         {
             var s = await db.Settings.ToDictionaryAsync(x => x.Key, x => x.Value, ct);
-            return new AdminSettingsDto(s.GetValueOrDefault(SettingKeys.WhatsappNumber, ""));
+            return new AdminSettingsDto(
+                s.GetValueOrDefault(SettingKeys.WhatsappNumber, ""),
+                s.GetValueOrDefault(SettingKeys.MercadoPagoAlias, ""));
         });
 
         admin.MapPut("/settings", async (SettingsRequest req, AppDbContext db, CancellationToken ct) =>
         {
             await Upsert(db, SettingKeys.WhatsappNumber, new string(req.WhatsappNumber.Where(char.IsDigit).ToArray()), ct);
+            if (req.MercadoPagoAlias is not null)
+                await Upsert(db, SettingKeys.MercadoPagoAlias, req.MercadoPagoAlias.Trim(), ct);
             await db.SaveChangesAsync(ct);
             return Results.NoContent();
         }).Validate<SettingsRequest>();

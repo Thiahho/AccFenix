@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { MessageCircleIcon } from "lucide-react";
 import { ClearCartOnPaid, PaymentPoller } from "@/components/site/checkout-follow-up";
+import { CopyAlias } from "@/components/site/copy-alias";
 import { PosterHead } from "@/components/site/poster-head";
 import { Button } from "@/components/ui/button";
 import { clientIpHeaders } from "@/lib/admin/client-ip";
@@ -49,8 +50,9 @@ export default async function ThanksPage({
   const reviewToken = typeof resena === "string" && /^[0-9a-f]{32}$/.test(resena) ? resena : null;
   const [payment, settings] = await Promise.all([
     valid ? paymentOf(number, paymentId) : Promise.resolve(null),
-    api.settings().catch(() => ({ whatsappNumber: "" })),
+    api.settings().catch(() => ({ whatsappNumber: "", mercadoPagoAlias: "" })),
   ]);
+  const awaitingPayment = valid && payment?.paymentStatus !== "approved" && payment?.paymentStatus !== "refunded";
 
   return (
     <div>
@@ -115,6 +117,16 @@ export default async function ThanksPage({
           <h2 className="poster-display text-2xl sm:text-3xl">No pudimos verificar el pago</h2>
           <p className="mt-2 max-w-md text-pretty text-muted-foreground">
             Probá de nuevo en unos minutos. Si ya pagaste, escribinos por WhatsApp con el número de pedido.
+          </p>
+        </Panel>
+      )}
+
+      {awaitingPayment && settings.mercadoPagoAlias && (
+        <Panel>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Alias de Mercado Pago</h2>
+          <CopyAlias alias={settings.mercadoPagoAlias} />
+          <p className="mt-3 max-w-md text-pretty text-sm text-muted-foreground">
+            Si preferís pagar por transferencia, usá este alias y mandanos el comprobante por WhatsApp con el número de pedido.
           </p>
         </Panel>
       )}

@@ -74,7 +74,7 @@ export type VariantStatus = {
   addons?: { id: number; price: number }[];
 };
 
-export type PublicSettings = { whatsappNumber: string };
+export type PublicSettings = { whatsappNumber: string; mercadoPagoAlias: string };
 
 export const availabilityLabel: Record<Availability, string> = {
   disponible: "Disponible",

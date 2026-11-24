@@ -61,7 +61,7 @@ export type AdminProduct = {
   flavorNotes: string | null;
 };
 
-export type AdminSettings = { whatsappNumber: string };
+export type AdminSettings = { whatsappNumber: string; mercadoPagoAlias: string };
 
 export type ActionResult<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 

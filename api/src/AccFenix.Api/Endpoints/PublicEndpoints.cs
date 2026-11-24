@@ -40,7 +40,7 @@ public record CategoryRefDto(string Name, string Slug);
 
 public record VariantStatusDto(int Id, bool IsActive, Availability Availability, decimal? RetailPrice, List<AddonPriceDto> Addons);
 
-public record PublicSettingsDto(string WhatsappNumber);
+public record PublicSettingsDto(string WhatsappNumber, string MercadoPagoAlias = "");
 
 public static class PublicEndpoints
 {
@@ -137,7 +137,9 @@ public static class PublicEndpoints
         api.MapGet("/settings/public", async (AppDbContext db, CancellationToken ct) =>
         {
             var settings = await db.Settings.ToDictionaryAsync(s => s.Key, s => s.Value, ct);
-            return new PublicSettingsDto(settings.GetValueOrDefault(SettingKeys.WhatsappNumber, ""));
+            return new PublicSettingsDto(
+                settings.GetValueOrDefault(SettingKeys.WhatsappNumber, ""),
+                settings.GetValueOrDefault(SettingKeys.MercadoPagoAlias, ""));
         });
     }
 

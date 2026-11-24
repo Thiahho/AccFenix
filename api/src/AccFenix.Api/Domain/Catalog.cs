@@ -152,6 +152,7 @@ public class Setting
 public static class SettingKeys
 {
     public const string WhatsappNumber = "WhatsappNumber";
+    public const string MercadoPagoAlias = "MercadoPagoAlias";
 }
 
 /// <summary>Bounds shared by the API validators and the database constraints of the catalog.</summary>

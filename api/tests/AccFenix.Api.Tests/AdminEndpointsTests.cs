@@ -155,6 +155,48 @@ public class AdminEndpointsTests(ApiFactory factory)
         (await client.PutAsJsonAsync("/api/admin/settings", new { whatsappNumber = "5491122692061" })).EnsureSuccessStatusCode();
     }
 
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("alias con espacios")]
+    [InlineData("demasiado.largo.para.un.alias")]
+    [InlineData("alias_invalido")]
+    public async Task Settings_reject_an_invalid_mercado_pago_alias(string alias)
+    {
+        var client = await AdminClient();
+
+        var res = await client.PutAsJsonAsync("/api/admin/settings", new { whatsappNumber = "5491122692061", mercadoPagoAlias = alias });
+
+        res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await res.Content.ReadAsStringAsync()).Should().Contain("alias");
+    }
+
+    [Fact]
+    public async Task Mercado_pago_alias_round_trips_and_is_public()
+    {
+        var client = await AdminClient();
+
+        (await client.PutAsJsonAsync("/api/admin/settings", new { whatsappNumber = "5491122692061", mercadoPagoAlias = "  coldcup.pagos  " }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var admin = await client.GetFromJsonAsync<JsonElement>("/api/admin/settings");
+        admin.GetProperty("mercadoPagoAlias").GetString().Should().Be("coldcup.pagos");
+        var pub = await factory.CreateClient().GetFromJsonAsync<JsonElement>("/api/settings/public");
+        pub.GetProperty("mercadoPagoAlias").GetString().Should().Be("coldcup.pagos");
+
+        // Omitting the alias keeps saving the WhatsApp number and leaves the alias untouched
+        (await client.PutAsJsonAsync("/api/admin/settings", new { whatsappNumber = "5491122334455" }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var afterOmit = await client.GetFromJsonAsync<JsonElement>("/api/admin/settings");
+        afterOmit.GetProperty("whatsappNumber").GetString().Should().Be("5491122334455");
+        afterOmit.GetProperty("mercadoPagoAlias").GetString().Should().Be("coldcup.pagos");
+
+        // An empty alias clears it; restore the defaults for other tests
+        (await client.PutAsJsonAsync("/api/admin/settings", new { whatsappNumber = "5491122692061", mercadoPagoAlias = "" }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var cleared = await factory.CreateClient().GetFromJsonAsync<JsonElement>("/api/settings/public");
+        cleared.GetProperty("mercadoPagoAlias").GetString().Should().BeEmpty();
+    }
+
     [Fact]
     public async Task Media_signature_reports_missing_cloudinary_config()
     {

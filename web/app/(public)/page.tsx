@@ -14,7 +14,7 @@ async function loadSettings(): Promise<PublicSettings> {
   try {
     return await api.settings();
   } catch {
-    return { whatsappNumber: "" }; // Sin API, la home se muestra sin botones de WhatsApp.
+    return { whatsappNumber: "", mercadoPagoAlias: "" }; // Sin API, la home se muestra sin botones de WhatsApp.
   }
 }
 

@@ -4,7 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import type { Availability, CaffeineLevel } from "@/lib/api";
 import { adminFetch, AdminApiError, clearSession, login } from "@/lib/admin/session";
-import type { ActionResult, AdminProduct, VariantPrices } from "@/lib/admin/types";
+import type { ActionResult, AdminProduct, AdminSettings, VariantPrices } from "@/lib/admin/types";
 
 /** Ejecuta una llamada admin, refresca el panel y el catálogo público, y traduce errores de la API. */
 async function run<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
@@ -196,6 +196,6 @@ export async function deleteMedia(id: number) {
 }
 
 // ---- Configuración ----
-export async function saveSettings(input: { whatsappNumber: string }) {
+export async function saveSettings(input: AdminSettings) {
   return run(() => adminFetch("/api/admin/settings", json("PUT", input)));
 }

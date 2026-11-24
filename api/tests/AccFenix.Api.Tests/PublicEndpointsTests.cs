@@ -140,4 +140,12 @@ public class PublicEndpointsTests(ApiFactory factory)
         json.GetProperty("whatsappNumber").GetString().Should().Be("5491122692061");
         json.TryGetProperty("wholesaleThreshold", out _).Should().BeFalse();
     }
+
+    [Fact]
+    public async Task Public_settings_expose_an_empty_mercado_pago_alias_by_default()
+    {
+        var json = await _client.GetFromJsonAsync<JsonElement>("/api/settings/public");
+
+        json.GetProperty("mercadoPagoAlias").GetString().Should().BeEmpty();
+    }
 }
