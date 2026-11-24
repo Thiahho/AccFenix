@@ -30,7 +30,7 @@ export function ProductGallery({ media, name, selectedValueIds }: { media: Media
       {active.type === "video" ? (
         <video src={active.url} controls playsInline className="aspect-square w-full bg-black object-contain" />
       ) : (
-        <ProductImage src={active.url} alt={name} priority sizes="(min-width: 768px) 50vw, 100vw" />
+        <ProductImage src={active.url} alt={name} priority sizes="(min-width: 1280px) 640px, (min-width: 768px) 50vw, 100vw" />
       )}
       {items.length > 1 && (
         <ul className="mt-3 grid grid-cols-5 gap-2">

@@ -59,12 +59,14 @@ export function VariantPicker({ product }: { product: ProductDetail }) {
   }
 
   return (
-    <div className="grid border-b border-border md:grid-cols-2">
-      <div className="border-b border-border md:border-r md:border-b-0">
+    // The side padding centers the content at the reviews' width (80rem) while the bottom border stays full-bleed,
+    // so the square gallery never outgrows the viewport on wide screens.
+    <div className="grid border-b border-border px-[max(0px,calc((100%-80rem)/2))] md:grid-cols-2">
+      <div className="border-b border-border md:sticky md:top-16 md:self-start md:border-b-0">
         <ProductGallery media={product.media} name={product.name} selectedValueIds={selectedValueIds} />
       </div>
 
-      <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+      <div className="px-4 py-6 sm:px-6 md:border-l md:border-border lg:px-10 lg:py-12">
         <p className="poster-hand text-2xl text-caramel-deep">
           <Link href={`/catalogo/${product.category.slug}`} className="inline-flex min-h-11 items-center underline-offset-4 hover:text-foreground hover:underline">{product.category.name}</Link>
         </p>
