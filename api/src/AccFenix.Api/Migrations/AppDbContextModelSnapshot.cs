@@ -522,6 +522,57 @@ namespace AccFenix.Api.Migrations
                     b.ToTable("Settings");
                 });
 
+            modelBuilder.Entity("AccFenix.Api.Domain.Testimonial", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Caption")
+                        .HasMaxLength(140)
+                        .HasColumnType("character varying(140)");
+
+                    b.Property<string>("CloudinaryPublicId")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsPublished", "SortOrder");
+
+                    b.ToTable("Testimonials", t =>
+                        {
+                            t.HasCheckConstraint("CK_Testimonials_Size", "\"Width\" BETWEEN 1 AND 20000 AND \"Height\" BETWEEN 1 AND 20000");
+
+                            t.HasCheckConstraint("CK_Testimonials_Source", "\"Source\" IN (0, 1, 2)");
+                        });
+                });
+
             modelBuilder.Entity("AccFenix.Api.Domain.Variant", b =>
                 {
                     b.Property<int>("Id")

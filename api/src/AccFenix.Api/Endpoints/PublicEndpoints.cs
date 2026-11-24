@@ -40,6 +40,8 @@ public record CategoryRefDto(string Name, string Slug);
 
 public record VariantStatusDto(int Id, bool IsActive, Availability Availability, decimal? RetailPrice, List<AddonPriceDto> Addons);
 
+public record PublicTestimonialDto(int Id, string Url, TestimonialSource Source, string? Caption, int Width, int Height);
+
 public record PublicSettingsDto(string WhatsappNumber, string MercadoPagoAlias = "");
 
 public static class PublicEndpoints
@@ -141,6 +143,15 @@ public static class PublicEndpoints
                 settings.GetValueOrDefault(SettingKeys.WhatsappNumber, ""),
                 settings.GetValueOrDefault(SettingKeys.MercadoPagoAlias, ""));
         });
+
+        // Customer screenshots for the home page: only the published ones, in the admin's order.
+        api.MapGet("/testimonials", async (AppDbContext db, CancellationToken ct) =>
+            await db.Testimonials.AsNoTracking()
+                .Where(t => t.IsPublished)
+                .OrderBy(t => t.SortOrder).ThenByDescending(t => t.Id)
+                .Take(Testimonial.MaxPublic)
+                .Select(t => new PublicTestimonialDto(t.Id, t.Url, t.Source, t.Caption, t.Width, t.Height))
+                .ToListAsync(ct));
     }
 
     static ProductDetailDto ToDetail(Product p, ProductStatsDto stats, List<PublicReviewDto> reviews)

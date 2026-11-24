@@ -21,6 +21,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<Testimonial> Testimonials => Set<Testimonial>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -80,6 +81,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(x => x.Product).WithMany(p => p.Reviews).HasForeignKey(x => x.ProductId);
             e.HasOne(x => x.Order).WithMany().HasForeignKey(x => x.OrderId);
             e.ToTable(t => t.HasCheckConstraint("CK_Reviews_Rating", Invariant($"\"Rating\" BETWEEN {Review.MinRating} AND {Review.MaxRating}")));
+        });
+
+        b.Entity<Testimonial>(e =>
+        {
+            e.Property(x => x.Url).HasMaxLength(1000);
+            e.Property(x => x.CloudinaryPublicId).HasMaxLength(300);
+            e.Property(x => x.Caption).HasMaxLength(Testimonial.CaptionMaxLength);
+            e.HasIndex(x => new { x.IsPublished, x.SortOrder });
+            e.ToTable(t =>
+            {
+                t.HasCheckConstraint("CK_Testimonials_Source", $"\"Source\" IN ({EnumValues<TestimonialSource>()})");
+                t.HasCheckConstraint("CK_Testimonials_Size",
+                    Invariant($"\"Width\" BETWEEN 1 AND {Testimonial.MaxDimension} AND \"Height\" BETWEEN 1 AND {Testimonial.MaxDimension}"));
+            });
         });
 
         b.Entity<ProductAllowedValue>(e =>
