@@ -35,4 +35,4 @@ Customers who do not use Checkout Pro have no way to know where to transfer; the
 - No web component test: vitest has no DOM environment.
 
 ## Progress
-T1–T2 code done; T1 pending API test run. T3 commit pending until API tests pass.
+T1–T2 committed in caa8da8 at the user's request; API tests still pending a run with Docker up.
