@@ -137,7 +137,8 @@ app.MapGroup("/api/admin")
     .WithTags("Admin")
     .MapAdminCatalogEndpoints()
     .MapAdminMediaEndpoints()
-    .MapAdminOrderEndpoints();
+    .MapAdminOrderEndpoints()
+    .MapAdminReviewEndpoints();
 
 if (app.Environment.IsDevelopment())
 {

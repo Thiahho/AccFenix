@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using AccFenix.Api.Data;
 using AccFenix.Api.Domain;
+using AccFenix.Api.Services;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
@@ -44,62 +45,38 @@ public static partial class ReviewEndpoints
             var order = await FindReviewable(db, token, ct);
             if (order is null) return Results.NotFound();
 
-            var products = await ProductsOf(db, order.Id).ToListAsync(ct);
-            var written = await db.Reviews.AsNoTracking().Where(r => r.OrderId == order.Id).ToDictionaryAsync(r => r.ProductId, ct);
-            return Results.Ok(new ReviewOrderDto(order.Number, products
-                .OrderBy(p => p.Name)
-                .Select(p => new ReviewableProductDto(p.Id, p.Name, p.Slug, written.GetValueOrDefault(p.Id)?.Rating, written.GetValueOrDefault(p.Id)?.Comment))
-                .ToList()));
+            var products = await ReviewRules.ProductsOf(db, order.Id, ct);
+            return Results.Ok(new ReviewOrderDto(order.Number, products.Select(ToDto).ToList()));
         });
 
         reviews.MapPost("", async (string? token, ReviewCreateRequest req, AppDbContext db, CancellationToken ct) =>
         {
             var order = await FindReviewable(db, token, ct);
             if (order is null) return Results.NotFound();
-            if (!await db.OrderItems.AnyAsync(i => i.OrderId == order.Id && i.Variant!.ProductId == req.ProductId, ct)) return Results.NotFound();
-            if (await db.Reviews.AnyAsync(r => r.OrderId == order.Id && r.ProductId == req.ProductId, ct))
-            {
-                return ValidationExtensions.Conflict("Ya dejaste una reseña de este producto");
-            }
 
-            db.Reviews.Add(new Review
+            var (result, _) = await ReviewRules.Add(db, order.Id, req.ProductId, req.Rating, req.Comment, ReviewRules.FirstName(order.CustomerName), ct);
+            return result switch
             {
-                OrderId = order.Id,
-                ProductId = req.ProductId,
-                Rating = req.Rating,
-                Comment = string.IsNullOrWhiteSpace(req.Comment) ? null : req.Comment.Trim(),
-                AuthorName = FirstName(order.CustomerName),
-                CreatedAt = DateTime.UtcNow,
-            });
-            await db.SaveChangesAsync(ct);
-            return Results.Created((string?)null, new { req.ProductId, req.Rating });
+                AddReviewResult.ProductNotInOrder => Results.NotFound(),
+                AddReviewResult.AlreadyReviewed => ValidationExtensions.Conflict("Ya dejaste una reseña de este producto"),
+                _ => Results.Created((string?)null, new { req.ProductId, req.Rating }),
+            };
         })
         .Validate<ReviewCreateRequest>()
         .AddEndpointFilter<UniqueViolationFilter>();
     }
 
+    internal static ReviewableProductDto ToDto(OrderProductReview p) => new(p.ProductId, p.Name, p.Slug, p.Rating, p.Comment);
+
     static async Task<ReviewableOrder?> FindReviewable(AppDbContext db, string? token, CancellationToken ct)
     {
         if (token is null || !TokenFormat().IsMatch(token)) return null;
         return await db.Orders.AsNoTracking()
-            .Where(o => o.ReviewToken == token && o.PaymentStatus == PaymentStatus.Approved && o.Status != OrderStatus.Cancelled)
+            .Where(o => o.ReviewToken == token)
+            .Where(ReviewRules.IsReviewable)
             .Select(o => new ReviewableOrder(o.Id, o.Number, o.CustomerName))
             .FirstOrDefaultAsync(ct);
     }
 
-    static IQueryable<OrderProduct> ProductsOf(AppDbContext db, int orderId) =>
-        db.OrderItems
-            .Where(i => i.OrderId == orderId && i.VariantId != null)
-            .Select(i => new OrderProduct(i.Variant!.ProductId, i.Variant.Product.Name, i.Variant.Product.Slug))
-            .Distinct();
-
-    static string FirstName(string customerName)
-    {
-        var first = customerName.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "Cliente";
-        return first.Length <= Review.AuthorMaxLength ? first : first[..Review.AuthorMaxLength];
-    }
-
     sealed record ReviewableOrder(int Id, int Number, string CustomerName);
-
-    sealed record OrderProduct(int Id, string Name, string Slug);
 }
