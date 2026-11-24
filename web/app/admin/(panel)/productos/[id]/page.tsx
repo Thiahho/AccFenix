@@ -35,7 +35,7 @@ export default async function ProductEditPage({ params, searchParams }: Props) {
   const variantsKey = product.variants.map((v) => `${v.id}${v.availability[0]}${v.isActive ? 1 : 0}`).join(",");
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <Link href="/admin/productos" className="text-sm text-muted-foreground hover:text-foreground">← Productos</Link>
       <PageHeader
         title={product.name}
