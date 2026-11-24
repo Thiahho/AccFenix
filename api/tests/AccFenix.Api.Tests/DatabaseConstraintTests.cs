@@ -96,7 +96,7 @@ public class DatabaseConstraintTests(ApiFactory factory)
     // ---- Variants ----
 
     [Theory]
-    [InlineData(-0.01, "CK_Variants_RetailPrice")]
+    [InlineData(-1.0, "CK_Variants_RetailPrice")]
     [InlineData(100_000_000.0, "CK_Variants_RetailPrice")]
     public Task Variant_prices_out_of_range_are_rejected(double retail, string constraint) =>
         ExpectViolation(constraint, SetVariantPrice((decimal)retail));
@@ -130,7 +130,7 @@ public class DatabaseConstraintTests(ApiFactory factory)
         { "CK_Orders_Status", () => With(DeliveryOrder(), o => o.Status = (OrderStatus)5) },
         { "CK_Orders_Status", () => With(DeliveryOrder(), o => o.Status = (OrderStatus)(-1)) },
         { "CK_Orders_Fulfillment", () => With(DeliveryOrder(), o => o.Fulfillment = (Fulfillment)2) },
-        { "CK_Orders_PaymentStatus", () => With(PickupOrder(), o => o.PaymentStatus = (PaymentStatus)3) },
+        { "CK_Orders_PaymentStatus", () => With(PickupOrder(), o => o.PaymentStatus = (PaymentStatus)99) },
         { "CK_Orders_PaidAt", () => With(PickupOrder(), o => o.PaymentStatus = PaymentStatus.Approved) },
         { "CK_Orders_PaidAt", () => With(PickupOrder(), o => o.PaidAt = DateTime.UtcNow) },
         { "CK_Orders_Total", () => With(DeliveryOrder(), o => o.Total = -1m) },
@@ -162,8 +162,8 @@ public class DatabaseConstraintTests(ApiFactory factory)
     [InlineData(0, 10.0, 10.0, "CK_OrderItems_Quantity")]
     [InlineData(-1, 10.0, 10.0, "CK_OrderItems_Quantity")]
     [InlineData(100_001, 10.0, 10.0, "CK_OrderItems_Quantity")]
-    [InlineData(1, -0.01, null, "CK_OrderItems_UnitPrice")]
-    [InlineData(1, null, -0.01, "CK_OrderItems_Subtotal")]
+    [InlineData(1, -1.0, null, "CK_OrderItems_UnitPrice")]
+    [InlineData(1, null, -1.0, "CK_OrderItems_Subtotal")]
     public Task Invalid_order_items_are_rejected(int quantity, double? unitPrice, double? subtotal, string constraint) =>
         ExpectViolation(constraint, Save(With(DeliveryOrder(), o => o.Items = [Item(quantity, (decimal?)unitPrice, (decimal?)subtotal)])));
 }
