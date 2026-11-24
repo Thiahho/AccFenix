@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { MessageCircleIcon } from "lucide-react";
+import { CircleCheckIcon, MessageCircleIcon, StarIcon } from "lucide-react";
 import { ClearCartOnPaid, PaymentPoller } from "@/components/site/checkout-follow-up";
 import { CopyAlias } from "@/components/site/copy-alias";
 import { PosterHead } from "@/components/site/poster-head";
@@ -68,8 +68,14 @@ export default async function ThanksPage({
       {valid && payment?.paymentStatus === "approved" && (
         <Panel>
           <ClearCartOnPaid />
-          <h2 className="poster-display text-2xl sm:text-3xl">Pago acreditado</h2>
-          <p className="mt-2 max-w-md text-pretty text-muted-foreground">
+          <div role="status" className="flex items-center gap-3">
+            <CircleCheckIcon aria-hidden className="size-9 shrink-0 text-caramel-deep" />
+            <div>
+              <h2 className="poster-display text-2xl sm:text-3xl">¡Pedido confirmado!</h2>
+              <p className="text-sm font-semibold text-caramel-deep">Pago acreditado · Pedido #{number}</p>
+            </div>
+          </div>
+          <p className="mt-4 max-w-md text-pretty text-muted-foreground">
             Ya le llegó el pedido al local. Mandanos el comprobante por WhatsApp para coordinar el horario.
           </p>
           {settings.whatsappNumber ? (
@@ -82,13 +88,22 @@ export default async function ThanksPage({
             <p className="mt-6 text-sm text-muted-foreground">Te contactamos por WhatsApp para coordinar el horario.</p>
           )}
           {reviewToken && (
-            <p className="mt-6 border-t border-border pt-4 text-sm text-muted-foreground">
-              Cuando lo pruebes,{" "}
-              <Link href={`/resena?token=${reviewToken}`} className="font-semibold text-caramel-deep underline underline-offset-4">
-                dejá tu reseña
-              </Link>
-              . Guardá este enlace para volver.
-            </p>
+            <div className="mt-6 border-t border-border pt-6">
+              <div className="flex items-start gap-3">
+                <StarIcon aria-hidden className="mt-0.5 size-6 shrink-0 fill-caramel-deep text-caramel-deep" />
+                <div>
+                  <h3 className="font-semibold">¿Qué te pareció?</h3>
+                  <p className="mt-1 max-w-md text-pretty text-sm text-muted-foreground">
+                    Cuando lo pruebes, dejanos tu reseña. Guardá esta página o el enlace para volver más tarde.
+                  </p>
+                </div>
+              </div>
+              <Button asChild variant="outline" size="lg" className="mt-4 h-12 w-full gap-2 sm:w-auto">
+                <Link href={`/resena?token=${reviewToken}`}>
+                  <StarIcon aria-hidden className="size-5" /> Dejar mi reseña
+                </Link>
+              </Button>
+            </div>
           )}
         </Panel>
       )}
