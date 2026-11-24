@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import * as m from "motion/react-m";
-import { MessageCircleIcon } from "lucide-react";
+import { WhatsappCupIcon } from "@/components/site/whatsapp-cup-icon";
 import { showsWhatsappFab } from "@/lib/nav";
 import { whatsappUrl } from "@/lib/whatsapp";
 
@@ -27,7 +27,7 @@ export function WhatsappFab({ phone }: { phone: string }) {
       whileTap={{ scale: 0.95 }}
       className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 inline-flex h-12 min-w-12 items-center justify-center gap-2 border border-ivory bg-[#128C4A] px-3 font-bold text-white transition-[translate,background-color] duration-200 hover:bg-[#0f7a40]"
     >
-      <MessageCircleIcon aria-hidden className="relative size-5" />
+      <WhatsappCupIcon className="relative size-5" />
       <span className="relative hidden sm:inline">WhatsApp</span>
     </m.a>
   );
