@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using AccFenix.Api.Services;
 using FluentAssertions;
 
 namespace AccFenix.Api.Tests;
@@ -9,10 +10,19 @@ namespace AccFenix.Api.Tests;
 [Collection(ApiCollection.Name)]
 public class AdminEndpointsTests(ApiFactory factory)
 {
+    static int _visitor;
+
     async Task<HttpClient> AdminClient()
     {
         var client = factory.CreateClient();
-        var res = await client.PostAsJsonAsync("/api/auth/login", new { email = ApiFactory.AdminEmail, password = ApiFactory.AdminPassword });
+        // Each login comes from its own trusted visitor IP, so the class does not exhaust the per-visitor login quota.
+        var login = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
+        {
+            Content = JsonContent.Create(new { email = ApiFactory.AdminEmail, password = ApiFactory.AdminPassword }),
+        };
+        login.Headers.Add(ClientIp.IpHeader, $"198.51.100.{Interlocked.Increment(ref _visitor) % 254 + 1}");
+        login.Headers.Add(ClientIp.KeyHeader, ApiFactory.TrustedWebKey);
+        var res = await client.SendAsync(login);
         res.EnsureSuccessStatusCode();
         var token = (await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
