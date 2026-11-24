@@ -2,6 +2,7 @@ import "server-only";
 
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { ADMIN_HINT_COOKIE } from "@/lib/admin/admin-hint";
 import { clientIpHeaders } from "@/lib/admin/client-ip";
 
 export const SESSION_COOKIE = "accfenix_admin";
@@ -9,17 +10,22 @@ export const SESSION_COOKIE = "accfenix_admin";
 const apiUrl = () => process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5080";
 
 export async function setSession(token: string, expiresAt: string) {
-  (await cookies()).set(SESSION_COOKIE, token, {
-    httpOnly: true,
+  const store = await cookies();
+  const options = {
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
     expires: new Date(expiresAt),
-  });
+  };
+  store.set(SESSION_COOKIE, token, { httpOnly: true, ...options });
+  // Readable by the public site so it can show the admin shortcut without rendering every page dynamically.
+  store.set(ADMIN_HINT_COOKIE, "1", { httpOnly: false, ...options });
 }
 
 export async function clearSession() {
-  (await cookies()).delete(SESSION_COOKIE);
+  const store = await cookies();
+  store.delete(SESSION_COOKIE);
+  store.delete(ADMIN_HINT_COOKIE);
 }
 
 export type ApiProblem = { title?: string; detail?: string; errors?: Record<string, string[]> };

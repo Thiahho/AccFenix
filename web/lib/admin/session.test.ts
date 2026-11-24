@@ -14,6 +14,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const { AdminApiError, SESSION_COOKIE, adminFetch, clearSession, login, setSession } = await import("./session");
+const { ADMIN_HINT_COOKIE } = await import("./admin-hint");
 
 const jsonResponse = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -53,9 +54,21 @@ describe("session cookie", () => {
     expect(cookieStore.set.mock.calls[0][2]).toMatchObject({ secure: true });
   });
 
+  it("sets a readable admin hint cookie that expires with the session", async () => {
+    await setSession("jwt", "2026-11-15T16:00:00Z");
+    expect(cookieStore.set).toHaveBeenCalledWith(ADMIN_HINT_COOKIE, "1", {
+      httpOnly: false,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+      expires: new Date("2026-11-15T16:00:00Z"),
+    });
+  });
+
   it("deletes the cookie on logout", async () => {
     await clearSession();
     expect(cookieStore.delete).toHaveBeenCalledWith(SESSION_COOKIE);
+    expect(cookieStore.delete).toHaveBeenCalledWith(ADMIN_HINT_COOKIE);
   });
 });
 

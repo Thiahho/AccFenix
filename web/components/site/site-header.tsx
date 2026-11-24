@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AdminLink } from "@/components/site/admin-link";
 import { CartButton } from "@/components/site/cart-button";
 import { MobileMenu } from "@/components/site/mobile-menu";
 import { Wordmark } from "@/components/site/wordmark";
@@ -55,6 +56,7 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
         </nav>
 
         <div className="ml-auto flex items-center gap-1 pr-2 lg:pr-8">
+          <AdminLink />
           <CartButton />
           <MobileMenu categories={categories} />
         </div>
