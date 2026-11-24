@@ -1,14 +1,14 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { toast, Toaster } from "sonner";
+import { create } from "zustand";
 import { ArrowRightIcon, CheckIcon, CupSodaIcon, XIcon } from "lucide-react";
 import { availabilityLabel, type Availability } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/stores/cart";
 
-const TOASTER_ID = "pedido";
 const DURATION_MS = 6000;
 
 export type AddedItem = {
@@ -19,41 +19,81 @@ export type AddedItem = {
   colorHex?: string | null;
 };
 
-let lastId: string | number | undefined;
+type Notice = { key: number; item: AddedItem };
+
+/*
+ * The notice lives in its own store instead of sonner: sonner adds toasts from a setTimeout and only shows them after a
+ * mount effect, which some phones delayed until the page lost visibility (the notice appeared only after switching
+ * windows). Setting this state inside the tap handler renders the notice in the same commit as the cart update.
+ */
+const useAddedNotice = create<{ notice: Notice | null; hide: () => void }>((set) => ({
+  notice: null,
+  hide: () => set({ notice: null }),
+}));
 
 /** Aviso de "sumado al pedido": arriba a la derecha bajo el botón Mi pedido; en móvil, abajo a todo el ancho. */
 export function notifyAdded(item: AddedItem) {
-  if (lastId !== undefined) toast.dismiss(lastId);
-  // 600px es el corte en el que sonner pasa a su disposición móvil.
-  const desktop = window.matchMedia("(min-width: 601px)").matches;
-  lastId = toast.custom((id) => <OrderToast id={id} item={item} />, {
-    toasterId: TOASTER_ID,
-    duration: DURATION_MS,
-    position: desktop ? "top-right" : "bottom-center",
-  });
+  useAddedNotice.setState((s) => ({ notice: { key: (s.notice?.key ?? 0) + 1, item } }));
 }
 
-/** Contenedor propio del aviso de pedido; el resto de los toasts sigue usando el Toaster general. */
+/**
+ * Contenedor del aviso de pedido. The live region is always mounted so screen readers announce each new notice. It closes
+ * by itself after DURATION_MS (paused while hovered or focused, like the progress bar), with Escape or its buttons.
+ */
 export function OrderToaster() {
+  const notice = useAddedNotice((s) => s.notice);
+  const hide = useAddedNotice((s) => s.hide);
+  const [paused, setPaused] = useState(false);
+  const remaining = useRef(DURATION_MS);
+  const startedAt = useRef(0);
+
+  // A new notice restarts the countdown.
+  useEffect(() => {
+    remaining.current = DURATION_MS;
+  }, [notice?.key]);
+
+  useEffect(() => {
+    if (!notice || paused) return;
+    startedAt.current = Date.now();
+    const timer = window.setTimeout(hide, remaining.current);
+    return () => {
+      window.clearTimeout(timer);
+      remaining.current = Math.max(0, remaining.current - (Date.now() - startedAt.current));
+    };
+  }, [notice, paused, hide]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && hide();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [notice, hide]);
+
   return (
-    <Toaster
-      id={TOASTER_ID}
-      containerAriaLabel="Avisos del pedido"
-      // Alineado con el borde derecho del contenedor del header (max-w-6xl + px-4).
-      offset={{ top: "4.75rem", right: "max(1rem, calc((100vw - 72rem) / 2 + 1rem))" }}
-      mobileOffset={{ bottom: "max(12px, env(safe-area-inset-bottom))", left: "12px", right: "12px" }}
-      style={{ "--width": "440px" } as React.CSSProperties}
-    />
+    <div
+      role="status"
+      aria-live="polite"
+      aria-label="Avisos del pedido"
+      // Phones: pinned to the bottom, full width. From 601px: under the header, aligned with its container's right edge.
+      className="pointer-events-none fixed inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-[60] min-[601px]:inset-x-auto min-[601px]:top-[4.75rem] min-[601px]:right-[max(1rem,calc((100vw-72rem)/2+1rem))] min-[601px]:bottom-auto"
+      onPointerEnter={() => setPaused(true)}
+      onPointerLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setPaused(false);
+      }}
+    >
+      {notice && <OrderToast key={notice.key} item={notice.item} close={hide} />}
+    </div>
   );
 }
 
-function OrderToast({ id, item }: { id: string | number; item: AddedItem }) {
+function OrderToast({ item, close }: { item: AddedItem; close: () => void }) {
   const lines = useCart((s) => s.items.length);
   const available = item.availability === "disponible";
-  const close = () => toast.dismiss(id);
 
   return (
-    <div data-order-toast className="group relative w-[var(--width)] text-cream max-[600px]:w-full">
+    <div data-order-toast className="order-toast-in group pointer-events-auto relative w-[440px] text-cream max-[600px]:w-full">
       <div className="poster-ink relative overflow-hidden border border-ivory">
         <div className="flex items-center gap-4 py-4 pr-14 pl-4">
           <div className="relative size-17 shrink-0">
