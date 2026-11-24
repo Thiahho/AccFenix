@@ -4,15 +4,22 @@ import { revalidatePath, updateTag } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import type { Availability, CaffeineLevel } from "@/lib/api";
 import { adminFetch, AdminApiError, clearSession, login } from "@/lib/admin/session";
-import type { ActionResult, AdminProduct, AdminSettings, VariantPrices } from "@/lib/admin/types";
+import type { ActionResult, AdminProduct, AdminReviewOrder, AdminSettings, VariantPrices } from "@/lib/admin/types";
 
 /** Ejecuta una llamada admin, refresca el panel y el catálogo público, y traduce errores de la API. */
 async function run<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
-  try {
+  return read(async () => {
     const data = await fn();
     updateTag("catalog");
     revalidatePath("/admin", "layout");
-    return { ok: true, data };
+    return data;
+  });
+}
+
+/** Ejecuta una llamada admin de solo lectura y traduce errores de la API, sin refrescar nada. */
+async function read<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
+  try {
+    return { ok: true, data: await fn() };
   } catch (e) {
     unstable_rethrow(e); // deja pasar los redirect() de sesión expirada
     if (e instanceof AdminApiError) return { ok: false, error: e.message };
@@ -123,10 +130,10 @@ export type VariantSummary = { id: number; sku: string; label: string; availabil
 /** Read only: loads the variants of one row of the products table when it is expanded. */
 export async function getProductVariants(id: number): Promise<ActionResult<VariantSummary[]>> {
   if (!isId(id)) return invalidId;
-  try {
+  return read(async () => {
     const product = await adminFetch<AdminProduct>(`/api/admin/products/${id}`);
     const attributes = product.categoryAttributes.filter((a) => !a.isAddon);
-    const data = product.variants.map((v) => ({
+    return product.variants.map((v) => ({
       id: v.id,
       sku: v.sku,
       label: attributes.flatMap((a) => a.values.filter((x) => v.valueIds.includes(x.id)).map((x) => x.label)).join(" · ") || v.sku,
@@ -134,13 +141,7 @@ export async function getProductVariants(id: number): Promise<ActionResult<Varia
       isActive: v.isActive,
       retailPrice: v.retailPrice,
     }));
-    return { ok: true, data };
-  } catch (e) {
-    unstable_rethrow(e);
-    if (e instanceof AdminApiError) return { ok: false, error: e.message };
-    console.error(e);
-    return { ok: false, error: "No se pudo conectar con la API" };
-  }
+  });
 }
 
 /** Omitted fields stay unchanged; an explicit null price clears it. */
@@ -193,6 +194,26 @@ export async function updateMedia(id: number, patch: { sortOrder?: number; attri
 export async function deleteMedia(id: number) {
   if (!isId(id)) return invalidId;
   return run(() => adminFetch(`/api/admin/media/${id}`, json("DELETE")));
+}
+
+// ---- Reseñas ----
+export type ReviewInput = { orderNumber: number; productId: number; rating: number; comment: string | null; authorName: string | null };
+
+/** Read only: the products of a paid order, to pick the one the review is for. */
+export async function findReviewOrder(orderNumber: number): Promise<ActionResult<AdminReviewOrder>> {
+  if (!isId(orderNumber)) return { ok: false, error: "Ingresá un número de pedido válido" };
+  return read(() => adminFetch<AdminReviewOrder>(`/api/admin/reviews/order/${orderNumber}`));
+}
+
+/** Published right away: `run` refreshes the cached product pages. */
+export async function createReview(input: ReviewInput) {
+  if (!isId(input.orderNumber) || !isId(input.productId)) return invalidId;
+  return run(() => adminFetch<{ id: number }>("/api/admin/reviews", json("POST", input)));
+}
+
+export async function deleteReview(id: number) {
+  if (!isId(id)) return invalidId;
+  return run(() => adminFetch(`/api/admin/reviews/${id}`, json("DELETE")));
 }
 
 // ---- Configuración ----

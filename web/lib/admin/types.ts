@@ -95,3 +95,22 @@ export type AdminOrder = AdminOrderSummary & {
   /** Secret of the customer's review link; it works once the order is paid. */
   reviewToken: string;
 };
+
+// Reflejan los DTOs de api/src/AccFenix.Api/Endpoints/AdminReviewEndpoints.cs
+export type AdminReview = {
+  id: number;
+  productId: number;
+  productName: string;
+  productSlug: string;
+  orderNumber: number;
+  rating: number;
+  comment: string | null;
+  authorName: string;
+  createdAt: string;
+};
+
+/** A product of the order; `rating` is set when it already has a review. */
+export type AdminReviewableProduct = { productId: number; name: string; slug: string; rating: number | null; comment: string | null };
+
+/** A paid order ready to receive reviews; `authorName` is the customer's first name. */
+export type AdminReviewOrder = { number: number; customerName: string; authorName: string; products: AdminReviewableProduct[] };
