@@ -42,7 +42,7 @@ export function PriceBoard({ products }: Props) {
                * Phones: one swipeable row per category (the next card peeks out), so the list does not become one long
                * column. From `sm` up it is the usual grid. The bottom padding keeps the card shadow from being clipped.
                */}
-              <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto overscroll-x-contain px-4 pb-6 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:gap-5 xl:grid-cols-3">
+              <div className="-mx-4 flex snap-x snap-proximity scroll-px-4 gap-4 overflow-x-auto px-4 pb-6 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:gap-5 xl:grid-cols-3">
                 {group.products.map((product) => (
                   <div key={product.id} className="grid w-[85%] max-w-sm shrink-0 snap-start sm:w-auto sm:max-w-none">
                     <ProductCard product={product} mostOrdered={product.id === mostOrderedId} />

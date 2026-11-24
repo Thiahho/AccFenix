@@ -75,7 +75,9 @@ export function OrderToaster() {
       aria-live="polite"
       aria-label="Avisos del pedido"
       // Phones: pinned to the bottom, full width. From 601px: under the header, aligned with its container's right edge.
-      className="pointer-events-none fixed inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-[60] min-[601px]:inset-x-auto min-[601px]:top-[4.75rem] min-[601px]:right-[max(1rem,calc((100vw-72rem)/2+1rem))] min-[601px]:bottom-auto"
+      // Its own compositing layer (translateZ + will-change): some mobile browsers did not paint this fixed notice after a
+      // tap inside the home's horizontal carousel until the page scrolled.
+      className="pointer-events-none fixed inset-x-3 [transform:translateZ(0)] will-change-transform bottom-[max(12px,env(safe-area-inset-bottom))] z-[60] min-[601px]:inset-x-auto min-[601px]:top-[4.75rem] min-[601px]:right-[max(1rem,calc((100vw-72rem)/2+1rem))] min-[601px]:bottom-auto"
       onPointerEnter={() => setPaused(true)}
       onPointerLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
