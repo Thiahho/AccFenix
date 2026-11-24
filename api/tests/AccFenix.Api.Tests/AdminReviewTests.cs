@@ -162,16 +162,19 @@ public class AdminReviewTests(ApiFactory factory)
         ids.IndexOf(newer).Should().BeLessThan(ids.IndexOf(older));
     }
 
-    [Fact]
-    public async Task Custom_author_name_is_used()
+    [Theory]
+    [InlineData(" Martita ", "Martita")]
+    [InlineData("María José", "María José")]
+    [InlineData("  María   José ", "María José")]
+    public async Task Custom_author_name_is_used(string authorName, string expected)
     {
         var admin = await AdminClient();
         await using var product = await CreateProduct(admin);
         var number = await CreateOrder(PaymentStatus.Approved, product.First);
 
-        await CreatedId(await admin.PostAsJsonAsync(ReviewsUrl, Review(number, product.ProductId, authorName: " Martita ")));
+        await CreatedId(await admin.PostAsJsonAsync(ReviewsUrl, Review(number, product.ProductId, authorName: authorName)));
 
-        (await PublicReviews(product.Slug)).Should().ContainSingle().Which.GetProperty("authorName").GetString().Should().Be("Martita");
+        (await PublicReviews(product.Slug)).Should().ContainSingle().Which.GetProperty("authorName").GetString().Should().Be(expected);
     }
 
     [Theory]
@@ -232,7 +235,7 @@ public class AdminReviewTests(ApiFactory factory)
     [Theory]
     [InlineData(0, null, null)]
     [InlineData(6, null, null)]
-    [InlineData(5, null, "Marta Fernández")]
+    [InlineData(5, null, "Ana\nMaría")]
     [InlineData(5, null, "   ")]
     [InlineData(5, "long", null)]
     [InlineData(5, null, "long")]

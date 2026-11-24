@@ -28,9 +28,9 @@ public class AdminReviewCreateRequestValidator : AbstractValidator<AdminReviewCr
         RuleFor(x => x.Rating).InclusiveBetween(Review.MinRating, Review.MaxRating);
         RuleFor(x => x.Comment).FreeText(Review.CommentMaxLength);
         RuleFor(x => x.AuthorName)
-            .Must(ReviewRules.IsFirstNameOnly)
+            .Must(ReviewRules.IsValidAuthorName)
             .When(x => x.AuthorName is not null)
-            .WithMessage($"Solo el nombre, sin apellido: una palabra de hasta {Review.AuthorMaxLength} caracteres");
+            .WithMessage($"El nombre del autor debe tener entre 1 y {Review.AuthorMaxLength} caracteres, en una sola línea");
     }
 }
 

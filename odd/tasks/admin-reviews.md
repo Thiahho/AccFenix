@@ -29,7 +29,7 @@ Reviews can only be created by the customer through the order's private link. Cu
 
 ## Decisions
 - Shared rules live in `Services/ReviewRules.cs`; the public flow uses them with unchanged behavior.
-- Author must be a single word (first name only), max 60 chars.
+- Author: first name, compound allowed ("María José"), single line, max 60 chars, repeated spaces collapsed (user decision).
 - Refunded or cancelled orders are not reviewable, matching the public flow.
 - The admin list has no server limit; the page paginates in memory like categorías.
 

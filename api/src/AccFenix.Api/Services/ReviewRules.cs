@@ -63,7 +63,7 @@ public static class ReviewRules
             ProductId = productId,
             Rating = rating,
             Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim(),
-            AuthorName = authorName.Trim(),
+            AuthorName = NormalizeAuthorName(authorName),
             CreatedAt = DateTime.UtcNow,
         };
         db.Reviews.Add(review);
@@ -78,10 +78,15 @@ public static class ReviewRules
         return first.Length <= Review.AuthorMaxLength ? first : first[..Review.AuthorMaxLength];
     }
 
-    /// <summary>A valid author is a single word (a first name, no surname) within the author limit.</summary>
-    public static bool IsFirstNameOnly(string? name)
+    /// <summary>A valid author is a single line within the author limit; compound first names such as "María José" are allowed.</summary>
+    public static bool IsValidAuthorName(string? name)
     {
-        var trimmed = name?.Trim();
-        return !string.IsNullOrEmpty(trimmed) && trimmed.Length <= Review.AuthorMaxLength && !trimmed.Any(c => char.IsWhiteSpace(c) || char.IsControl(c));
+        if (name is null || name.Any(char.IsControl)) return false;
+        var normalized = NormalizeAuthorName(name);
+        return normalized.Length is > 0 and <= Review.AuthorMaxLength;
     }
+
+    /// <summary>Trims the name and collapses repeated spaces between words.</summary>
+    public static string NormalizeAuthorName(string name) =>
+        string.Join(' ', name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 }

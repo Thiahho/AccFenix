@@ -188,7 +188,7 @@ function ReviewForm({ onSaved }: { onSaved: () => void }) {
                   autoComplete="off"
                   aria-describedby="review-author-hint"
                 />
-                <p id="review-author-hint" className="text-xs text-muted-foreground">Solo el nombre, sin apellido. Si lo dejás vacío se usa el del cliente.</p>
+                <p id="review-author-hint" className="text-xs text-muted-foreground">Solo el nombre (puede ser compuesto, como María José), sin apellido. Si lo dejás vacío se usa el del cliente.</p>
               </div>
 
               {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
