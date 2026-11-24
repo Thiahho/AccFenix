@@ -93,6 +93,10 @@ Variables de entorno (formato ASP.NET, `__` separa secciones):
 | `Admin__Email`, `Admin__Password` | Usuario admin que crea el seed (solo si no existe) o que crea/restablece `reset-admin` |
 | `TrustedWeb__Key` | Clave compartida con la web (mínimo 32 caracteres, igual a `API_TRUSTED_KEY`). Hace que el límite de intentos de login sea por visitante; sin ella el cupo es compartido |
 | `Cloudinary__CloudName`, `Cloudinary__ApiKey`, `Cloudinary__ApiSecret` | Cuenta para fotos y videos. Sin estas variables, la subida queda deshabilitada |
+| `MercadoPago__AccessToken` | Access token de Mercado Pago (Checkout Pro). En producción, el de la aplicación productiva. Sin él (o sin `SiteUrl`), los pedidos se crean pero no abren el pago |
+| `MercadoPago__SiteUrl` | URL pública del sitio web, adonde vuelve el cliente después de pagar. Debe ser `https` para que la vuelta sea automática |
+| `MercadoPago__NotificationUrl` | URL pública del webhook: `https://<api>/api/payments/mercadopago/webhook` |
+| `MercadoPago__WebhookSecret` | Clave secreta del webhook (Tus integraciones > Webhooks). Con ella se rechazan las notificaciones sin firma válida; configurarla en producción |
 
 Migraciones nuevas: `dotnet ef migrations add <Nombre> --project src/AccFenix.Api -o Data/Migrations`.
 
