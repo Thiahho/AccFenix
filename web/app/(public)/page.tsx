@@ -3,8 +3,9 @@ import { Faq } from "@/components/home/faq";
 import { Hero } from "@/components/home/hero";
 import { HowWeWork } from "@/components/home/how-we-work";
 import { PriceBoard } from "@/components/home/price-board";
+import { Testimonials } from "@/components/home/testimonials";
 import { JsonLd } from "@/components/seo/json-ld";
-import { api, type PublicSettings } from "@/lib/api";
+import { api, type PublicSettings, type Testimonial } from "@/lib/api";
 import { loadCatalogProducts } from "@/lib/catalog";
 import { site } from "@/lib/site";
 
@@ -15,6 +16,14 @@ async function loadSettings(): Promise<PublicSettings> {
     return await api.settings();
   } catch {
     return { whatsappNumber: "", mercadoPagoAlias: "" }; // Sin API, la home se muestra sin botones de WhatsApp.
+  }
+}
+
+async function loadTestimonials(): Promise<Testimonial[]> {
+  try {
+    return await api.testimonials();
+  } catch {
+    return []; // Sin API, la home se muestra sin la sección de clientes.
   }
 }
 
@@ -32,13 +41,14 @@ function organization(phone: string) {
 }
 
 export default async function HomePage() {
-  const [settings, products] = await Promise.all([loadSettings(), loadCatalogProducts()]);
+  const [settings, products, testimonials] = await Promise.all([loadSettings(), loadCatalogProducts(), loadTestimonials()]);
 
   return (
     <>
       <JsonLd data={organization(settings.whatsappNumber)} />
       <Hero />
       <PriceBoard products={products} />
+      <Testimonials items={testimonials} />
       <HowWeWork />
       <Faq />
     </>
