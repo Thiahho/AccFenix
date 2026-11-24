@@ -73,12 +73,16 @@ export default async function CategoryPage({ params }: Props) {
       {cards.length === 0 ? (
         <p className="px-4 py-10 text-muted-foreground sm:px-6 lg:px-8">Todavía no hay productos en este catálogo.</p>
       ) : (
-        <ul className="grid lg:grid-cols-2">
+        // Phones: a swipeable row of cards (the next one peeks out) instead of a long column. From `sm` up, the usual list.
+        <ul className="flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain px-4 py-6 sm:grid sm:snap-none sm:gap-0 sm:overflow-visible sm:px-0 sm:py-0 lg:grid-cols-2">
           {cards.map((p) => {
             // Without its detail the row still links to the product; it just cannot state a price.
             const variants = variantsBySlug.get(p.slug);
             return (
-              <li key={p.id} className="border-b border-border lg:odd:border-r">
+              <li
+                key={p.id}
+                className="w-[85%] max-w-sm shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-card sm:w-auto sm:max-w-none sm:rounded-none sm:border-0 sm:border-b sm:bg-transparent lg:odd:border-r"
+              >
                 <Link
                   href={`/producto/${p.slug}`}
                   className="poster-focus-inset group flex h-full min-h-32 items-stretch gap-4 px-4 py-5 transition-colors hover:bg-oat sm:px-6 lg:px-8"
